@@ -9,28 +9,55 @@ from torch.utils.data import random_split
 import pytorch_lightning as pl
 from torch_geometric.nn import GCNConv, global_mean_pool
 from torch_geometric.datasets import TUDataset
-from torch_geometric.data import DataLoader
+from torch_geometric.data import DataLoader, Batch
+from torch_geometric.utils import to_dense_adj
 
 from topognn import DATA_DIR
+from pyper.persistent_homology.graphs import calculate_persistence_diagrams
+
+import igraph as ig
+
 
 GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
 
 
-class GCN(torch.nn.Module):
-    def __init__(self):
-        super(GCN, self).__init__()
-        self.conv1 = GCNConv(data.num_node_features, 16)
-        self.conv2 = GCNConv(16, data.num_classes)
+def batch_to_igraph_list(batch: Batch):
+    list_of_instances = batch.to_data_list()
+    # TODO: this conversion can be done more quickly without an
+    # intermediate adjacency matrix representation.
+    adjacency_matrices = [to_dense_adj(instance.edge_index)[0] for instance in
+                          list_of_instances]
+    graphs = [ig.Graph.Adjacency(m.tolist())
+              for m in adjacency_matrices]
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+    return graphs
 
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index)
 
-        return F.log_softmax(x, dim=1)
+def apply_degree_filtration(graphs):
+    for graph in graphs:
+        graph.vs['filtration'] = graph.vs.degree()
+
+        for edge in graph.es:
+            u, v = edge.source, edge.target
+            edge['filtration'] = max(graph.vs[u]['filtration'],
+                                     graph.vs[v]['filtration'])
+
+    return graphs
+
+
+def calculate_batch_persistence_diagrams(graphs):
+    persistence_diagrams = [
+        calculate_persistence_diagrams(
+            graph, vertex_attribute='filtration', edge_attribute='filtration')
+        for graph in graphs
+    ]
+    return persistence_diagrams
+
+
+def persistence_diagrams_from_batch(batch: Batch):
+    graphs = batch_to_igraph_list(batch)
+    graphs = apply_degree_filtration(graphs)
+    return calculate_batch_persistence_diagrams(graphs)
 
 
 class TUGraphDataset(pl.LightningDataModule):
@@ -133,6 +160,11 @@ if __name__ == "__main__":
     )
     data = TUGraphDataset('ENZYMES', batch_size=32)
     data.prepare_data()
+    # Test
+    batch = next(data.train_dataloader().__iter__())
+    diagrams = persistence_diagrams_from_batch(batch)
+    import pdb
+    pdb.set_trace()
     model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
                      num_classes=data.num_classes)
     trainer.fit(model, datamodule=data)
