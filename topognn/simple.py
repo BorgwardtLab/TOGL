@@ -9,7 +9,7 @@ from torch.utils.data import random_split
 import pytorch_lightning as pl
 from torch_geometric.nn import GCNConv, global_mean_pool
 from torch_geometric.datasets import TUDataset
-from torch_geometric.data import DataLoader, Batch
+from torch_geometric.data import DataLoader, Batch, Data
 from torch_geometric.utils import to_dense_adj
 
 from topognn import DATA_DIR
@@ -23,28 +23,32 @@ GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
 
 def batch_to_igraph_list(batch: Batch):
     list_of_instances = batch.to_data_list()
-    # TODO: this conversion can be done more quickly without an
-    # intermediate adjacency matrix representation.
-    #adjacency_matrices = [to_dense_adj(instance.edge_index)[0] for instance in
-    #                      list_of_instances]
-    #graphs = [ig.Graph.Adjacency(m.tolist())
-    #          for m in adjacency_matrices]
 
     graphs = [ig.Graph(zip(instance.edge_index[0].tolist(),instance.edge_index[1].tolist())) for instance in list_of_instances]
     
     return graphs
 
-def persistence_routine(filtered_v_, batch: Batch):
+
+def batch_persistence_routine(filtered_v_, batch):
+
+    #for i, data in enumerate(batch.to_data_list()):
+    #    print(i)
+    #    persistence_routine(filtered_v_[batch.batch==i],data)
+
+    batch_persistence = [persistence_routine(filtered_v_[batch.batch==i],data) for i,data in enumerate(batch.to_data_list())]
+
+    return torch.cat(batch_persistence)
+
+def persistence_routine(filtered_v_, data: Data):
     """
     Pytorch based routine to compute the persistence pairs
     Based on pyper routine.
     Inputs : 
         * filtration values of the vertices
-        * batch object that stores the graph structure (could be just the edge_index actually)
+        * data object that stores the graph structure (could be just the edge_index actually)
     """
-    
     # Compute the edge filtrations as the max between the value of the nodes.
-    filtered_e_, _ = torch.max(torch.stack((filtered_v_[batch.edge_index[0]],filtered_v_[batch.edge_index[1]])),axis=0)
+    filtered_e_, _ = torch.max(torch.stack((filtered_v_[data.edge_index[0]],filtered_v_[data.edge_index[1]])),axis=0)
 
     filtered_v, v_indices = torch.sort(filtered_v_)
     filtered_e, e_indices = torch.sort(filtered_e_)
@@ -56,7 +60,7 @@ def persistence_routine(filtered_v_, batch: Batch):
     for edge_index, edge_weight in zip(e_indices,filtered_e):
       
         # nodes connected to this edge
-        nodes = batch.edge_index[:,edge_index]
+        nodes = data.edge_index[:,edge_index]
         
         younger = uf.find(nodes[0])
         older = uf.find(nodes[1])
@@ -207,22 +211,32 @@ class FiltrationGCNModel(pl.LightningModule):
         """
         l1_norm = torch.norm(persistence.unsqueeze(1).repeat(1,self.num_coord_funs,1)-self.coord_fun_c,p = 1, dim = -1)
         coord_activation = (1/(1+l1_norm)) - (1/(1+torch.abs(l1_norm-torch.abs(self.coord_fun_r))))
-        reduced_coord_activation = coord_activation.sum(0)
+        #reduced_coord_activation = coord_activation.sum(0)
 
-        return reduced_coord_activation
+        return coord_activation
 
     def compute_persistence(self,x,batch):
-        
+        """
+        Returns the persistence pairs as a list of tensors with shape [X.shape[0],2].
+        The lenght of the list is the number of filtrations.
+        """ 
         filtered_v_ = self.filtration(x)
 
-        persistences = [ persistence_routine(filtered_v_[:,f_idx],batch) for f_idx in range(self.num_filtrations) ]
+        persistences = [ batch_persistence_routine(filtered_v_[:,f_idx],batch) for f_idx in range(self.num_filtrations) ]
 
         return persistences
 
-    def compute_coord_activations(self,persistences):
+    def compute_coord_activations(self,persistences,batch):
 
-        coord_activations = torch.cat([self.compute_coord_fun(persistence) for persistence in persistences])
-        return coord_activations
+        """
+        Return the coordinate functions activations pooled by graph.
+        Output dims : list of length number of filtrations with elements : [N_graphs in batch, number fo coordinate functions]
+        """
+        coord_activations = [self.compute_coord_fun(persistence) for persistence in persistences]
+        #pooling graph-wise
+        pooled_coord_activations = [global_mean_pool(coord_activation,batch.batch) for coord_activation in coord_activations]
+
+        return pooled_coord_activations
        
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -231,11 +245,14 @@ class FiltrationGCNModel(pl.LightningModule):
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
-
+        
         persistences = self.compute_persistence(x,data)
-        coord_activations = self.compute_coord_activations(persistences)
 
-        x_out = self.out(coord_activations).unsqueeze(0)
+        coord_activations = self.compute_coord_activations(persistences,data)
+
+        coord_activations = torch.cat(coord_activations,1)
+        
+        x_out = self.out(coord_activations)
 
         return x_out 
 
@@ -278,16 +295,16 @@ if __name__ == "__main__":
     trainer = pl.Trainer(
         gpus=-1 if GPU_AVAILABLE else None,
     )
-    data = TUGraphDataset('ENZYMES', batch_size=1)
+    data = TUGraphDataset('ENZYMES', batch_size=3)
     data.prepare_data()
     # Test
     batch = next(data.train_dataloader().__iter__())
     diagrams = persistence_diagrams_from_batch(batch)
 
     
-    model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
-                     num_classes=data.num_classes)
-    trainer.fit(model, datamodule=data)
+    #model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
+    #                 num_classes=data.num_classes)
+    #trainer.fit(model, datamodule=data)
 
     #TODO : currenty only working on cpu (check devices)
     assert GPU_AVAILABLE is False 
@@ -295,9 +312,6 @@ if __name__ == "__main__":
                      num_classes=data.num_classes, num_filtrations = 2, num_coord_funs = 10 )
     trainer.fit(filtration_model, datamodule=data)
 
-
-
-    
 
 
     ##--- Test that the filtration is correct.- Comparing against figure 2 of the graph filtration paper ##
