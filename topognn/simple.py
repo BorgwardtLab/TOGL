@@ -20,7 +20,6 @@ import igraph as ig
 import sys
 
 GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
-GPU_AVAILABLE = False
 
 def batch_to_igraph_list(batch: Batch):
     list_of_instances = batch.to_data_list()
@@ -280,11 +279,12 @@ if __name__ == "__main__":
     diagrams = persistence_diagrams_from_batch(batch)
 
     
-    #model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
-    #                 num_classes=data.num_classes)
-    #trainer.fit(model, datamodule=data)
+    model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
+                     num_classes=data.num_classes)
+    trainer.fit(model, datamodule=data)
 
-
+    #TODO : currenty only working on cpu (check devices)
+    assert GPU_AVAILABLE is False 
     filtration_model = FiltrationGCNModel(hidden_dim=32, num_node_features=data.node_attributes, pre_filtration_features = 3,
                      num_classes=data.num_classes, num_filtrations = 2, num_coord_funs = 10 )
     trainer.fit(filtration_model, datamodule=data)
