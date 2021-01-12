@@ -14,24 +14,66 @@ from torch_geometric.utils import to_dense_adj
 
 from topognn import DATA_DIR
 from pyper.persistent_homology.graphs import calculate_persistence_diagrams
+from pyper.utilities import UnionFind
 
 import igraph as ig
-
+import sys
 
 GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
-
+GPU_AVAILABLE = False
 
 def batch_to_igraph_list(batch: Batch):
     list_of_instances = batch.to_data_list()
     # TODO: this conversion can be done more quickly without an
     # intermediate adjacency matrix representation.
-    adjacency_matrices = [to_dense_adj(instance.edge_index)[0] for instance in
-                          list_of_instances]
-    graphs = [ig.Graph.Adjacency(m.tolist())
-              for m in adjacency_matrices]
+    #adjacency_matrices = [to_dense_adj(instance.edge_index)[0] for instance in
+    #                      list_of_instances]
+    #graphs = [ig.Graph.Adjacency(m.tolist())
+    #          for m in adjacency_matrices]
 
+    graphs = [ig.Graph(zip(instance.edge_index[0].tolist(),instance.edge_index[1].tolist())) for instance in list_of_instances]
+    
     return graphs
 
+def persistence_routine(filtered_v_, batch: Batch):
+
+    # let's assume filtrate is the mean function of the node attributes
+    #filtered_v_ = x.mean(axis=1)
+    filtered_e_, _ = torch.max(torch.stack((filtered_v_[batch.edge_index[0]],filtered_v_[batch.edge_index[1]])),axis=0)
+
+    filtered_v, v_indices = torch.sort(filtered_v_)
+    filtered_e, e_indices = torch.sort(filtered_e_)
+
+    uf = UnionFind(len(v_indices))
+
+    persistence = torch.zeros((len(e_indices),2))
+
+    #TODO: check how to pair the different points.
+    i_n = 0
+
+    for edge_index, edge_weight in zip(e_indices,filtered_e):
+       
+        # nodes connected to this edge
+        nodes = batch.edge_index[:,edge_index]
+        
+        younger = uf.find(nodes[0])
+        older = uf.find(nodes[1])
+
+        if younger == older : 
+            continue
+        elif v_indices[younger] < v_indices[older]:
+            younger, older = older, younger
+            nodes = torch.flip(nodes,[0])
+
+        #creation = filtered_v_[younger]
+        #destruction = edge_weight
+
+        persistence[i_n,0] = filtered_v_[younger]
+        persistence[i_n,1] = edge_weight
+
+        i_n += 1
+
+    return persistence
 
 def apply_degree_filtration(graphs):
     for graph in graphs:
@@ -125,6 +167,79 @@ class TUGraphDataset(pl.LightningDataModule):
         )
 
 
+class FiltrationGCNModel(pl.LightningModule):
+    """
+    GCN Model with a Graph Filtration Readout function.
+    """
+
+    def __init__(self, hidden_dim, num_node_features, pre_filtration_features, num_classes, num_filtrations, num_coord_funs):
+        """
+        num_filtrations = number of filtration functions
+        num_coord_funs = number of different coordinate function
+        """
+        super().__init__()
+        self.save_hyperparameters()
+        self.conv1 = GCNConv(num_node_features, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, pre_filtration_features)
+        self.loss = torch.nn.CrossEntropyLoss()
+
+        self.num_filtrations = num_filtrations
+        self.num_coord_funs = num_coord_funs
+
+        self.filtration = torch.nn.Linear(pre_filtration_features,self.num_filtrations)
+
+        self.coord_fun_c = torch.nn.Parameter(torch.randn(self.num_coord_funs,2), requires_grad = True) 
+        self.coord_fun_r = torch.nn.Parameter(torch.randn(self.num_coord_funs), requires_grad = True)
+        self.out = torch.nn.Linear(self.num_filtrations*self.num_coord_funs,num_classes)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=0.001)
+
+    def compute_coord_fun(self,persistence):
+        """
+        Input : persistence [N_points,2]
+        Output : coord_fun mean-aggregated [self.num_coord_fun]
+        """
+        l1_norm = torch.norm(persistence.unsqueeze(1).repeat(1,self.num_coord_funs,1)-self.coord_fun_c,p = 1, dim = -1)
+        coord_activation = (1/(1+l1_norm)) - (1/(1+torch.abs(l1_norm-torch.abs(self.coord_fun_r))))
+        reduced_coord_activation = coord_activation.sum(0)
+
+        return reduced_coord_activation
+
+    def compute_persistence(self,x,batch):
+        
+        filtered_v_ = self.filtration(x)
+
+        persistences = [ persistence_routine(filtered_v_[:,f_idx],batch) for f_idx in range(self.num_filtrations) ]
+
+        return persistences
+
+    def compute_coord_activations(self,persistences):
+
+        coord_activations = torch.cat([self.compute_coord_fun(persistence) for persistence in persistences])
+        return coord_activations
+       
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+
+        persistences = self.compute_persistence(x,data)
+        coord_activations = self.compute_coord_activations(persistences)
+
+        x_out = self.out(coord_activations).unsqueeze(0)
+
+        return x_out 
+
+    def training_step(self, batch, batch_idx):
+        y = batch.y
+        y_hat = self(batch)
+        return self.loss(y_hat, y)
+
+
 class GCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, num_node_features, num_classes):
         super().__init__()
@@ -145,7 +260,7 @@ class GCNModel(pl.LightningModule):
         x = self.conv2(x, edge_index)
 
         x = global_mean_pool(x, data.batch)
-
+      
         return x
 
     def training_step(self, batch, batch_idx):
@@ -158,13 +273,29 @@ if __name__ == "__main__":
     trainer = pl.Trainer(
         gpus=-1 if GPU_AVAILABLE else None,
     )
-    data = TUGraphDataset('ENZYMES', batch_size=32)
+    data = TUGraphDataset('ENZYMES', batch_size=1)
     data.prepare_data()
     # Test
     batch = next(data.train_dataloader().__iter__())
     diagrams = persistence_diagrams_from_batch(batch)
-    import pdb
-    pdb.set_trace()
-    model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
-                     num_classes=data.num_classes)
-    trainer.fit(model, datamodule=data)
+
+    
+    #model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
+    #                 num_classes=data.num_classes)
+    #trainer.fit(model, datamodule=data)
+
+
+    filtration_model = FiltrationGCNModel(hidden_dim=32, num_node_features=data.node_attributes, pre_filtration_features = 3,
+                     num_classes=data.num_classes, num_filtrations = 2, num_coord_funs = 10 )
+    trainer.fit(filtration_model, datamodule=data)
+
+
+
+
+    ##--- Test that the filtration is correct.- Comparing against figure 2 of the graph filtration paper ##
+    g = ig.Graph([(0,3),(2,3),(3,4),(4,1)],edge_attrs={"filtration":[3,3,4,4]})
+    g.vs["filtration"] = [1,1,2,3,4]
+    persistence,_ = calculate_persistence_diagrams(
+            g, vertex_attribute='filtration', edge_attribute='filtration')#, order = "superlevel")
+
+    print(persistence._pairs)
