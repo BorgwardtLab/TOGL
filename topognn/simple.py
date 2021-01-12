@@ -35,9 +35,15 @@ def batch_to_igraph_list(batch: Batch):
     return graphs
 
 def persistence_routine(filtered_v_, batch: Batch):
-
-    # let's assume filtrate is the mean function of the node attributes
-    #filtered_v_ = x.mean(axis=1)
+    """
+    Pytorch based routine to compute the persistence pairs
+    Based on pyper routine.
+    Inputs : 
+        * filtration values of the vertices
+        * batch object that stores the graph structure (could be just the edge_index actually)
+    """
+    
+    # Compute the edge filtrations as the max between the value of the nodes.
     filtered_e_, _ = torch.max(torch.stack((filtered_v_[batch.edge_index[0]],filtered_v_[batch.edge_index[1]])),axis=0)
 
     filtered_v, v_indices = torch.sort(filtered_v_)
@@ -45,13 +51,10 @@ def persistence_routine(filtered_v_, batch: Batch):
 
     uf = UnionFind(len(v_indices))
 
-    persistence = torch.zeros((len(e_indices),2))
-
-    #TODO: check how to pair the different points.
-    i_n = 0
+    persistence = torch.zeros((len(v_indices),2))
 
     for edge_index, edge_weight in zip(e_indices,filtered_e):
-       
+      
         # nodes connected to this edge
         nodes = batch.edge_index[:,edge_index]
         
@@ -64,13 +67,16 @@ def persistence_routine(filtered_v_, batch: Batch):
             younger, older = older, younger
             nodes = torch.flip(nodes,[0])
 
-        #creation = filtered_v_[younger]
-        #destruction = edge_weight
+        persistence[nodes[0],0] = filtered_v_[younger]
+        persistence[nodes[0],1] = edge_weight
 
-        persistence[i_n,0] = filtered_v_[younger]
-        persistence[i_n,1] = edge_weight
+        uf.merge(nodes[0],nodes[1])
 
-        i_n += 1
+    unpaired_value = filtered_e[-1]
+
+    for root in uf.roots():
+        persistence[root,0] = filtered_v_[root]
+        persistence[root,1] = unpaired_value
 
     return persistence
 
@@ -291,11 +297,19 @@ if __name__ == "__main__":
 
 
 
+    
+
 
     ##--- Test that the filtration is correct.- Comparing against figure 2 of the graph filtration paper ##
     g = ig.Graph([(0,3),(2,3),(3,4),(4,1)],edge_attrs={"filtration":[3,3,4,4]})
     g.vs["filtration"] = [1,1,2,3,4]
     persistence,_ = calculate_persistence_diagrams(
             g, vertex_attribute='filtration', edge_attribute='filtration')#, order = "superlevel")
-
     print(persistence._pairs)
+
+
+    batch = Batch()
+    batch.edge_index = torch.tensor([[0,2,3,4],[3,3,4,1]])
+    filtered_v = torch.tensor([1,1,2,3,4])
+    persistence = persistence_routine(filtered_v, batch)
+    print(persistence_routine(filtered_v, batch))
