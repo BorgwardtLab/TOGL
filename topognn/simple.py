@@ -84,6 +84,51 @@ def persistence_routine(filtered_v_, data: Data):
 
     return persistence
 
+def persistence_routine_new(filtered_v_, edge_index):
+    """
+    Pytorch based routine to compute the persistence pairs
+    Based on pyper routine.
+    Inputs : 
+        * filtration values of the vertices
+        * data object that stores the graph structure (could be just the edge_index actually)
+    """
+    # Compute the edge filtrations as the max between the value of the nodes.
+    filtered_e_, _ = torch.max(torch.stack((filtered_v_[edge_index[0]],filtered_v_[edge_index[1]])),axis=0)
+
+    filtered_v, v_indices = torch.sort(filtered_v_)
+    filtered_e, e_indices = torch.sort(filtered_e_)
+
+    uf = UnionFind(len(v_indices))
+
+    persistence = torch.zeros((len(v_indices),2), device=filtered_v_.device)
+
+    for edge_index, edge_weight in zip(e_indices,filtered_e):
+        # nodes connected to this edge
+        nodes = edge_index[:,edge_index]
+
+        younger = uf.find(nodes[0].item())
+        older = uf.find(nodes[1].item())
+
+        if younger == older : 
+            continue
+        elif v_indices[younger] < v_indices[older]:
+            younger, older = older, younger
+            nodes = torch.flip(nodes, [0])
+
+        persistence[nodes[0],0] = filtered_v_[younger]
+        persistence[nodes[0],1] = edge_weight
+
+        uf.merge(nodes[0].item(),nodes[1].item())
+
+    unpaired_value = filtered_e[-1]
+
+    for root in uf.roots():
+        persistence[root,0] = filtered_v_[root]
+        persistence[root,1] = unpaired_value
+
+    return persistence
+
+
 def apply_degree_filtration(graphs):
     for graph in graphs:
         graph.vs['filtration'] = graph.vs.degree()
@@ -183,8 +228,10 @@ class FiltrationGCNModel(pl.LightningModule):
 
     def __init__(self, hidden_dim, num_node_features, pre_filtration_features, num_classes, num_filtrations, num_coord_funs):
         """
-        num_filtrations = number of filtration functions
-        num_coord_funs = number of different coordinate function
+        Inputs : 
+            * pre_filtration_features = dimension of the input node features for the filtration function.
+            * num_filtrations = number of filtration functions.
+            * num_coord_funs = number of different coordinate function.
         """
         super().__init__()
         self.save_hyperparameters()
@@ -234,6 +281,7 @@ class FiltrationGCNModel(pl.LightningModule):
         """
         coord_activations = [self.compute_coord_fun(persistence) for persistence in persistences]
         #pooling graph-wise
+        #TODO: maybe sum ?
         pooled_coord_activations = [global_mean_pool(coord_activation,batch.batch) for coord_activation in coord_activations]
 
         return pooled_coord_activations
@@ -245,13 +293,17 @@ class FiltrationGCNModel(pl.LightningModule):
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
-        
+       
         persistences = self.compute_persistence(x,data)
 
         coord_activations = self.compute_coord_activations(persistences,data)
 
         coord_activations = torch.cat(coord_activations,1)
-        
+
+        # TODO:
+        #  - concatenate
+        #  - linear layer to go back to n_num_features?
+       
         x_out = self.out(coord_activations)
 
         return x_out 
@@ -260,6 +312,86 @@ class FiltrationGCNModel(pl.LightningModule):
         y = batch.y
         y_hat = self(batch)
         return self.loss(y_hat, y)
+
+
+class TopologyLayer(torch.nn.Module):
+    """Topological Aggregation Layer."""
+
+    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs):
+        super().__init__()
+        self.features_in = features_in
+        self.features_out = features_out
+
+        self.num_filtrations = num_filtrations
+        self.num_coord_funs = num_coord_funs
+        self.filtration = torch.nn.Linear(self.features_in, self.num_filtrations)
+
+        self.coord_fun_c = torch.nn.Parameter(
+            torch.randn(self.num_coord_funs, 2),
+            requires_grad = True
+        )
+        self.coord_fun_r = torch.nn.Parameter(
+            torch.randn(self.num_coord_funs),
+            requires_grad = True
+        )
+        self.out = torch.nn.Linear(
+            self.features_in + self.num_filtrations * self.num_coord_funs, features_out)
+
+    def compute_coord_fun(self, persistence):
+        """
+        Input : persistence [N_points,2]
+        Output : coord_fun mean-aggregated [self.num_coord_fun]
+        """
+        l1_norm = torch.norm(persistence.unsqueeze(1).repeat(1,self.num_coord_funs,1)-self.coord_fun_c,p = 1, dim = -1)
+        coord_activation = (1/(1+l1_norm)) - (1/(1+torch.abs(l1_norm-torch.abs(self.coord_fun_r))))
+        #reduced_coord_activation = coord_activation.sum(0)
+
+        return coord_activation
+
+    def compute_persistence(self, x, edge_index, x_slices, edge_slices):
+        """
+        Returns the persistence pairs as a list of tensors with shape [X.shape[0],2].
+        The length of the list is the number of filtrations.
+        """
+        filtered_v_ = self.filtration(x)
+        out = []
+        # Compute where each graph starts and ends
+        for filtration in torch.split(
+                filtered_v_, self.num_filtrations, dim=1):
+            out.append(
+                torch.cat([
+                        persistence_routine_new(
+                            filtration[b_v:e_v], edge_index[b_e:e_e] - b_v)
+                        for (b_v, e_v), (b_e, e_e) in zip(
+                            zip(x_slices, x_slices[1:]),
+                            zip(edge_slices, edge_slices[1:])
+                        )
+                    ],
+                    dim=-1
+                )
+            )
+        return out
+
+    def compute_coord_activations(self, persistences):
+        """
+        Return the coordinate functions activations pooled by graph.
+        Output dims : list of length number of filtrations with elements : [N_graphs in batch, number fo coordinate functions]
+        """
+        coord_activations = [
+            self.compute_coord_fun(persistence) for persistence in persistences]
+
+        return torch.cat(coord_activations, 1)
+
+    def forward(self, x, edge_index, x_slices, edge_slices):
+        persistences = self.compute_persistence(
+            x, edge_index, x_slices, edge_slices)
+
+        coord_activations = self.compute_coord_activations(persistences)
+
+        # TODO: Maybe check residual approach
+        x = torch.cat([x, coord_activations], dim=-1)
+
+        return self.out(x)
 
 
 class GCNModel(pl.LightningModule):
@@ -282,7 +414,7 @@ class GCNModel(pl.LightningModule):
         x = self.conv2(x, edge_index)
 
         x = global_mean_pool(x, data.batch)
-      
+
         return x
 
     def training_step(self, batch, batch_idx):
@@ -290,6 +422,40 @@ class GCNModel(pl.LightningModule):
         y_hat = self(batch)
         return self.loss(y_hat, y)
 
+
+class TopoGCNModel(pl.LightningModule):
+    def __init__(self, hidden_dim, num_node_features, num_classes,
+                 num_filtrations, num_coord_funs):
+        super().__init__()
+        self.save_hyperparameters()
+        self.conv1 = GCNConv(num_node_features, hidden_dim)
+        self.topo1 = TopologyLayer(
+            hidden_dim, hidden_dim, num_filtrations, num_coord_funs)
+        self.conv2 = GCNConv(hidden_dim, num_classes)
+        self.loss = torch.nn.CrossEntropyLoss()
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=0.001)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.topo1(
+            x, edge_index, data.__slices__['x'], data.__slices__['edge_index'])
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+
+        x = global_mean_pool(x, data.batch)
+        return x
+
+    def training_step(self, batch, batch_idx):
+        y = batch.y
+        y_hat = self(batch)
+        return self.loss(y_hat, y)
 
 if __name__ == "__main__":
     trainer = pl.Trainer(
@@ -308,7 +474,9 @@ if __name__ == "__main__":
 
     #TODO : currenty only working on cpu (check devices)
     assert GPU_AVAILABLE is False 
-    filtration_model = FiltrationGCNModel(hidden_dim=32, num_node_features=data.node_attributes, pre_filtration_features = 3,
+    # filtration_model = FiltrationGCNModel(hidden_dim=32, num_node_features=data.node_attributes, pre_filtration_features = 3,
+    #                  num_classes=data.num_classes, num_filtrations = 2, num_coord_funs = 10 )
+    filtration_model = TopoGCNModel(hidden_dim=32, num_node_features=data.node_attributes,
                      num_classes=data.num_classes, num_filtrations = 2, num_coord_funs = 10 )
     trainer.fit(filtration_model, datamodule=data)
 
