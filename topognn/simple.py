@@ -14,7 +14,7 @@ from torch_geometric.data import DataLoader, Batch, Data
 
 from topognn import DATA_DIR
 
-from topognn.topo_utils import batch_persistence_routine
+from topognn.topo_utils import batch_persistence_routine, persistence_routine, batch_persistence_routine_old
 
 import sys
 
@@ -93,6 +93,7 @@ class TopologyLayer(torch.nn.Module):
     
     def __init__(self, features_in, features_out, num_filtrations, num_coord_funs):
         super().__init__()
+
         self.features_in = features_in
         self.features_out = features_out
 
@@ -104,6 +105,7 @@ class TopologyLayer(torch.nn.Module):
             torch.randn(self.num_coord_funs, 2),
             requires_grad = True
         )
+
         self.coord_fun_r = torch.nn.Parameter(
             torch.randn(self.num_coord_funs),
             requires_grad = True
@@ -117,7 +119,6 @@ class TopologyLayer(torch.nn.Module):
         The lenght of the list is the number of filtrations.
         """ 
         filtered_v_ = self.filtration(x)
-
         persistences = [ batch_persistence_routine(filtered_v_[:,f_idx],batch) for f_idx in range(self.num_filtrations) ]
 
         return persistences
@@ -127,6 +128,7 @@ class TopologyLayer(torch.nn.Module):
         Input : persistence [N_points,2]
         Output : coord_fun mean-aggregated [self.num_coord_fun]
         """
+
         l1_norm = torch.norm(persistence.unsqueeze(1).repeat(1,self.num_coord_funs,1)-self.coord_fun_c,p = 1, dim = -1)
         coord_activation = (1/(1+l1_norm)) - (1/(1+torch.abs(l1_norm-torch.abs(self.coord_fun_r))))
         #reduced_coord_activation = coord_activation.sum(0)
@@ -149,7 +151,7 @@ class TopologyLayer(torch.nn.Module):
 
         persistences = self.compute_persistence(x,batch)
 
-        coord_activations = self.compute_coord_activations(persistences,data)
+        coord_activations = self.compute_coord_activations(persistences,batch)
 
         concat_activations = torch.cat((x,coord_activations),1)
         
@@ -295,16 +297,12 @@ class GCNModel(pl.LightningModule):
         self.log("val_acc_epoch", self.accuracy_val.compute())
 
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Topo GNN")
-    parser.add_argument("--type",type=str,default = "GCN")
-
-    args = parser.parse_args()
-
+def main(args):
+    
     model_type = args.type
 
-    wandb_logger = WandbLogger(name = f"Attempt2_{model_type}",project = "TopoGNN")
+    wandb_logger = WandbLogger(name = f"Attempt_{model_type}",project = "topo_gnn",entity = "topo_gnn")
+    #wandb_logger = WandbLogger(name = f"Attempt_{model_type}",project = "TopoGNN",entity="edebrouwer")
 
     trainer = pl.Trainer(
         gpus=-1 if GPU_AVAILABLE else None,
@@ -318,18 +316,23 @@ if __name__ == "__main__":
         model = GCNModel(hidden_dim=32, num_node_features=data.node_attributes,
                      num_classes=data.num_classes)
     elif model_type=="TopoGNN":
-        assert GPU_AVAILABLE is False 
         model = FiltrationGCNModel(hidden_dim=32, num_node_features=data.node_attributes,
                      num_classes=data.num_classes, num_filtrations = 2, num_coord_funs = 10 )
     else:
         raise("Model not found")
 
- 
     trainer.fit(model, datamodule=data)
 
 
 
+if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser(description="Topo GNN")
+    parser.add_argument("--type",type=str,default = "TopoGNN")
+
+    args = parser.parse_args()
+
+    main(args)
 
     ##--- Test that the filtration is correct.- Comparing against figure 2 of the graph filtration paper ##
     #g = ig.Graph([(0,3),(2,3),(3,4),(4,1)],edge_attrs={"filtration":[3,3,4,4]})
@@ -338,9 +341,9 @@ if __name__ == "__main__":
     #        g, vertex_attribute='filtration', edge_attribute='filtration')#, order = "superlevel")
     #print(persistence._pairs)
 
+    batch = Batch() 
+    batch.edge_index = torch.tensor([[0,2,3,4],[3,3,4,1]])
+    filtered_v = torch.tensor([1.,1.,2.,3.,4.])
+    persistence = persistence_routine(filtered_v, batch)
+    print(persistence_routine(filtered_v, batch))
 
-    #batch = Batch()
-    #batch.edge_index = torch.tensor([[0,2,3,4],[3,3,4,1]])
-    #filtered_v = torch.tensor([1,1,2,3,4])
-    #persistence = persistence_routine(filtered_v, batch)
-    #print(persistence_routine(filtered_v, batch))
