@@ -46,6 +46,9 @@ if __name__ =="__main__":
     persistence_giotto = compute_persistence_giotto(edge_index, filtered_v)[0,:,:-1]
     sorted_persistence_giotto = persistence_giotto[np.argsort(persistence_giotto[:,0])]
 
+    print("-----Giotto----")
+    print(sorted_persistence_giotto)
+
     # --------- TopoGNN --------
     pers_torch = {}
     for method in ["new","old"]: 
@@ -56,6 +59,9 @@ if __name__ =="__main__":
         reduced_persistence_torch = persistence_torch[persistence_torch[:,0]!=persistence_torch[:,1]].numpy() 
         sorted_reduced_persistence_torch = reduced_persistence_torch[np.argsort(reduced_persistence_torch[:,0])]
         pers_torch[method] = sorted_reduced_persistence_torch
+    
+    print("------TopoGNN------")
+    print(pers_torch)
 
     # --------- Pyper ---------
     edge_tuples = list(zip(list(edge_index[0]),list(edge_index[1])))
@@ -71,4 +77,7 @@ if __name__ =="__main__":
     reduced_persistence_pyper = persistence_pyper[persistence_pyper[:,0]!=persistence_pyper[:,1]]
 
     sorted_reduced_persistence_pyper = reduced_persistence_pyper[np.argsort(reduced_persistence_pyper[:,0])]
+
+    print("------Pyper-----")
+    print(sorted_reduced_persistence_pyper)
 
