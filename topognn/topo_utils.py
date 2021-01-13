@@ -17,13 +17,15 @@ def batch_persistence_routine(filtered_v_, batch):
     """
     return persistence_routine(filtered_v_, batch)
 
-def persistence_routine(filtered_v_, data: Data, method = "new"):
+def persistence_routine(filtered_v_, data: Data, method = "new", cycles = False):
     """
     Pytorch based routine to compute the persistence pairs
     Based on pyper routine.
     Inputs : 
         * filtration values of the vertices
         * data object that stores the graph structure (could be just the edge_index actually)
+        * method is just a check for the algo
+        * cycles is a boolean to compute the 1D persistence or not. If true, returns also the 1D persistence.
     """
     
     #Quick check for the filtration values to be different.
@@ -42,6 +44,8 @@ def persistence_routine(filtered_v_, data: Data, method = "new"):
 
     persistence = torch.zeros((len(v_indices),2),device = filtered_v_.device)
 
+    edge_indices_cycles =  []
+
     for edge_index, edge_weight in zip(e_indices,filtered_e):
       
         # nodes connected to this edge
@@ -50,7 +54,10 @@ def persistence_routine(filtered_v_, data: Data, method = "new"):
         younger = uf.find(nodes[0])
         older = uf.find(nodes[1])
 
-        if younger == older : 
+        
+        if younger == older :
+            if cycles:
+                edge_indices_cycles.append(edge_index)
             continue
         else:
             if method=="new":
@@ -80,6 +87,13 @@ def persistence_routine(filtered_v_, data: Data, method = "new"):
     for root in uf.roots():
         persistence[root,0] = filtered_v_[root]
         persistence[root,1] = unpaired_value
+
+    if cycles:
+        persistence1 = torch.zeros((len(filtered_e),2)) 
+        for edge_index in enumerate(edge_indices_cycles):
+            persistence1[i,0] = filtered_e_[edge_index]
+            persistence1[i,1] = unpaired_value
+        return persistence, persistence1
 
     return persistence
 
