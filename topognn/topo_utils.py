@@ -37,48 +37,47 @@ def persistence_routine(filtered_v_, data: Data, method = "new", cycles = False)
     # Compute the edge filtrations as the max between the value of the nodes.
     filtered_e_, _ = torch.max(torch.stack((filtered_v_[data.edge_index[0]],filtered_v_[data.edge_index[1]])),axis=0)
 
-    filtered_v, v_indices = torch.sort(filtered_v_)
+    # Only the edges need to be sorted, since they determine the
+    # filtration ordering. For the vertices, we will look up the
+    # values directly in the tensor.
     filtered_e, e_indices = torch.sort(filtered_e_)
 
-    uf = UnionFind(len(v_indices))
+    n_vertices = len(filtered_v_)
+    uf = UnionFind(n_vertices)
 
-    persistence = torch.zeros((len(v_indices),2),device = filtered_v_.device)
+    persistence = torch.zeros(
+        (n_vertices, 2),
+        device = filtered_v_.device
+    )
 
     edge_indices_cycles =  []
 
     for edge_index, edge_weight in zip(e_indices,filtered_e):
       
         # nodes connected to this edge
-        nodes = data.edge_index[:,edge_index]
-        
+        nodes = data.edge_index[:, edge_index]
+
         younger = uf.find(nodes[0])
         older = uf.find(nodes[1])
 
-        
         if younger == older :
             if cycles:
                 edge_indices_cycles.append(edge_index)
             continue
         else:
-            if method=="new":
-                if filtered_v_[younger] < filtered_v_[older]: 
-                    younger, older = older, younger
-                    nodes = torch.flip(nodes,[0])
-            else:
-                if v_indices[younger] < v_indices[older]:
-                    younger, older = older, younger
-                    nodes = torch.flip(nodes,[0])
+            # Use vertex weight lookup to determine which vertex comes
+            # first. This works because our filtrations are based on
+            # values at the vertices themselves.
+            if filtered_v_[younger] < filtered_v_[older]:
+                younger, older = older, younger
+                nodes = torch.flip(nodes, [0])
 
-        
-        #elif v_indices[younger] < v_indices[older]:
-        #elif filtered_v_[younger] < filtered_v_[older]:     
-
-
+        # TODO: can this be removed? 
         #persistence[nodes[0],0] = filtered_v_[younger]
         #persistence[nodes[0],1] = edge_weight
 
-        persistence[younger,0] = filtered_v_[younger]
-        persistence[younger,1] = edge_weight
+        persistence[younger, 0] = filtered_v_[younger]
+        persistence[younger, 1] = edge_weight
         
         uf.merge(nodes[0],nodes[1])
     
