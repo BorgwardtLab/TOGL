@@ -22,7 +22,6 @@ import argparse
 
 GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
 
-
 class TUGraphDataset(pl.LightningDataModule):
     def __init__(self, name, batch_size, use_node_attributes=True,
                  val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4):
@@ -197,9 +196,9 @@ class FiltrationGCNModel(pl.LightningModule):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index)
-        X = F.relu(x)
-        x = F.dropout(x, training = self.training)
+        #x = self.conv2(x, edge_index)
+        #x = F.relu(x)
+        #x = F.dropout(x, training = self.training)
        
         x = self.topo1(x,data)
         x = self.conv3(x,edge_index)
@@ -214,7 +213,7 @@ class FiltrationGCNModel(pl.LightningModule):
 
         loss = self.loss(y_hat,y)
 
-        self.log("train_loss_step",loss)
+        self.log("train_loss",loss, on_step = True, on_epoch = True)
         self.log("train_acc_step",self.accuracy(y_hat,y))
         return loss
 
@@ -226,7 +225,7 @@ class FiltrationGCNModel(pl.LightningModule):
         y_hat = self(batch)
 
         loss = self.loss(y_hat,y)
-        self.log("validation_loss",loss)
+        self.log("val_loss_step",loss)
 
         self.log("val_acc_step",self.accuracy_val(y_hat,y))
         
@@ -257,10 +256,10 @@ class GCNModel(pl.LightningModule):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index)
+        #x = self.conv2(x, edge_index)
 
-        x = F.relu(x)
-        x = F.dropout(x, training = self.training)
+        #x = F.relu(x)
+        #x = F.dropout(x, training = self.training)
        
         x = self.conv3(x,edge_index)
 
@@ -274,7 +273,7 @@ class GCNModel(pl.LightningModule):
 
         loss = self.loss(y_hat,y)
 
-        self.log("train_loss_step",loss)
+        self.log("train_loss",loss, on_step = True, on_epoch = True)
         self.log("train_acc_step",self.accuracy(y_hat,y))
         return loss
 
@@ -286,7 +285,7 @@ class GCNModel(pl.LightningModule):
         y_hat = self(batch)
 
         loss = self.loss(y_hat,y)
-        self.log("validation_loss",loss)
+        self.log("val_loss_step",loss)
 
         self.log("val_acc_step",self.accuracy_val(y_hat,y))
         
@@ -301,12 +300,13 @@ def main(args):
     
     model_type = args.type
 
-    wandb_logger = WandbLogger(name = f"Attempt_{model_type}",project = "topo_gnn",entity = "topo_gnn")
+    wandb_logger = WandbLogger(name = f"Attempt_2_layers_{model_type}",project = "topo_gnn",entity = "topo_gnn")
     #wandb_logger = WandbLogger(name = f"Attempt_{model_type}",project = "TopoGNN",entity="edebrouwer")
 
     trainer = pl.Trainer(
         gpus=-1 if GPU_AVAILABLE else None,
-        logger = wandb_logger
+        logger = wandb_logger,
+        log_every_n_steps = 5
     )
 
     data = TUGraphDataset('ENZYMES', batch_size=32)

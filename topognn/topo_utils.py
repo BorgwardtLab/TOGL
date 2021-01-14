@@ -17,7 +17,7 @@ def batch_persistence_routine(filtered_v_, batch):
     """
     return persistence_routine(filtered_v_, batch)
 
-def persistence_routine(filtered_v_, data: Data, method = "new", cycles = False):
+def persistence_routine(filtered_v_, data: Data, cycles = False):
     """
     Pytorch based routine to compute the persistence pairs
     Based on pyper routine.
