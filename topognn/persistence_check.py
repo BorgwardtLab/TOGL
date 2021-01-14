@@ -50,18 +50,16 @@ if __name__ =="__main__":
     print(sorted_persistence_giotto)
 
     # --------- TopoGNN --------
-    pers_torch = {}
-    for method in ["new","old"]: 
-        batch = Batch() 
-        batch.edge_index = torch.tensor(edge_index)
-        persistence_torch = persistence_routine(torch.tensor(filtered_v), batch, method = method)
+
+    batch = Batch() 
+    batch.edge_index = torch.tensor(edge_index)
+    persistence_torch = persistence_routine(torch.tensor(filtered_v), batch)
         
-        reduced_persistence_torch = persistence_torch[persistence_torch[:,0]!=persistence_torch[:,1]].numpy() 
-        sorted_reduced_persistence_torch = reduced_persistence_torch[np.argsort(reduced_persistence_torch[:,0])]
-        pers_torch[method] = sorted_reduced_persistence_torch
+    reduced_persistence_torch = persistence_torch[persistence_torch[:,0]!=persistence_torch[:,1]].numpy() 
+    sorted_reduced_persistence_torch = reduced_persistence_torch[np.argsort(reduced_persistence_torch[:,0])]
     
     print("------TopoGNN------")
-    print(pers_torch)
+    print(sorted_reduced_persistence_torch)
 
     # --------- Pyper ---------
     edge_tuples = list(zip(list(edge_index[0]),list(edge_index[1])))
@@ -80,4 +78,8 @@ if __name__ =="__main__":
 
     print("------Pyper-----")
     print(sorted_reduced_persistence_pyper)
+
+    assert (sorted_reduced_persistence_pyper == sorted_reduced_persistence_torch).all()
+    assert (sorted_persistence_giotto == sorted_reduced_persistence_torch).all()
+    assert (sorted_reduced_persistence_pyper == sorted_persistence_giotto).all()
 
