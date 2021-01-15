@@ -9,13 +9,13 @@ def batch_persistence_routine_old(filtered_v_, batch):
 
     return torch.cat(batch_persistence)
 
-def batch_persistence_routine(filtered_v_, batch):
+def batch_persistence_routine(filtered_v_, batch, dim1 = False):
     """
     Persistence diagrams are computed in one shot. 
     Note that this results in a tiny but potentially significant difference compared to computing the persistence one graph at a time.
     Namely, the unpaired_value (inf) will be set to the largest value in the *batch* rather than to the highest value in the *graph*.
     """
-    return persistence_routine(filtered_v_, batch)
+    return persistence_routine(filtered_v_, batch, cycles = dim1)
 
 def persistence_routine(filtered_v_, data: Data, cycles = False):
     """
@@ -89,9 +89,9 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
 
     if cycles:
         persistence1 = torch.zeros((len(filtered_e),2)) 
-        for edge_index in enumerate(edge_indices_cycles):
-            persistence1[i,0] = filtered_e_[edge_index]
-            persistence1[i,1] = unpaired_value
+        for edge_index in edge_indices_cycles:
+            persistence1[edge_index,0] = filtered_e_[edge_index]
+            persistence1[edge_index,1] = unpaired_value
         return persistence, persistence1
 
     return persistence

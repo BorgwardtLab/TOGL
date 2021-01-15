@@ -23,19 +23,30 @@ def compute_persistence_giotto(edge_index, filtered_v):
 
     np.fill_diagonal(adj,filtered_v)
 
-    VR = VietorisRipsPersistence(homology_dimensions=[0], metric = "precomputed",infinity_values=np.max(filtered_v),reduced_homology = False)
+    VR = VietorisRipsPersistence(homology_dimensions=[0,1], metric = "precomputed",infinity_values=np.max(filtered_v),reduced_homology = False)
 
     VR = VR.fit(adj[None,:,:])
 
-    return VR.transform(adj[None,:,:])
+    persistence = VR.transform(adj[None,:,:])
+
+    dim0 = persistence[persistence[:,:,-1]==0,:-1]
+    dim1 = persistence[persistence[:,:,-1]==1,:-1]
+
+
+    return dim0, dim1
 
 if __name__ =="__main__":
     #Test 0 :
     print("Test 0 (from the Graph Filtration paper) ")
-    edge_index = np.array([[0,2,3,4],[3,3,4,1]])
+    edge_index = np.array([[0,0,2,3,4],[2,3,3,4,1]])
     filtered_v = np.array([1.,1.,2.,3.,4.])
-    print(compute_persistence_giotto(edge_index, filtered_v))
+    dim0, dim1 = compute_persistence_giotto(edge_index, filtered_v)
+   
+    batch = Batch()
+    batch.edge_index = torch.tensor(edge_index)
+    dim0_torch, dim1_torch = persistence_routine(torch.tensor(filtered_v),batch,cycles = True)
     
+
     #---------------------------
     #---------- Test 1 ---------
     #---------------------------
@@ -43,7 +54,7 @@ if __name__ =="__main__":
     # --------- Giotto ---------
     edge_index = np.array(torch.load("edge_index.pt"))
     filtered_v = np.array(torch.load("filtered_v_.pt"))
-    persistence_giotto = compute_persistence_giotto(edge_index, filtered_v)[0,:,:-1]
+    persistence_giotto = compute_persistence_giotto(edge_index, filtered_v)[0]
     sorted_persistence_giotto = persistence_giotto[np.argsort(persistence_giotto[:,0])]
 
     print("-----Giotto----")
