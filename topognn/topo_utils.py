@@ -88,7 +88,7 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
         persistence[root,1] = unpaired_value
 
     if cycles:
-        persistence1 = torch.zeros((len(filtered_e),2)) 
+        persistence1 = torch.zeros((len(filtered_e),2), device = filtered_v_.device) 
         for edge_index in edge_indices_cycles:
             persistence1[edge_index,0] = filtered_e_[edge_index]
             persistence1[edge_index,1] = unpaired_value
@@ -98,7 +98,8 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
 
 
 #numpy / pyper stuff 
-import igraph as ig
+
+#import igraph as ig
 
 
 def batch_to_igraph_list(batch: Batch):
