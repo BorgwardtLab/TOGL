@@ -1,7 +1,12 @@
 import torch
 from pyper.persistent_homology.graphs import calculate_persistence_diagrams
-from pyper.utilities import UnionFind
+#from pyper.utilities import UnionFind
 from torch_geometric.data import Batch, Data
+
+import unionfind
+
+import time
+
 
 def batch_persistence_routine_old(filtered_v_, batch):
 
@@ -35,6 +40,8 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
         #filtered_v_ += 0.001*std*torch.randn(filtered_v_.shape)
 
     # Compute the edge filtrations as the max between the value of the nodes.
+    start_time = time.time()
+
     filtered_e_, _ = torch.max(torch.stack((filtered_v_[data.edge_index[0]],filtered_v_[data.edge_index[1]])),axis=0)
 
     # Only the edges need to be sorted, since they determine the
@@ -43,7 +50,8 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
     filtered_e, e_indices = torch.sort(filtered_e_)
 
     n_vertices = len(filtered_v_)
-    uf = UnionFind(n_vertices)
+    #uf = UnionFind(n_vertices)
+    uf = unionfind.UnionFind(n_vertices)
 
     persistence = torch.zeros(
         (n_vertices, 2),
@@ -52,13 +60,16 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
 
     edge_indices_cycles =  []
 
+    pre_time = time.time()
+
     for edge_index, edge_weight in zip(e_indices,filtered_e):
-      
+
         # nodes connected to this edge
         nodes = data.edge_index[:, edge_index]
 
         younger = uf.find(nodes[0])
         older = uf.find(nodes[1])
+
 
         if younger == older :
             if cycles:
@@ -72,27 +83,29 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
                 younger, older = older, younger
                 nodes = torch.flip(nodes, [0])
 
-        # TODO: can this be removed? 
-        #persistence[nodes[0],0] = filtered_v_[younger]
-        #persistence[nodes[0],1] = edge_weight
-
         persistence[younger, 0] = filtered_v_[younger]
         persistence[younger, 1] = edge_weight
         
-        uf.merge(nodes[0],nodes[1])
+        uf.union(nodes[0],nodes[1])
+
+    loop_time = time.time()
     
     #TODO : this currently assumes a single unpaired value for the whole batch. THis can be discussed.
     unpaired_value = filtered_e[-1]
     for root in uf.roots():
         persistence[root,0] = filtered_v_[root]
         persistence[root,1] = unpaired_value
-
+    
     if cycles:
         persistence1 = torch.zeros((len(filtered_e),2), device = filtered_v_.device) 
         for edge_index in edge_indices_cycles:
             persistence1[edge_index,0] = filtered_e_[edge_index]
             persistence1[edge_index,1] = unpaired_value
+
+        cycle_time = time.time()
+
         return persistence, persistence1
+
 
     return persistence
 

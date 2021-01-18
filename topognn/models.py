@@ -74,6 +74,7 @@ class TopologyLayer(torch.nn.Module):
         persistence0 = []
         persistence1 = []
         for f_idx  in range(self.num_filtrations):
+
             batch_p_ = batch_persistence_routine(filtered_v_[:,f_idx],batch,self.dim1)
             if self.dim1: #cycles were computed
                 persistence0.append(batch_p_[0])
@@ -123,13 +124,15 @@ class TopologyLayer(torch.nn.Module):
 
     def forward(self,x, batch):
 
+
         persistences0, persistences1 = self.compute_persistence(x,batch)
 
         coord_activations = self.compute_coord_activations(persistences0,batch)
 
         concat_activations = torch.cat((x,coord_activations),1)
-        
+
         out_activations = self.out(concat_activations)
+
 
         if self.dim1:        
             persistence1_mask = (persistences1[0]==0).sum(axis=1)==2
@@ -199,7 +202,7 @@ class FiltrationGCNModel(pl.LightningModule):
         #x = self.conv2(x, edge_index)
         #x = F.relu(x)
         #x = F.dropout(x, training = self.training)
-       
+        
         x, x_dim1 = self.topo1(x,data)
 
         x = self.conv3(x,edge_index)
@@ -217,6 +220,7 @@ class FiltrationGCNModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         y = batch.y
+
         y_hat = self(batch)
 
         loss = self.loss(y_hat,y)
