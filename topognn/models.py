@@ -9,7 +9,7 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 
 from torch_geometric.data import DataLoader, Batch, Data
 
-from topognn.topo_utils import batch_persistence_routine, persistence_routine, batch_persistence_routine_old
+from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
 
 import topognn.coord_transforms as coord_transforms
 import numpy as np
@@ -70,7 +70,11 @@ class TopologyLayer(torch.nn.Module):
         """ 
         filtered_v_ = torch.cat([filtration_mod.forward(x) for filtration_mod in self.filtration_modules],1)
 
-
+        #TEST
+        #persistence0 = parallel_persistence_routine(filtered_v_, batch)
+        #persistence0 = torch.split(persistence0,1,2)
+        #persistence0 = [p.squeeze(-1) for p in persistence0]
+        
         persistence0 = []
         persistence1 = []
         for f_idx  in range(self.num_filtrations):
