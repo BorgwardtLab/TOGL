@@ -23,6 +23,56 @@ class MultipleUnionFind:
         ### returns -1 when the list of one uf is exhausted
         return itertools.zip_longest(*[uf.roots() for uf in self.uflist],fillvalue = -1)
 
+from itertools import accumulate
+from operator import add
+
+cdef class MultipleUnionFind2:
+    cdef int * parents
+    cdef int * offsets
+    cdef int * n_points
+
+    def __cinit__(self, n_points):
+        offsets = accumulate(n_points, add, initial=0)
+        self.offsets = <int *> malloc(len(n_points))
+        for i in range(len(n_points)):
+            self.offsets[i] = offsets[i]
+        self.n_points = <int *> malloc(len(n_points))
+        for i in range(len(n_points)):
+            self.n_points[i] = n_points[i]
+        self.parents = <int *> malloc(self.offsets[-1])
+        for i, off in enumerate(offsets):
+            for j in range(n_points[i]):
+                self.parents[j+off] = j
+
+    cdef find_single(self, int instance, int u):
+        # u is an array
+        off = self.offsets[instance]
+        if self.parents[off+u] == u:
+            return u
+        else:
+            self.parents[off+u] = self.find_single(instance, self.parents[off+u])
+            return self.parents[off+u]
+
+    cdef merge_single(self, int instance, int u, int v):
+        cdef int root_u, root_v
+        if u!= v:
+            off = self.offsets[instance]
+            root_u = self.find_single(instance, u)
+            root_v = self.find_single(instance, v)
+            self.parents[off+root_u] = root_v
+
+    def merge(self, int[:] u, int[:] v):
+        with cython.nogil():
+            for i in cython.prange(0, len(u)):
+                self.merge_single(i, u[i], v[i])
+
+    def find(self, int[:] u):
+        out = np.zeros(len(u))
+        with cython.nogil():
+            for i in cython.prange(0, len(u)):
+                out[i] = self.find_single(i, u[i])
+        return out
+
 
 cdef class UnionFind:
     cdef int n_points
@@ -51,7 +101,7 @@ cdef class UnionFind:
         else:
             self.parent[i] = self.find(self.parent[i])
             return self.parent[i]
-    
+
     def roots(self):
         for vertex in range(self.n_points):
             if vertex == self.parent[vertex]:
