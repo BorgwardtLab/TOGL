@@ -1,3 +1,4 @@
+import cython
 cimport cython
 from libc.stdlib cimport malloc, free
 import itertools
@@ -61,16 +62,24 @@ cdef class MultipleUnionFind2:
             root_v = self.find_single(instance, v)
             self.parents[off+root_u] = root_v
 
-    def merge(self, int[:] u, int[:] v):
-        with cython.nogil():
-            for i in cython.prange(0, len(u)):
+    def merge(self, int[:] u, int[:] v, int[:] mask):
+        for i in cython.prange(0, len(u)):
+            if mask[i]:
                 self.merge_single(i, u[i], v[i])
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def find(self, int[:] u):
-        out = np.zeros(len(u))
-        with cython.nogil():
-            for i in cython.prange(0, len(u)):
-                out[i] = self.find_single(i, u[i])
+        # cdef u_copy = <int *> malloc(len(u))
+        # cdef out = <int *> malloc(len(u))
+        out_np = np.zeros(len(u), dtype=int)
+        cdef int[:] out = out_np
+        # for i, u_el in enumerate(u):
+        #     u_copy[i] = u_el
+
+        cdef Py_ssize_t i
+        for i in cython.prange(0, len(u), nogil=True):
+            out[i] = self.find_single(i, u[i])
         return out
 
 
