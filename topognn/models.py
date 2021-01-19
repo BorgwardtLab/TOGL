@@ -1,4 +1,3 @@
-
 import math
 import torch
 import torch.nn.functional as F
@@ -16,7 +15,6 @@ import numpy as np
 
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
-
     
     def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1 = None, dim1 = False):
         """
@@ -58,8 +56,6 @@ class TopologyLayer(torch.nn.Module):
                     torch.nn.Linear(self.filtration_hidden,1)) for _ in range(num_filtrations)
             ])
 
-        #self.filtration = torch.nn.Linear(self.features_in, self.num_filtrations)
-
         self.out = torch.nn.Linear(
             self.features_in + self.num_filtrations * self.total_num_coord_funs, features_out)
 
@@ -69,25 +65,30 @@ class TopologyLayer(torch.nn.Module):
         The lenght of the list is the number of filtrations.
         """ 
         filtered_v_ = torch.cat([filtration_mod.forward(x) for filtration_mod in self.filtration_modules],1)
+        
 
+        filtered_v_cpu = filtered_v_.cpu()
+        
         #TEST
-        #persistence0 = parallel_persistence_routine(filtered_v_, batch)
+        #persistence0 = parallel_persistence_routine(filtered_v_cpu, batch).to(filtered_v_.device)
         #persistence0 = torch.split(persistence0,1,2)
         #persistence0 = [p.squeeze(-1) for p in persistence0]
         
         persistence0 = []
         persistence1 = []
+        
         for f_idx  in range(self.num_filtrations):
 
-            batch_p_ = batch_persistence_routine(filtered_v_[:,f_idx],batch,self.dim1)
+            batch_cpu = batch.clone().to("cpu")
+            batch_p_ = batch_persistence_routine(filtered_v_cpu[:,f_idx],batch_cpu,self.dim1)
+
             if self.dim1: #cycles were computed
-                persistence0.append(batch_p_[0])
-                persistence1.append(batch_p_[1])
+                persistence0.append(batch_p_[0].to(filtered_v_.device))
+                persistence1.append(batch_p_[1].to(filtered_v_.device))
             else:
-                persistence0.append(batch_p_)
+                persistence0.append(batch_p_.to(filtered_v_.device))
         
         return persistence0, persistence1
-
 
     def compute_coord_fun(self,persistence, dim1 = False):
         """
@@ -101,9 +102,7 @@ class TopologyLayer(torch.nn.Module):
 
         return coord_activation
 
-
     def compute_coord_activations(self,persistences,batch,dim1 = False):
-
         """
         Return the coordinate functions activations pooled by graph.
         Output dims : list of length number of filtrations with elements : [N_graphs in batch, number fo coordinate functions]
@@ -128,7 +127,6 @@ class TopologyLayer(torch.nn.Module):
 
     def forward(self,x, batch):
 
-
         persistences0, persistences1 = self.compute_persistence(x,batch)
 
         coord_activations = self.compute_coord_activations(persistences0,batch)
@@ -136,7 +134,6 @@ class TopologyLayer(torch.nn.Module):
         concat_activations = torch.cat((x,coord_activations),1)
 
         out_activations = self.out(concat_activations)
-
 
         if self.dim1:        
             persistence1_mask = (persistences1[0]==0).sum(axis=1)==2

@@ -1,7 +1,9 @@
 import torch
 from pyper.persistent_homology.graphs import calculate_persistence_diagrams
-from pyper.utilities import UnionFind
+#from pyper.utilities import UnionFind
+
 from torch_geometric.data import Batch, Data
+#from topognn.unionfind_torch import UnionFind
 
 import unionfind
 
@@ -51,7 +53,8 @@ def persistence_routine(filtered_v_, data: Data, cycles = False):
     filtered_e, e_indices = torch.sort(filtered_e_)
 
     n_vertices = len(filtered_v_)
-    #uf = UnionFind(n_vertices)
+    
+    #uf = UnionFind(n_vertices,device = filtered_v_.device)
     uf = unionfind.UnionFind(n_vertices) #Cython version
 
     persistence = torch.zeros(
@@ -191,7 +194,7 @@ def parallel_persistence_routine(filtered_v_, data: Data, cycles = False):
        
         nodes0_index = (correct_mask*1 + 1*equal_mask + flipped_mask*2)-1
         nodes1_index = 1-nodes0_index
-        uf.union(nodes[nodes0_index, np.arange(num_filtrations)], nodes[nodes1_index,np.arange(num_filtrations)], ~equal_mask)
+        uf.merge(nodes[nodes0_index, np.arange(num_filtrations)], nodes[nodes1_index,np.arange(num_filtrations)], ~equal_mask)
 
     loop_time = time.time()
    
