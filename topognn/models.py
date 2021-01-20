@@ -244,7 +244,7 @@ class FiltrationGCNModel(pl.LightningModule):
         y_hat = self(batch)
 
         loss = self.loss(y_hat,y)
-        self.log("val_loss",loss)
+        self.log("val_loss",loss, on_epoch = True)
 
         self.accuracy_val(y_hat,y)
         self.log("val_acc",self.accuracy_val,on_epoch = True)
@@ -256,6 +256,8 @@ class FiltrationGCNModel(pl.LightningModule):
         y = batch.y
         y_hat = self(batch)
 
+        loss = self.loss(y_hat,y)
+        self.log("val_loss",loss, on_epoch = True)
 
         self.accuracy_test(y_hat,y)
         self.log("test_acc",self.accuracy_test,on_epoch = True)
