@@ -185,6 +185,7 @@ class FiltrationGCNModel(pl.LightningModule):
 
         self.accuracy = pl.metrics.Accuracy()
         self.accuracy_val = pl.metrics.Accuracy()
+        self.accuracy_test = pl.metrics.Accuracy()
 
         self.lr = lr
         self.dropout_p = dropout_p
@@ -240,7 +241,7 @@ class FiltrationGCNModel(pl.LightningModule):
         y_hat = self(batch)
 
         loss = self.loss(y_hat,y)
-        self.log("val_loss_step",loss)
+        self.log("val_loss",loss)
 
         self.accuracy_val(y_hat,y)
         self.log("val_acc",self.accuracy_val,on_epoch = True)
@@ -248,8 +249,14 @@ class FiltrationGCNModel(pl.LightningModule):
         return {"predictions" : y_hat.detach().cpu(), 
                 "labels" : y.detach().cpu()}
 
-    #def validation_epoch_end(self,outputs):
-    #    self.log("val_acc_epoch", self.accuracy_val.compute())
+    def test_step(self,batch,batch_idx):
+        y = batch.y
+        y_hat = self(batch)
+
+
+        self.accuracy_test(y_hat,y)
+        self.log("test_acc",self.accuracy_test,on_epoch = True)
+        
             
 
 class GCNModel(pl.LightningModule):
@@ -268,6 +275,7 @@ class GCNModel(pl.LightningModule):
 
         self.accuracy = pl.metrics.Accuracy()
         self.accuracy_val = pl.metrics.Accuracy()
+        self.accuracy_test = pl.metrics.Accuracy()
 
         self.lr = lr
 
@@ -316,12 +324,25 @@ class GCNModel(pl.LightningModule):
         loss = self.loss(y_hat,y)
      
         self.accuracy_val(y_hat,y)
-        self.log("val_loss_step",loss)
+        self.log("val_loss",loss)
 
         self.log("val_acc",self.accuracy_val, on_epoch = True)
         
         return {"predictions" : y_hat.detach().cpu(), 
                 "labels" : y.detach().cpu()}
+
+    def test_step(self,batch, batch_idx):
+
+        y = batch.y
+        y_hat = self(batch)
+
+        loss = self.loss(y_hat,y)
+     
+        self.accuracy_test(y_hat,y)
+  
+        self.log("test_acc",self.accuracy_test, on_epoch = True)
+        
+
 
     #def validation_epoch_end(self,outputs):
     #    self.log("val_acc_epoch", self.accuracy_val.compute())
