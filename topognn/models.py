@@ -207,6 +207,9 @@ class FiltrationGCNModel(pl.LightningModule):
         
         x, x_dim1 = self.topo1(x,data)
 
+        x = F.relu(x)
+        x = F.dropout(x, p = self.dropout_p, training = self.training)
+
         x = self.conv3(x,edge_index)
 
         x = global_mean_pool(x, data.batch)
@@ -267,6 +270,8 @@ class GCNModel(pl.LightningModule):
         self.conv2 = GCNConv(hidden_dim, hidden_dim)
         self.conv3 = GCNConv(hidden_dim, hidden_dim)
 
+        self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
+
         self.classif = torch.nn.Sequential( torch.nn.Linear(hidden_dim,hidden_dim),
                                             torch.nn.ReLU(),
                                             torch.nn.Linear(hidden_dim,num_classes) )
@@ -289,10 +294,10 @@ class GCNModel(pl.LightningModule):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout_p,training=self.training)
-        #x = self.conv2(x, edge_index)
-
-        #x = F.relu(x)
-        #x = F.dropout(x, training = self.training)
+        
+        x = self.fake_topo(x)
+        x = F.relu(x)
+        x = F.dropout(x, p=self.dropout_p,training=self.training)
        
         x = self.conv3(x,edge_index)
 
