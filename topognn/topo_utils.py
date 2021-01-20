@@ -75,6 +75,8 @@ def persistence_routine(filtered_v_, data: Data, cycles=False):
 
     unpaired_value = filtered_e[-1]
 
+    persistence[:,0] = filtered_v_
+
     for edge_index, edge_weight in zip(e_indices, filtered_e):
 
         # nodes connected to this edge
@@ -97,7 +99,7 @@ def persistence_routine(filtered_v_, data: Data, cycles=False):
                 younger, older = older, younger
                 nodes = torch.flip(nodes, [0])
 
-        persistence[younger, 0] = filtered_v_[younger]
+        #persistence[younger, 0] = filtered_v_[younger]
         persistence[younger, 1] = edge_weight
 
         uf.merge(nodes[0], nodes[1])
