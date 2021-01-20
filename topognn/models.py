@@ -344,7 +344,8 @@ class GCNModel(pl.LightningModule):
         y_hat = self(batch)
 
         loss = self.loss(y_hat,y)
-     
+        self.log("test_loss",loss, on_epoch = True)
+        
         self.accuracy_test(y_hat,y)
   
         self.log("test_acc",self.accuracy_test, on_epoch = True)
