@@ -836,7 +836,7 @@ static const char *__pyx_f[] = {
 struct __pyx_obj_9unionfind_UnionFind;
 struct __pyx_obj_9unionfind___pyx_scope_struct__roots;
 
-/* "unionfind.pyx":27
+/* "unionfind.pyx":86
  * 
  * 
  * cdef class UnionFind:             # <<<<<<<<<<<<<<
@@ -853,7 +853,7 @@ struct __pyx_obj_9unionfind_UnionFind {
 };
 
 
-/* "unionfind.pyx":55
+/* "unionfind.pyx":114
  *             return self.parent[i]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
@@ -871,7 +871,7 @@ struct __pyx_obj_9unionfind___pyx_scope_struct__roots {
 
 
 
-/* "unionfind.pyx":27
+/* "unionfind.pyx":86
  * 
  * 
  * cdef class UnionFind:             # <<<<<<<<<<<<<<
@@ -1629,7 +1629,7 @@ static PyObject *__pyx_codeobj__9;
 static PyObject *__pyx_codeobj__11;
 /* Late includes */
 
-/* "unionfind.pyx":6
+/* "unionfind.pyx":7
  * 
  * class MultipleUnionFind:
  *     def __init__(self,n_uf,n):             # <<<<<<<<<<<<<<
@@ -1676,17 +1676,17 @@ static PyObject *__pyx_pw_9unionfind_17MultipleUnionFind_1__init__(PyObject *__p
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_uf)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 6, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 7, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 6, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 7, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 6, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 7, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -1701,7 +1701,7 @@ static PyObject *__pyx_pw_9unionfind_17MultipleUnionFind_1__init__(PyObject *__p
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 6, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 7, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("unionfind.MultipleUnionFind.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1728,24 +1728,24 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind___init__(CYTHON_UNUSED 
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "unionfind.pyx":11
+  /* "unionfind.pyx":12
  *         n is the number of elements in each unionfind
  *         """
  *         self.uflist = [UnionFind(n) for i in range(n_uf)]             # <<<<<<<<<<<<<<
  * 
  *     def find(self,values):
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_range, __pyx_v_n_uf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_range, __pyx_v_n_uf); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 12, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (likely(PyList_CheckExact(__pyx_t_2)) || PyTuple_CheckExact(__pyx_t_2)) {
     __pyx_t_3 = __pyx_t_2; __Pyx_INCREF(__pyx_t_3); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
   } else {
-    __pyx_t_4 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 11, __pyx_L1_error)
+    __pyx_t_4 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 12, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_5 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 11, __pyx_L1_error)
+    __pyx_t_5 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 12, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   for (;;) {
@@ -1753,17 +1753,17 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind___init__(CYTHON_UNUSED 
       if (likely(PyList_CheckExact(__pyx_t_3))) {
         if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_3)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_2); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 11, __pyx_L1_error)
+        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_2); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 12, __pyx_L1_error)
         #else
-        __pyx_t_2 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 11, __pyx_L1_error)
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 12, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         #endif
       } else {
         if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_3)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_2); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 11, __pyx_L1_error)
+        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_2); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 12, __pyx_L1_error)
         #else
-        __pyx_t_2 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 11, __pyx_L1_error)
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 12, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         #endif
       }
@@ -1773,7 +1773,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind___init__(CYTHON_UNUSED 
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 11, __pyx_L1_error)
+          else __PYX_ERR(0, 12, __pyx_L1_error)
         }
         break;
       }
@@ -1781,16 +1781,16 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind___init__(CYTHON_UNUSED 
     }
     __Pyx_XDECREF_SET(__pyx_v_i, __pyx_t_2);
     __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyObject_CallOneArg(((PyObject *)__pyx_ptype_9unionfind_UnionFind), __pyx_v_n); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 11, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_CallOneArg(((PyObject *)__pyx_ptype_9unionfind_UnionFind), __pyx_v_n); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 12, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_2))) __PYX_ERR(0, 11, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_2))) __PYX_ERR(0, 12, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_uflist, __pyx_t_1) < 0) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_uflist, __pyx_t_1) < 0) __PYX_ERR(0, 12, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "unionfind.pyx":6
+  /* "unionfind.pyx":7
  * 
  * class MultipleUnionFind:
  *     def __init__(self,n_uf,n):             # <<<<<<<<<<<<<<
@@ -1814,7 +1814,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind___init__(CYTHON_UNUSED 
   return __pyx_r;
 }
 
-/* "unionfind.pyx":13
+/* "unionfind.pyx":14
  *         self.uflist = [UnionFind(n) for i in range(n_uf)]
  * 
  *     def find(self,values):             # <<<<<<<<<<<<<<
@@ -1858,11 +1858,11 @@ static PyObject *__pyx_pw_9unionfind_17MultipleUnionFind_3find(PyObject *__pyx_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_values)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("find", 1, 2, 2, 1); __PYX_ERR(0, 13, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("find", 1, 2, 2, 1); __PYX_ERR(0, 14, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find") < 0)) __PYX_ERR(0, 13, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find") < 0)) __PYX_ERR(0, 14, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1875,7 +1875,7 @@ static PyObject *__pyx_pw_9unionfind_17MultipleUnionFind_3find(PyObject *__pyx_s
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("find", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 13, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("find", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 14, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("unionfind.MultipleUnionFind.find", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1907,7 +1907,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("find", 0);
 
-  /* "unionfind.pyx":17
+  /* "unionfind.pyx":18
  *         values in a vector of length n
  *         """
  *         return [uf.find(values[i]) for i,uf in enumerate(self.uflist)]             # <<<<<<<<<<<<<<
@@ -1915,19 +1915,19 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
  *     def union(self,values1, values2, mask):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_int_0);
   __pyx_t_2 = __pyx_int_0;
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_uflist); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_uflist); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (likely(PyList_CheckExact(__pyx_t_3)) || PyTuple_CheckExact(__pyx_t_3)) {
     __pyx_t_4 = __pyx_t_3; __Pyx_INCREF(__pyx_t_4); __pyx_t_5 = 0;
     __pyx_t_6 = NULL;
   } else {
-    __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 18, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 18, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   for (;;) {
@@ -1935,17 +1935,17 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
       if (likely(PyList_CheckExact(__pyx_t_4))) {
         if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_4)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 18, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       } else {
         if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 18, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       }
@@ -1955,7 +1955,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 17, __pyx_L1_error)
+          else __PYX_ERR(0, 18, __pyx_L1_error)
         }
         break;
       }
@@ -1965,14 +1965,14 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
     __pyx_t_3 = 0;
     __Pyx_INCREF(__pyx_t_2);
     __Pyx_XDECREF_SET(__pyx_v_i, __pyx_t_2);
-    __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_t_2, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_t_2, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_2);
     __pyx_t_2 = __pyx_t_3;
     __pyx_t_3 = 0;
-    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_uf, __pyx_n_s_find); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_uf, __pyx_n_s_find); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = __Pyx_PyObject_GetItem(__pyx_v_values, __pyx_v_i); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_GetItem(__pyx_v_values, __pyx_v_i); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 18, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __pyx_t_9 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
@@ -1987,10 +1987,10 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
     __pyx_t_3 = (__pyx_t_9) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_9, __pyx_t_8) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_t_8);
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 17, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 18, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -1999,7 +1999,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "unionfind.pyx":13
+  /* "unionfind.pyx":14
  *         self.uflist = [UnionFind(n) for i in range(n_uf)]
  * 
  *     def find(self,values):             # <<<<<<<<<<<<<<
@@ -2026,7 +2026,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_2find(CYTHON_UNUSED PyO
   return __pyx_r;
 }
 
-/* "unionfind.pyx":19
+/* "unionfind.pyx":20
  *         return [uf.find(values[i]) for i,uf in enumerate(self.uflist)]
  * 
  *     def union(self,values1, values2, mask):             # <<<<<<<<<<<<<<
@@ -2075,23 +2075,23 @@ static PyObject *__pyx_pw_9unionfind_17MultipleUnionFind_5union(PyObject *__pyx_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_values1)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, 1); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, 1); __PYX_ERR(0, 20, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_values2)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, 2); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, 2); __PYX_ERR(0, 20, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_mask)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, 3); __PYX_ERR(0, 19, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, 3); __PYX_ERR(0, 20, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "union") < 0)) __PYX_ERR(0, 19, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "union") < 0)) __PYX_ERR(0, 20, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -2108,7 +2108,7 @@ static PyObject *__pyx_pw_9unionfind_17MultipleUnionFind_5union(PyObject *__pyx_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 19, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("union", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 20, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("unionfind.MultipleUnionFind.union", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2144,7 +2144,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("union", 0);
 
-  /* "unionfind.pyx":20
+  /* "unionfind.pyx":21
  * 
  *     def union(self,values1, values2, mask):
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]             # <<<<<<<<<<<<<<
@@ -2152,19 +2152,19 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
  *     def roots(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_int_0);
   __pyx_t_2 = __pyx_int_0;
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_uflist); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_uflist); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (likely(PyList_CheckExact(__pyx_t_3)) || PyTuple_CheckExact(__pyx_t_3)) {
     __pyx_t_4 = __pyx_t_3; __Pyx_INCREF(__pyx_t_4); __pyx_t_5 = 0;
     __pyx_t_6 = NULL;
   } else {
-    __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 20, __pyx_L1_error)
+    __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 20, __pyx_L1_error)
+    __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 21, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   for (;;) {
@@ -2172,17 +2172,17 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
       if (likely(PyList_CheckExact(__pyx_t_4))) {
         if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_4)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 21, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       } else {
         if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 21, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       }
@@ -2192,7 +2192,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 20, __pyx_L1_error)
+          else __PYX_ERR(0, 21, __pyx_L1_error)
         }
         break;
       }
@@ -2202,21 +2202,21 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
     __pyx_t_3 = 0;
     __Pyx_INCREF(__pyx_t_2);
     __Pyx_XDECREF_SET(__pyx_v_i, __pyx_t_2);
-    __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_t_2, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_t_2, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_2);
     __pyx_t_2 = __pyx_t_3;
     __pyx_t_3 = 0;
-    __pyx_t_3 = __Pyx_PyObject_GetItem(__pyx_v_mask, __pyx_v_i); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetItem(__pyx_v_mask, __pyx_v_i); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_7 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_7 < 0)) __PYX_ERR(0, 20, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_7 < 0)) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     if (__pyx_t_7) {
-      __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_v_uf, __pyx_n_s_union); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 20, __pyx_L1_error)
+      __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_v_uf, __pyx_n_s_union); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 21, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_9 = __Pyx_PyObject_GetItem(__pyx_v_values1, __pyx_v_i); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 20, __pyx_L1_error)
+      __pyx_t_9 = __Pyx_PyObject_GetItem(__pyx_v_values1, __pyx_v_i); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 21, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_10 = __Pyx_PyObject_GetItem(__pyx_v_values2, __pyx_v_i); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 20, __pyx_L1_error)
+      __pyx_t_10 = __Pyx_PyObject_GetItem(__pyx_v_values2, __pyx_v_i); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 21, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_10);
       __pyx_t_11 = NULL;
       __pyx_t_12 = 0;
@@ -2233,7 +2233,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
       #if CYTHON_FAST_PYCALL
       if (PyFunction_Check(__pyx_t_8)) {
         PyObject *__pyx_temp[3] = {__pyx_t_11, __pyx_t_9, __pyx_t_10};
-        __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
         __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -2243,7 +2243,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
       #if CYTHON_FAST_PYCCALL
       if (__Pyx_PyFastCFunction_Check(__pyx_t_8)) {
         PyObject *__pyx_temp[3] = {__pyx_t_11, __pyx_t_9, __pyx_t_10};
-        __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
         __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -2251,7 +2251,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
       } else
       #endif
       {
-        __pyx_t_13 = PyTuple_New(2+__pyx_t_12); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_13 = PyTuple_New(2+__pyx_t_12); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 21, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_13);
         if (__pyx_t_11) {
           __Pyx_GIVEREF(__pyx_t_11); PyTuple_SET_ITEM(__pyx_t_13, 0, __pyx_t_11); __pyx_t_11 = NULL;
@@ -2262,12 +2262,12 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
         PyTuple_SET_ITEM(__pyx_t_13, 1+__pyx_t_12, __pyx_t_10);
         __pyx_t_9 = 0;
         __pyx_t_10 = 0;
-        __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_t_13, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 20, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_t_13, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
       }
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 20, __pyx_L1_error)
+      if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 21, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     }
   }
@@ -2277,7 +2277,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "unionfind.pyx":19
+  /* "unionfind.pyx":20
  *         return [uf.find(values[i]) for i,uf in enumerate(self.uflist)]
  * 
  *     def union(self,values1, values2, mask):             # <<<<<<<<<<<<<<
@@ -2306,7 +2306,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_4union(CYTHON_UNUSED Py
   return __pyx_r;
 }
 
-/* "unionfind.pyx":22
+/* "unionfind.pyx":23
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
@@ -2345,30 +2345,30 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("roots", 0);
 
-  /* "unionfind.pyx":24
+  /* "unionfind.pyx":25
  *     def roots(self):
  *         ### returns -1 when the list of one uf is exhausted
  *         return itertools.zip_longest(*[uf.roots() for uf in self.uflist],fillvalue = -1)             # <<<<<<<<<<<<<<
  * 
- * 
+ * # from itertools import accumulate
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_itertools); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_itertools); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_zip_longest); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_zip_longest); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_uflist); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_uflist); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (likely(PyList_CheckExact(__pyx_t_3)) || PyTuple_CheckExact(__pyx_t_3)) {
     __pyx_t_4 = __pyx_t_3; __Pyx_INCREF(__pyx_t_4); __pyx_t_5 = 0;
     __pyx_t_6 = NULL;
   } else {
-    __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 24, __pyx_L1_error)
+    __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 25, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 24, __pyx_L1_error)
+    __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 25, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   for (;;) {
@@ -2376,17 +2376,17 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
       if (likely(PyList_CheckExact(__pyx_t_4))) {
         if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_4)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 24, __pyx_L1_error)
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 25, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 24, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 25, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       } else {
         if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 24, __pyx_L1_error)
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 25, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 24, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 25, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       }
@@ -2396,7 +2396,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 24, __pyx_L1_error)
+          else __PYX_ERR(0, 25, __pyx_L1_error)
         }
         break;
       }
@@ -2404,7 +2404,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
     }
     __Pyx_XDECREF_SET(__pyx_v_uf, __pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_uf, __pyx_n_s_roots); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 24, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_v_uf, __pyx_n_s_roots); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 25, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __pyx_t_8 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_7))) {
@@ -2418,20 +2418,20 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
     }
     __pyx_t_3 = (__pyx_t_8) ? __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_t_8) : __Pyx_PyObject_CallNoArg(__pyx_t_7);
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 24, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 25, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 24, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 25, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = PySequence_Tuple(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __pyx_t_4 = PySequence_Tuple(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_fillvalue, __pyx_int_neg_1) < 0) __PYX_ERR(0, 24, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 24, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_fillvalue, __pyx_int_neg_1) < 0) __PYX_ERR(0, 25, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -2440,7 +2440,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "unionfind.pyx":22
+  /* "unionfind.pyx":23
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
@@ -2465,7 +2465,7 @@ static PyObject *__pyx_pf_9unionfind_17MultipleUnionFind_6roots(CYTHON_UNUSED Py
   return __pyx_r;
 }
 
-/* "unionfind.pyx":33
+/* "unionfind.pyx":92
  *     cdef int _n_sets
  * 
  *     def __cinit__(self, n_points):             # <<<<<<<<<<<<<<
@@ -2502,7 +2502,7 @@ static int __pyx_pw_9unionfind_9UnionFind_1__cinit__(PyObject *__pyx_v_self, PyO
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) __PYX_ERR(0, 33, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) __PYX_ERR(0, 92, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 1) {
       goto __pyx_L5_argtuple_error;
@@ -2513,7 +2513,7 @@ static int __pyx_pw_9unionfind_9UnionFind_1__cinit__(PyObject *__pyx_v_self, PyO
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 33, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 92, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("unionfind.UnionFind.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2541,61 +2541,61 @@ static int __pyx_pf_9unionfind_9UnionFind___cinit__(struct __pyx_obj_9unionfind_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__cinit__", 0);
 
-  /* "unionfind.pyx":34
+  /* "unionfind.pyx":93
  * 
  *     def __cinit__(self, n_points):
  *         self.n_points = n_points             # <<<<<<<<<<<<<<
  *         self.parent = <int *> malloc(n_points * sizeof(int))
  *         self.rank = <int *> malloc(n_points * sizeof(int))
  */
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_n_points); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 34, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_n_points); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 93, __pyx_L1_error)
   __pyx_v_self->n_points = __pyx_t_1;
 
-  /* "unionfind.pyx":35
+  /* "unionfind.pyx":94
  *     def __cinit__(self, n_points):
  *         self.n_points = n_points
  *         self.parent = <int *> malloc(n_points * sizeof(int))             # <<<<<<<<<<<<<<
  *         self.rank = <int *> malloc(n_points * sizeof(int))
  * 
  */
-  __pyx_t_2 = __Pyx_PyInt_FromSize_t((sizeof(int))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_FromSize_t((sizeof(int))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 94, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyNumber_Multiply(__pyx_v_n_points, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Multiply(__pyx_v_n_points, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 94, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_4 = __Pyx_PyInt_As_size_t(__pyx_t_3); if (unlikely((__pyx_t_4 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_As_size_t(__pyx_t_3); if (unlikely((__pyx_t_4 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 94, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_v_self->parent = ((int *)malloc(__pyx_t_4));
 
-  /* "unionfind.pyx":36
+  /* "unionfind.pyx":95
  *         self.n_points = n_points
  *         self.parent = <int *> malloc(n_points * sizeof(int))
  *         self.rank = <int *> malloc(n_points * sizeof(int))             # <<<<<<<<<<<<<<
  * 
  *         cdef int i
  */
-  __pyx_t_3 = __Pyx_PyInt_FromSize_t((sizeof(int))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_FromSize_t((sizeof(int))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 95, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_2 = PyNumber_Multiply(__pyx_v_n_points, __pyx_t_3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_n_points, __pyx_t_3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 95, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_4 = __Pyx_PyInt_As_size_t(__pyx_t_2); if (unlikely((__pyx_t_4 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_As_size_t(__pyx_t_2); if (unlikely((__pyx_t_4 == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 95, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_self->rank = ((int *)malloc(__pyx_t_4));
 
-  /* "unionfind.pyx":39
+  /* "unionfind.pyx":98
  * 
  *         cdef int i
  *         for i in range(n_points):             # <<<<<<<<<<<<<<
  *             self.parent[i] = i
  * 
  */
-  __pyx_t_5 = __Pyx_PyInt_As_long(__pyx_v_n_points); if (unlikely((__pyx_t_5 == (long)-1) && PyErr_Occurred())) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_long(__pyx_v_n_points); if (unlikely((__pyx_t_5 == (long)-1) && PyErr_Occurred())) __PYX_ERR(0, 98, __pyx_L1_error)
   __pyx_t_6 = __pyx_t_5;
   for (__pyx_t_1 = 0; __pyx_t_1 < __pyx_t_6; __pyx_t_1+=1) {
     __pyx_v_i = __pyx_t_1;
 
-    /* "unionfind.pyx":40
+    /* "unionfind.pyx":99
  *         cdef int i
  *         for i in range(n_points):
  *             self.parent[i] = i             # <<<<<<<<<<<<<<
@@ -2605,17 +2605,17 @@ static int __pyx_pf_9unionfind_9UnionFind___cinit__(struct __pyx_obj_9unionfind_
     (__pyx_v_self->parent[__pyx_v_i]) = __pyx_v_i;
   }
 
-  /* "unionfind.pyx":42
+  /* "unionfind.pyx":101
  *             self.parent[i] = i
  * 
  *         self._n_sets = n_points             # <<<<<<<<<<<<<<
  * 
  *     def __dealloc__(self):
  */
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_n_points); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_n_points); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
   __pyx_v_self->_n_sets = __pyx_t_1;
 
-  /* "unionfind.pyx":33
+  /* "unionfind.pyx":92
  *     cdef int _n_sets
  * 
  *     def __cinit__(self, n_points):             # <<<<<<<<<<<<<<
@@ -2636,7 +2636,7 @@ static int __pyx_pf_9unionfind_9UnionFind___cinit__(struct __pyx_obj_9unionfind_
   return __pyx_r;
 }
 
-/* "unionfind.pyx":44
+/* "unionfind.pyx":103
  *         self._n_sets = n_points
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -2659,7 +2659,7 @@ static void __pyx_pf_9unionfind_9UnionFind_2__dealloc__(struct __pyx_obj_9unionf
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__", 0);
 
-  /* "unionfind.pyx":45
+  /* "unionfind.pyx":104
  * 
  *     def __dealloc__(self):
  *         free(self.parent)             # <<<<<<<<<<<<<<
@@ -2668,7 +2668,7 @@ static void __pyx_pf_9unionfind_9UnionFind_2__dealloc__(struct __pyx_obj_9unionf
  */
   free(__pyx_v_self->parent);
 
-  /* "unionfind.pyx":46
+  /* "unionfind.pyx":105
  *     def __dealloc__(self):
  *         free(self.parent)
  *         free(self.rank)             # <<<<<<<<<<<<<<
@@ -2677,7 +2677,7 @@ static void __pyx_pf_9unionfind_9UnionFind_2__dealloc__(struct __pyx_obj_9unionf
  */
   free(__pyx_v_self->rank);
 
-  /* "unionfind.pyx":44
+  /* "unionfind.pyx":103
  *         self._n_sets = n_points
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -2689,7 +2689,7 @@ static void __pyx_pf_9unionfind_9UnionFind_2__dealloc__(struct __pyx_obj_9unionf
   __Pyx_RefNannyFinishContext();
 }
 
-/* "unionfind.pyx":48
+/* "unionfind.pyx":107
  *         free(self.rank)
  * 
  *     cdef int _find(self, int i):             # <<<<<<<<<<<<<<
@@ -2711,7 +2711,7 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_find", 0);
 
-  /* "unionfind.pyx":49
+  /* "unionfind.pyx":108
  * 
  *     cdef int _find(self, int i):
  *         if self.parent[i] == i:             # <<<<<<<<<<<<<<
@@ -2721,7 +2721,7 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
   __pyx_t_1 = (((__pyx_v_self->parent[__pyx_v_i]) == __pyx_v_i) != 0);
   if (__pyx_t_1) {
 
-    /* "unionfind.pyx":50
+    /* "unionfind.pyx":109
  *     cdef int _find(self, int i):
  *         if self.parent[i] == i:
  *             return i             # <<<<<<<<<<<<<<
@@ -2731,7 +2731,7 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
     __pyx_r = __pyx_v_i;
     goto __pyx_L0;
 
-    /* "unionfind.pyx":49
+    /* "unionfind.pyx":108
  * 
  *     cdef int _find(self, int i):
  *         if self.parent[i] == i:             # <<<<<<<<<<<<<<
@@ -2740,7 +2740,7 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
  */
   }
 
-  /* "unionfind.pyx":52
+  /* "unionfind.pyx":111
  *             return i
  *         else:
  *             self.parent[i] = self.find(self.parent[i])             # <<<<<<<<<<<<<<
@@ -2748,9 +2748,9 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
  * 
  */
   /*else*/ {
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 52, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 111, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_4 = __Pyx_PyInt_From_int((__pyx_v_self->parent[__pyx_v_i])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 52, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_int((__pyx_v_self->parent[__pyx_v_i])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 111, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __pyx_t_5 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
@@ -2765,14 +2765,14 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
     __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 52, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 52, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 111, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     (__pyx_v_self->parent[__pyx_v_i]) = __pyx_t_6;
 
-    /* "unionfind.pyx":53
+    /* "unionfind.pyx":112
  *         else:
  *             self.parent[i] = self.find(self.parent[i])
  *             return self.parent[i]             # <<<<<<<<<<<<<<
@@ -2783,7 +2783,7 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
     goto __pyx_L0;
   }
 
-  /* "unionfind.pyx":48
+  /* "unionfind.pyx":107
  *         free(self.rank)
  * 
  *     cdef int _find(self, int i):             # <<<<<<<<<<<<<<
@@ -2805,7 +2805,7 @@ static int __pyx_f_9unionfind_9UnionFind__find(struct __pyx_obj_9unionfind_Union
 }
 static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject *__pyx_generator, CYTHON_UNUSED PyThreadState *__pyx_tstate, PyObject *__pyx_sent_value); /* proto */
 
-/* "unionfind.pyx":55
+/* "unionfind.pyx":114
  *             return self.parent[i]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
@@ -2838,7 +2838,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_4roots(struct __pyx_obj_9unionfi
   if (unlikely(!__pyx_cur_scope)) {
     __pyx_cur_scope = ((struct __pyx_obj_9unionfind___pyx_scope_struct__roots *)Py_None);
     __Pyx_INCREF(Py_None);
-    __PYX_ERR(0, 55, __pyx_L1_error)
+    __PYX_ERR(0, 114, __pyx_L1_error)
   } else {
     __Pyx_GOTREF(__pyx_cur_scope);
   }
@@ -2846,7 +2846,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_4roots(struct __pyx_obj_9unionfi
   __Pyx_INCREF((PyObject *)__pyx_cur_scope->__pyx_v_self);
   __Pyx_GIVEREF((PyObject *)__pyx_cur_scope->__pyx_v_self);
   {
-    __pyx_CoroutineObject *gen = __Pyx_Generator_New((__pyx_coroutine_body_t) __pyx_gb_9unionfind_9UnionFind_6generator, NULL, (PyObject *) __pyx_cur_scope, __pyx_n_s_roots, __pyx_n_s_UnionFind_roots, __pyx_n_s_unionfind); if (unlikely(!gen)) __PYX_ERR(0, 55, __pyx_L1_error)
+    __pyx_CoroutineObject *gen = __Pyx_Generator_New((__pyx_coroutine_body_t) __pyx_gb_9unionfind_9UnionFind_6generator, NULL, (PyObject *) __pyx_cur_scope, __pyx_n_s_roots, __pyx_n_s_UnionFind_roots, __pyx_n_s_unionfind); if (unlikely(!gen)) __PYX_ERR(0, 114, __pyx_L1_error)
     __Pyx_DECREF(__pyx_cur_scope);
     __Pyx_RefNannyFinishContext();
     return (PyObject *) gen;
@@ -2884,9 +2884,9 @@ static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject
     return NULL;
   }
   __pyx_L3_first_run:;
-  if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 55, __pyx_L1_error)
+  if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 114, __pyx_L1_error)
 
-  /* "unionfind.pyx":56
+  /* "unionfind.pyx":115
  * 
  *     def roots(self):
  *         for vertex in range(self.n_points):             # <<<<<<<<<<<<<<
@@ -2898,7 +2898,7 @@ static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_cur_scope->__pyx_v_vertex = __pyx_t_3;
 
-    /* "unionfind.pyx":57
+    /* "unionfind.pyx":116
  *     def roots(self):
  *         for vertex in range(self.n_points):
  *             if vertex == self.parent[vertex]:             # <<<<<<<<<<<<<<
@@ -2908,14 +2908,14 @@ static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject
     __pyx_t_4 = ((__pyx_cur_scope->__pyx_v_vertex == (__pyx_cur_scope->__pyx_v_self->parent[__pyx_cur_scope->__pyx_v_vertex])) != 0);
     if (__pyx_t_4) {
 
-      /* "unionfind.pyx":58
+      /* "unionfind.pyx":117
  *         for vertex in range(self.n_points):
  *             if vertex == self.parent[vertex]:
  *                 yield vertex             # <<<<<<<<<<<<<<
  * 
  *     def find(self, int i):
  */
-      __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_cur_scope->__pyx_v_vertex); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 58, __pyx_L1_error)
+      __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_cur_scope->__pyx_v_vertex); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 117, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __pyx_r = __pyx_t_5;
       __pyx_t_5 = 0;
@@ -2932,9 +2932,9 @@ static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject
       __pyx_t_1 = __pyx_cur_scope->__pyx_t_0;
       __pyx_t_2 = __pyx_cur_scope->__pyx_t_1;
       __pyx_t_3 = __pyx_cur_scope->__pyx_t_2;
-      if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 58, __pyx_L1_error)
+      if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 117, __pyx_L1_error)
 
-      /* "unionfind.pyx":57
+      /* "unionfind.pyx":116
  *     def roots(self):
  *         for vertex in range(self.n_points):
  *             if vertex == self.parent[vertex]:             # <<<<<<<<<<<<<<
@@ -2945,7 +2945,7 @@ static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject
   }
   CYTHON_MAYBE_UNUSED_VAR(__pyx_cur_scope);
 
-  /* "unionfind.pyx":55
+  /* "unionfind.pyx":114
  *             return self.parent[i]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
@@ -2970,7 +2970,7 @@ static PyObject *__pyx_gb_9unionfind_9UnionFind_6generator(__pyx_CoroutineObject
   return __pyx_r;
 }
 
-/* "unionfind.pyx":60
+/* "unionfind.pyx":119
  *                 yield vertex
  * 
  *     def find(self, int i):             # <<<<<<<<<<<<<<
@@ -2989,7 +2989,7 @@ static PyObject *__pyx_pw_9unionfind_9UnionFind_8find(PyObject *__pyx_v_self, Py
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("find (wrapper)", 0);
   assert(__pyx_arg_i); {
-    __pyx_v_i = __Pyx_PyInt_As_int(__pyx_arg_i); if (unlikely((__pyx_v_i == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 60, __pyx_L3_error)
+    __pyx_v_i = __Pyx_PyInt_As_int(__pyx_arg_i); if (unlikely((__pyx_v_i == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 119, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3015,7 +3015,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_7find(struct __pyx_obj_9unionfin
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("find", 0);
 
-  /* "unionfind.pyx":61
+  /* "unionfind.pyx":120
  * 
  *     def find(self, int i):
  *         if (i < 0) or (i > self.n_points):             # <<<<<<<<<<<<<<
@@ -3033,20 +3033,20 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_7find(struct __pyx_obj_9unionfin
   __pyx_L4_bool_binop_done:;
   if (unlikely(__pyx_t_1)) {
 
-    /* "unionfind.pyx":62
+    /* "unionfind.pyx":121
  *     def find(self, int i):
  *         if (i < 0) or (i > self.n_points):
  *             raise ValueError("Out of bounds index.")             # <<<<<<<<<<<<<<
  *         return self._find(i)
  * 
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 62, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 121, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(0, 62, __pyx_L1_error)
+    __PYX_ERR(0, 121, __pyx_L1_error)
 
-    /* "unionfind.pyx":61
+    /* "unionfind.pyx":120
  * 
  *     def find(self, int i):
  *         if (i < 0) or (i > self.n_points):             # <<<<<<<<<<<<<<
@@ -3055,7 +3055,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_7find(struct __pyx_obj_9unionfin
  */
   }
 
-  /* "unionfind.pyx":63
+  /* "unionfind.pyx":122
  *         if (i < 0) or (i > self.n_points):
  *             raise ValueError("Out of bounds index.")
  *         return self._find(i)             # <<<<<<<<<<<<<<
@@ -3063,13 +3063,13 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_7find(struct __pyx_obj_9unionfin
  *     def merge(self, int u, int v):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = __Pyx_PyInt_From_int(((struct __pyx_vtabstruct_9unionfind_UnionFind *)__pyx_v_self->__pyx_vtab)->_find(__pyx_v_self, __pyx_v_i)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(((struct __pyx_vtabstruct_9unionfind_UnionFind *)__pyx_v_self->__pyx_vtab)->_find(__pyx_v_self, __pyx_v_i)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 122, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "unionfind.pyx":60
+  /* "unionfind.pyx":119
  *                 yield vertex
  * 
  *     def find(self, int i):             # <<<<<<<<<<<<<<
@@ -3088,7 +3088,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_7find(struct __pyx_obj_9unionfin
   return __pyx_r;
 }
 
-/* "unionfind.pyx":65
+/* "unionfind.pyx":124
  *         return self._find(i)
  * 
  *     def merge(self, int u, int v):             # <<<<<<<<<<<<<<
@@ -3130,11 +3130,11 @@ static PyObject *__pyx_pw_9unionfind_9UnionFind_10merge(PyObject *__pyx_v_self, 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_v)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("merge", 1, 2, 2, 1); __PYX_ERR(0, 65, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("merge", 1, 2, 2, 1); __PYX_ERR(0, 124, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "merge") < 0)) __PYX_ERR(0, 65, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "merge") < 0)) __PYX_ERR(0, 124, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3142,12 +3142,12 @@ static PyObject *__pyx_pw_9unionfind_9UnionFind_10merge(PyObject *__pyx_v_self, 
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_u = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_u == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 65, __pyx_L3_error)
-    __pyx_v_v = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_v == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 65, __pyx_L3_error)
+    __pyx_v_u = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_u == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L3_error)
+    __pyx_v_v = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_v == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 124, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("merge", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 65, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("merge", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 124, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("unionfind.UnionFind.merge", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3176,7 +3176,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("merge", 0);
 
-  /* "unionfind.pyx":67
+  /* "unionfind.pyx":126
  *     def merge(self, int u, int v):
  *         cdef int root_u, root_v
  *         if u!= v:             # <<<<<<<<<<<<<<
@@ -3186,16 +3186,16 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
   __pyx_t_1 = ((__pyx_v_u != __pyx_v_v) != 0);
   if (__pyx_t_1) {
 
-    /* "unionfind.pyx":68
+    /* "unionfind.pyx":127
  *         cdef int root_u, root_v
  *         if u!= v:
  *             root_u = self.find(u)             # <<<<<<<<<<<<<<
  *             root_v = self.find(v)
  *             self.parent[root_u] = root_v
  */
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 68, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_u); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 68, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_u); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __pyx_t_5 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
@@ -3210,23 +3210,23 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
     __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 68, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 68, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_v_root_u = __pyx_t_6;
 
-    /* "unionfind.pyx":69
+    /* "unionfind.pyx":128
  *         if u!= v:
  *             root_u = self.find(u)
  *             root_v = self.find(v)             # <<<<<<<<<<<<<<
  *             self.parent[root_u] = root_v
  * 
  */
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 128, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_v); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_v); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 128, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __pyx_t_5 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
@@ -3241,14 +3241,14 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
     __pyx_t_2 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_5, __pyx_t_4) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 128, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 69, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 128, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_v_root_v = __pyx_t_6;
 
-    /* "unionfind.pyx":70
+    /* "unionfind.pyx":129
  *             root_u = self.find(u)
  *             root_v = self.find(v)
  *             self.parent[root_u] = root_v             # <<<<<<<<<<<<<<
@@ -3257,7 +3257,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
  */
     (__pyx_v_self->parent[__pyx_v_root_u]) = __pyx_v_root_v;
 
-    /* "unionfind.pyx":67
+    /* "unionfind.pyx":126
  *     def merge(self, int u, int v):
  *         cdef int root_u, root_v
  *         if u!= v:             # <<<<<<<<<<<<<<
@@ -3266,7 +3266,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
  */
   }
 
-  /* "unionfind.pyx":65
+  /* "unionfind.pyx":124
  *         return self._find(i)
  * 
  *     def merge(self, int u, int v):             # <<<<<<<<<<<<<<
@@ -3290,7 +3290,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_9merge(struct __pyx_obj_9unionfi
   return __pyx_r;
 }
 
-/* "unionfind.pyx":72
+/* "unionfind.pyx":131
  *             self.parent[root_u] = root_v
  * 
  *     def union(self, int i, int j):             # <<<<<<<<<<<<<<
@@ -3332,11 +3332,11 @@ static PyObject *__pyx_pw_9unionfind_9UnionFind_12union(PyObject *__pyx_v_self, 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_j)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("union", 1, 2, 2, 1); __PYX_ERR(0, 72, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("union", 1, 2, 2, 1); __PYX_ERR(0, 131, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "union") < 0)) __PYX_ERR(0, 72, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "union") < 0)) __PYX_ERR(0, 131, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3344,12 +3344,12 @@ static PyObject *__pyx_pw_9unionfind_9UnionFind_12union(PyObject *__pyx_v_self, 
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_i = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_i == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L3_error)
-    __pyx_v_j = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_j == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_i = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_i == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 131, __pyx_L3_error)
+    __pyx_v_j = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_j == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 131, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("union", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 72, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("union", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 131, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("unionfind.UnionFind.union", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3379,7 +3379,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("union", 0);
 
-  /* "unionfind.pyx":73
+  /* "unionfind.pyx":132
  * 
  *     def union(self, int i, int j):
  *         if (i < 0) or (i > self.n_points) or (j < 0) or (j > self.n_points):             # <<<<<<<<<<<<<<
@@ -3409,20 +3409,20 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
   __pyx_L4_bool_binop_done:;
   if (unlikely(__pyx_t_1)) {
 
-    /* "unionfind.pyx":74
+    /* "unionfind.pyx":133
  *     def union(self, int i, int j):
  *         if (i < 0) or (i > self.n_points) or (j < 0) or (j > self.n_points):
  *             raise ValueError("Out of bounds index.")             # <<<<<<<<<<<<<<
  * 
  *         cdef int root_i, root_j
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 74, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 133, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(0, 74, __pyx_L1_error)
+    __PYX_ERR(0, 133, __pyx_L1_error)
 
-    /* "unionfind.pyx":73
+    /* "unionfind.pyx":132
  * 
  *     def union(self, int i, int j):
  *         if (i < 0) or (i > self.n_points) or (j < 0) or (j > self.n_points):             # <<<<<<<<<<<<<<
@@ -3431,16 +3431,16 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
   }
 
-  /* "unionfind.pyx":77
+  /* "unionfind.pyx":136
  * 
  *         cdef int root_i, root_j
  *         root_i = self.find(i)             # <<<<<<<<<<<<<<
  *         root_j = self.find(j)
  *         if root_i != root_j:
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 136, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_i); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_i); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 136, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_6 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -3455,23 +3455,23 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
   __pyx_t_3 = (__pyx_t_6) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_6, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 77, __pyx_L1_error)
+  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 136, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 136, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_v_root_i = __pyx_t_7;
 
-  /* "unionfind.pyx":78
+  /* "unionfind.pyx":137
  *         cdef int root_i, root_j
  *         root_i = self.find(i)
  *         root_j = self.find(j)             # <<<<<<<<<<<<<<
  *         if root_i != root_j:
  *             self._n_sets -= 1
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 137, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_j); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_j); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 137, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_6 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -3486,14 +3486,14 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
   __pyx_t_3 = (__pyx_t_6) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_6, __pyx_t_5) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 78, __pyx_L1_error)
+  if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 137, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 78, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 137, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_v_root_j = __pyx_t_7;
 
-  /* "unionfind.pyx":79
+  /* "unionfind.pyx":138
  *         root_i = self.find(i)
  *         root_j = self.find(j)
  *         if root_i != root_j:             # <<<<<<<<<<<<<<
@@ -3503,7 +3503,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
   __pyx_t_1 = ((__pyx_v_root_i != __pyx_v_root_j) != 0);
   if (__pyx_t_1) {
 
-    /* "unionfind.pyx":80
+    /* "unionfind.pyx":139
  *         root_j = self.find(j)
  *         if root_i != root_j:
  *             self._n_sets -= 1             # <<<<<<<<<<<<<<
@@ -3512,7 +3512,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
     __pyx_v_self->_n_sets = (__pyx_v_self->_n_sets - 1);
 
-    /* "unionfind.pyx":81
+    /* "unionfind.pyx":140
  *         if root_i != root_j:
  *             self._n_sets -= 1
  *             if self.rank[root_i] < self.rank[root_j]:             # <<<<<<<<<<<<<<
@@ -3522,7 +3522,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
     __pyx_t_1 = (((__pyx_v_self->rank[__pyx_v_root_i]) < (__pyx_v_self->rank[__pyx_v_root_j])) != 0);
     if (__pyx_t_1) {
 
-      /* "unionfind.pyx":82
+      /* "unionfind.pyx":141
  *             self._n_sets -= 1
  *             if self.rank[root_i] < self.rank[root_j]:
  *                 self.parent[root_i] = root_j             # <<<<<<<<<<<<<<
@@ -3531,7 +3531,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
       (__pyx_v_self->parent[__pyx_v_root_i]) = __pyx_v_root_j;
 
-      /* "unionfind.pyx":83
+      /* "unionfind.pyx":142
  *             if self.rank[root_i] < self.rank[root_j]:
  *                 self.parent[root_i] = root_j
  *                 return root_j             # <<<<<<<<<<<<<<
@@ -3539,13 +3539,13 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  *                 self.parent[root_j] = root_i
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_j); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 83, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_j); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 142, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __pyx_r = __pyx_t_3;
       __pyx_t_3 = 0;
       goto __pyx_L0;
 
-      /* "unionfind.pyx":81
+      /* "unionfind.pyx":140
  *         if root_i != root_j:
  *             self._n_sets -= 1
  *             if self.rank[root_i] < self.rank[root_j]:             # <<<<<<<<<<<<<<
@@ -3554,7 +3554,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
     }
 
-    /* "unionfind.pyx":84
+    /* "unionfind.pyx":143
  *                 self.parent[root_i] = root_j
  *                 return root_j
  *             elif self.rank[root_i] > self.rank[root_j]:             # <<<<<<<<<<<<<<
@@ -3564,7 +3564,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
     __pyx_t_1 = (((__pyx_v_self->rank[__pyx_v_root_i]) > (__pyx_v_self->rank[__pyx_v_root_j])) != 0);
     if (__pyx_t_1) {
 
-      /* "unionfind.pyx":85
+      /* "unionfind.pyx":144
  *                 return root_j
  *             elif self.rank[root_i] > self.rank[root_j]:
  *                 self.parent[root_j] = root_i             # <<<<<<<<<<<<<<
@@ -3573,7 +3573,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
       (__pyx_v_self->parent[__pyx_v_root_j]) = __pyx_v_root_i;
 
-      /* "unionfind.pyx":86
+      /* "unionfind.pyx":145
  *             elif self.rank[root_i] > self.rank[root_j]:
  *                 self.parent[root_j] = root_i
  *                 return root_i             # <<<<<<<<<<<<<<
@@ -3581,13 +3581,13 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  *                 self.parent[root_i] = root_j
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_i); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 86, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_i); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 145, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __pyx_r = __pyx_t_3;
       __pyx_t_3 = 0;
       goto __pyx_L0;
 
-      /* "unionfind.pyx":84
+      /* "unionfind.pyx":143
  *                 self.parent[root_i] = root_j
  *                 return root_j
  *             elif self.rank[root_i] > self.rank[root_j]:             # <<<<<<<<<<<<<<
@@ -3596,7 +3596,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
     }
 
-    /* "unionfind.pyx":88
+    /* "unionfind.pyx":147
  *                 return root_i
  *             else:
  *                 self.parent[root_i] = root_j             # <<<<<<<<<<<<<<
@@ -3606,7 +3606,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
     /*else*/ {
       (__pyx_v_self->parent[__pyx_v_root_i]) = __pyx_v_root_j;
 
-      /* "unionfind.pyx":89
+      /* "unionfind.pyx":148
  *             else:
  *                 self.parent[root_i] = root_j
  *                 self.rank[root_j] += 1             # <<<<<<<<<<<<<<
@@ -3616,7 +3616,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
       __pyx_t_7 = __pyx_v_root_j;
       (__pyx_v_self->rank[__pyx_t_7]) = ((__pyx_v_self->rank[__pyx_t_7]) + 1);
 
-      /* "unionfind.pyx":90
+      /* "unionfind.pyx":149
  *                 self.parent[root_i] = root_j
  *                 self.rank[root_j] += 1
  *                 return root_j             # <<<<<<<<<<<<<<
@@ -3624,14 +3624,14 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  *             return root_i
  */
       __Pyx_XDECREF(__pyx_r);
-      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_j); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 90, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_j); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 149, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __pyx_r = __pyx_t_3;
       __pyx_t_3 = 0;
       goto __pyx_L0;
     }
 
-    /* "unionfind.pyx":79
+    /* "unionfind.pyx":138
  *         root_i = self.find(i)
  *         root_j = self.find(j)
  *         if root_i != root_j:             # <<<<<<<<<<<<<<
@@ -3640,7 +3640,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
   }
 
-  /* "unionfind.pyx":92
+  /* "unionfind.pyx":151
  *                 return root_j
  *         else:
  *             return root_i             # <<<<<<<<<<<<<<
@@ -3649,14 +3649,14 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
  */
   /*else*/ {
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_i); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 92, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_root_i); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 151, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_r = __pyx_t_3;
     __pyx_t_3 = 0;
     goto __pyx_L0;
   }
 
-  /* "unionfind.pyx":72
+  /* "unionfind.pyx":131
  *             self.parent[root_u] = root_v
  * 
  *     def union(self, int i, int j):             # <<<<<<<<<<<<<<
@@ -3678,7 +3678,7 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_11union(struct __pyx_obj_9unionf
   return __pyx_r;
 }
 
-/* "unionfind.pyx":95
+/* "unionfind.pyx":154
  * 
  *     property n_sets:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -3707,19 +3707,19 @@ static PyObject *__pyx_pf_9unionfind_9UnionFind_6n_sets___get__(struct __pyx_obj
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "unionfind.pyx":96
+  /* "unionfind.pyx":155
  *     property n_sets:
  *         def __get__(self):
  *             return self._n_sets             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->_n_sets); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->_n_sets); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 155, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "unionfind.pyx":95
+  /* "unionfind.pyx":154
  * 
  *     property n_sets:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4186,9 +4186,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 11, __pyx_L1_error)
-  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(0, 17, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 12, __pyx_L1_error)
+  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(0, 18, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 121, __pyx_L1_error)
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(1, 2, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
@@ -4199,14 +4199,14 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "unionfind.pyx":62
+  /* "unionfind.pyx":121
  *     def find(self, int i):
  *         if (i < 0) or (i > self.n_points):
  *             raise ValueError("Out of bounds index.")             # <<<<<<<<<<<<<<
  *         return self._find(i)
  * 
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_s_Out_of_bounds_index); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_s_Out_of_bounds_index); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 121, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
@@ -4229,53 +4229,53 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
-  /* "unionfind.pyx":6
+  /* "unionfind.pyx":7
  * 
  * class MultipleUnionFind:
  *     def __init__(self,n_uf,n):             # <<<<<<<<<<<<<<
  *         """
  *         n_uf is the number of unionfind objects
  */
-  __pyx_tuple__4 = PyTuple_Pack(4, __pyx_n_s_self, __pyx_n_s_n_uf, __pyx_n_s_n, __pyx_n_s_i); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 6, __pyx_L1_error)
+  __pyx_tuple__4 = PyTuple_Pack(4, __pyx_n_s_self, __pyx_n_s_n_uf, __pyx_n_s_n, __pyx_n_s_i); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 7, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__4);
   __Pyx_GIVEREF(__pyx_tuple__4);
-  __pyx_codeobj__5 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__4, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_init, 6, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__5)) __PYX_ERR(0, 6, __pyx_L1_error)
+  __pyx_codeobj__5 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__4, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_init, 7, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__5)) __PYX_ERR(0, 7, __pyx_L1_error)
 
-  /* "unionfind.pyx":13
+  /* "unionfind.pyx":14
  *         self.uflist = [UnionFind(n) for i in range(n_uf)]
  * 
  *     def find(self,values):             # <<<<<<<<<<<<<<
  *         """
  *         values in a vector of length n
  */
-  __pyx_tuple__6 = PyTuple_Pack(4, __pyx_n_s_self, __pyx_n_s_values, __pyx_n_s_i, __pyx_n_s_uf); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_tuple__6 = PyTuple_Pack(4, __pyx_n_s_self, __pyx_n_s_values, __pyx_n_s_i, __pyx_n_s_uf); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
-  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_find, 13, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_find, 14, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 14, __pyx_L1_error)
 
-  /* "unionfind.pyx":19
+  /* "unionfind.pyx":20
  *         return [uf.find(values[i]) for i,uf in enumerate(self.uflist)]
  * 
  *     def union(self,values1, values2, mask):             # <<<<<<<<<<<<<<
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]
  * 
  */
-  __pyx_tuple__8 = PyTuple_Pack(6, __pyx_n_s_self, __pyx_n_s_values1, __pyx_n_s_values2, __pyx_n_s_mask, __pyx_n_s_i, __pyx_n_s_uf); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_tuple__8 = PyTuple_Pack(6, __pyx_n_s_self, __pyx_n_s_values1, __pyx_n_s_values2, __pyx_n_s_mask, __pyx_n_s_i, __pyx_n_s_uf); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 20, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__8);
   __Pyx_GIVEREF(__pyx_tuple__8);
-  __pyx_codeobj__9 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_union, 19, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__9)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_codeobj__9 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__8, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_union, 20, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__9)) __PYX_ERR(0, 20, __pyx_L1_error)
 
-  /* "unionfind.pyx":22
+  /* "unionfind.pyx":23
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
  *         ### returns -1 when the list of one uf is exhausted
  *         return itertools.zip_longest(*[uf.roots() for uf in self.uflist],fillvalue = -1)
  */
-  __pyx_tuple__10 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_uf); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __pyx_tuple__10 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_uf); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
-  __pyx_codeobj__11 = (PyObject*)__Pyx_PyCode_New(1, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__10, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_roots, 22, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__11)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __pyx_codeobj__11 = (PyObject*)__Pyx_PyCode_New(1, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__10, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_unionfind_pyx, __pyx_n_s_roots, 23, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__11)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -4334,18 +4334,18 @@ static int __Pyx_modinit_type_init_code(void) {
   /*--- Type init code ---*/
   __pyx_vtabptr_9unionfind_UnionFind = &__pyx_vtable_9unionfind_UnionFind;
   __pyx_vtable_9unionfind_UnionFind._find = (int (*)(struct __pyx_obj_9unionfind_UnionFind *, int))__pyx_f_9unionfind_9UnionFind__find;
-  if (PyType_Ready(&__pyx_type_9unionfind_UnionFind) < 0) __PYX_ERR(0, 27, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_9unionfind_UnionFind) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
   #if PY_VERSION_HEX < 0x030800B1
   __pyx_type_9unionfind_UnionFind.tp_print = 0;
   #endif
   if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_type_9unionfind_UnionFind.tp_dictoffset && __pyx_type_9unionfind_UnionFind.tp_getattro == PyObject_GenericGetAttr)) {
     __pyx_type_9unionfind_UnionFind.tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
-  if (__Pyx_SetVtable(__pyx_type_9unionfind_UnionFind.tp_dict, __pyx_vtabptr_9unionfind_UnionFind) < 0) __PYX_ERR(0, 27, __pyx_L1_error)
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_UnionFind, (PyObject *)&__pyx_type_9unionfind_UnionFind) < 0) __PYX_ERR(0, 27, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_9unionfind_UnionFind) < 0) __PYX_ERR(0, 27, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_type_9unionfind_UnionFind.tp_dict, __pyx_vtabptr_9unionfind_UnionFind) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_UnionFind, (PyObject *)&__pyx_type_9unionfind_UnionFind) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_9unionfind_UnionFind) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
   __pyx_ptype_9unionfind_UnionFind = &__pyx_type_9unionfind_UnionFind;
-  if (PyType_Ready(&__pyx_type_9unionfind___pyx_scope_struct__roots) < 0) __PYX_ERR(0, 55, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_9unionfind___pyx_scope_struct__roots) < 0) __PYX_ERR(0, 114, __pyx_L1_error)
   #if PY_VERSION_HEX < 0x030800B1
   __pyx_type_9unionfind___pyx_scope_struct__roots.tp_print = 0;
   #endif
@@ -4587,93 +4587,93 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "unionfind.pyx":3
+  /* "unionfind.pyx":4
  * cimport cython
  * from libc.stdlib cimport malloc, free
  * import itertools             # <<<<<<<<<<<<<<
  * 
  * class MultipleUnionFind:
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_itertools, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 3, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_itertools, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_itertools, __pyx_t_1) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_itertools, __pyx_t_1) < 0) __PYX_ERR(0, 4, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "unionfind.pyx":5
+  /* "unionfind.pyx":6
  * import itertools
  * 
  * class MultipleUnionFind:             # <<<<<<<<<<<<<<
  *     def __init__(self,n_uf,n):
  *         """
  */
-  __pyx_t_1 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_empty_tuple, __pyx_n_s_MultipleUnionFind, __pyx_n_s_MultipleUnionFind, (PyObject *) NULL, __pyx_n_s_unionfind, (PyObject *) NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 5, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_empty_tuple, __pyx_n_s_MultipleUnionFind, __pyx_n_s_MultipleUnionFind, (PyObject *) NULL, __pyx_n_s_unionfind, (PyObject *) NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
 
-  /* "unionfind.pyx":6
+  /* "unionfind.pyx":7
  * 
  * class MultipleUnionFind:
  *     def __init__(self,n_uf,n):             # <<<<<<<<<<<<<<
  *         """
  *         n_uf is the number of unionfind objects
  */
-  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_1__init__, 0, __pyx_n_s_MultipleUnionFind___init, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__5)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 6, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_1__init__, 0, __pyx_n_s_MultipleUnionFind___init, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__5)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 7, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_init, __pyx_t_2) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_init, __pyx_t_2) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "unionfind.pyx":13
+  /* "unionfind.pyx":14
  *         self.uflist = [UnionFind(n) for i in range(n_uf)]
  * 
  *     def find(self,values):             # <<<<<<<<<<<<<<
  *         """
  *         values in a vector of length n
  */
-  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_3find, 0, __pyx_n_s_MultipleUnionFind_find, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__7)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_3find, 0, __pyx_n_s_MultipleUnionFind_find, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__7)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_find, __pyx_t_2) < 0) __PYX_ERR(0, 13, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_find, __pyx_t_2) < 0) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "unionfind.pyx":19
+  /* "unionfind.pyx":20
  *         return [uf.find(values[i]) for i,uf in enumerate(self.uflist)]
  * 
  *     def union(self,values1, values2, mask):             # <<<<<<<<<<<<<<
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]
  * 
  */
-  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_5union, 0, __pyx_n_s_MultipleUnionFind_union, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__9)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_5union, 0, __pyx_n_s_MultipleUnionFind_union, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__9)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 20, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_union, __pyx_t_2) < 0) __PYX_ERR(0, 19, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_union, __pyx_t_2) < 0) __PYX_ERR(0, 20, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "unionfind.pyx":22
+  /* "unionfind.pyx":23
  *         return [uf.union(values1[i],values2[i]) for i,uf in enumerate(self.uflist) if mask[i]]
  * 
  *     def roots(self):             # <<<<<<<<<<<<<<
  *         ### returns -1 when the list of one uf is exhausted
  *         return itertools.zip_longest(*[uf.roots() for uf in self.uflist],fillvalue = -1)
  */
-  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_7roots, 0, __pyx_n_s_MultipleUnionFind_roots, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__11)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CyFunction_New(&__pyx_mdef_9unionfind_17MultipleUnionFind_7roots, 0, __pyx_n_s_MultipleUnionFind_roots, NULL, __pyx_n_s_unionfind, __pyx_d, ((PyObject *)__pyx_codeobj__11)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_roots, __pyx_t_2) < 0) __PYX_ERR(0, 22, __pyx_L1_error)
+  if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_n_s_roots, __pyx_t_2) < 0) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "unionfind.pyx":5
+  /* "unionfind.pyx":6
  * import itertools
  * 
  * class MultipleUnionFind:             # <<<<<<<<<<<<<<
  *     def __init__(self,n_uf,n):
  *         """
  */
-  __pyx_t_2 = __Pyx_Py3ClassCreate(((PyObject*)&__Pyx_DefaultClassType), __pyx_n_s_MultipleUnionFind, __pyx_empty_tuple, __pyx_t_1, NULL, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 5, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_Py3ClassCreate(((PyObject*)&__Pyx_DefaultClassType), __pyx_n_s_MultipleUnionFind, __pyx_empty_tuple, __pyx_t_1, NULL, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_MultipleUnionFind, __pyx_t_2) < 0) __PYX_ERR(0, 5, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_MultipleUnionFind, __pyx_t_2) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "unionfind.pyx":1
- * cimport cython             # <<<<<<<<<<<<<<
+ * import cython             # <<<<<<<<<<<<<<
+ * cimport cython
  * from libc.stdlib cimport malloc, free
- * import itertools
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
