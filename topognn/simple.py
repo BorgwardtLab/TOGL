@@ -69,10 +69,9 @@ def main(args):
 
     trainer.fit(model, datamodule=data)
     checkpoint_path = checkpoint_cb.best_model_path
-    import ipdb
-    ipdb.set_trace()
     trainer2 = pl.Trainer(logger=False)
-    model = model.eval()
+    model = models.FiltrationGCNModel.load_from_checkpoint(
+        checkpoint_path)
     val_results = trainer2.test(
         model,
         test_dataloaders=data.val_dataloader(),
