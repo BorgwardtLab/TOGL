@@ -24,7 +24,8 @@ def main(args):
     model_type = args.type
 
     wandb_logger = WandbLogger(
-        name=f"TopoGNN_2layers", project="topo_gnn", entity="topo_gnn", log_model=True)
+        name=f"TopoGNN_{args.dataset}", project="topo_gnn", entity="topo_gnn", log_model=True, tags = [args.dataset])
+    
     early_stopping_cb = EarlyStopping(monitor="val_acc", patience=200)
     checkpoint_cb = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
@@ -41,8 +42,9 @@ def main(args):
         callbacks=[early_stopping_cb, checkpoint_cb]
     )
 
-    data = topodata.TUGraphDataset('ENZYMES', batch_size=32)
+    data = topodata.TUGraphDataset(args.dataset, batch_size=32)
     data.prepare_data()
+
 
     num_coord_funs = {"Triangle_transform": args.num_coord_funs,
                       "Gaussian_transform": args.num_coord_funs,
@@ -69,30 +71,28 @@ def main(args):
 
     trainer.fit(model, datamodule=data)
     checkpoint_path = checkpoint_cb.best_model_path
-    import ipdb
-    ipdb.set_trace()
     trainer2 = pl.Trainer(logger=False)
-    model = model.eval()
+
+    model = models.FiltrationGCNModel.load_from_checkpoint(
+        checkpoint_path)
     val_results = trainer2.test(
         model,
-        test_dataloaders=data.val_dataloader(),
-        ckpt_path=checkpoint_path
+        test_dataloaders=data.val_dataloader()
     )[0]
-    print(val_results)
+    
     val_results = {
         name.replace('test', 'best_val'): value
         for name, value in val_results.items()
     }
+
     test_results = trainer2.test(
         model,
-        test_dataloaders=data.test_dataloader(),
-        ckpt_path=checkpoint_path
+        test_dataloaders=data.test_dataloader()
     )[0]
+
     for name, value in {**val_results, **test_results}.items():
         wandb_logger.experiment.summary[name] = value
 
-    # print(test_results)
-    # trainer.test(datamodule=data)
 
 
 if __name__ == "__main__":
@@ -108,6 +108,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--dropout_p", type=float, default=0.5)
     parser.add_argument("--max_epochs", type=int, default=1000)
+    parser.add_argument("--dataset",type=str, default = "ENZYMES")
 
     args = parser.parse_args()
 
