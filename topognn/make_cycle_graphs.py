@@ -30,7 +30,7 @@ def make_cycle_graph(
     v = 0
     edges = []
 
-    edges, v = make_vertex_chain(v, n_pre, edges)
+    edges, v = make_vertex_chain(v, np.random.randint(2, n_pre), edges)
 
     for i in range(n_cycles):
         cycle_len = np.random.randint(min_length, max_length + 1)
@@ -39,9 +39,9 @@ def make_cycle_graph(
         edges, v = make_vertex_chain(v, cycle_len - 1, edges)
         edges.append((v, v_start))
 
-        edges, v = make_vertex_chain(v, n_mid, edges)
+        edges, v = make_vertex_chain(v, np.random.randint(2, n_mid), edges)
 
-    edges, v = make_vertex_chain(v, n_post, edges)
+    edges, v = make_vertex_chain(v, np.random.randint(2, n_post), edges)
     return edges, v + 1
 
 
