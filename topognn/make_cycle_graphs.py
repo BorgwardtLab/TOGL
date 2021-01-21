@@ -50,33 +50,40 @@ if __name__ == '__main__':
     parser.add_argument(
         '-n', '--n-cycles',
         type=int,
-        help='Number of cycles'
+        help='Number of cycles',
+        default=3,
     )
 
     parser.add_argument(
         '-m', '--n-graphs',
         type=int,
-        help='Number of graphs to generate'
+        help='Number of graphs to generate',
+        default=100,
     )
 
     parser.add_argument(
         '-l', '--min-length',
         type=int,
-        help='Minimum length of cycle'
+        help='Minimum length of cycle',
+        default=3,
     )
 
     parser.add_argument(
         '-L', '--max-length',
         type=int,
-        help='Maximum length of cycle'
+        help='Maximum length of cycle',
+        default=10,
     )
 
     args = parser.parse_args()
 
-    edges, n_vertices = make_cycle_graph(10, 10, 20)
+    for i in range(args.n_graphs):
+        edges, n_vertices = make_cycle_graph(
+            args.n_cycles,
+            args.min_length,
+            args.max_length
+        )
 
-    print(f'*vertices {n_vertices}')
-    print('*edges')
-
-    for u, v in edges:
-        print(f'{u+1} {v+1}')
+        with open(f'/tmp/Graph_{i:02d}.txt', 'w') as f:
+            for u, v in edges:
+                print(f'{u} {v}', file=f)
