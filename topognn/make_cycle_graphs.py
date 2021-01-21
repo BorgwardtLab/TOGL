@@ -30,7 +30,7 @@ def make_cycle_graph(
     v = 0
     edges = []
 
-    edges, v = make_vertex_chain(v, np.random.randint(2, n_pre), edges)
+    edges, v = make_vertex_chain(v, np.random.randint(2, n_pre + 1), edges)
 
     for i in range(n_cycles):
         cycle_len = np.random.randint(min_length, max_length + 1)
@@ -39,9 +39,9 @@ def make_cycle_graph(
         edges, v = make_vertex_chain(v, cycle_len - 1, edges)
         edges.append((v, v_start))
 
-        edges, v = make_vertex_chain(v, np.random.randint(2, n_mid), edges)
+        edges, v = make_vertex_chain(v, np.random.randint(2, n_mid + 1), edges)
 
-    edges, v = make_vertex_chain(v, np.random.randint(2, n_post), edges)
+    edges, v = make_vertex_chain(v, np.random.randint(2, n_post + 1), edges)
     return edges, v + 1
 
 
@@ -84,6 +84,6 @@ if __name__ == '__main__':
             args.max_length
         )
 
-        with open(f'/tmp/Graph_{i:02d}.txt', 'w') as f:
+        with open(f'/tmp/G_{args.n_cycles}_{i:02d}.txt', 'w') as f:
             for u, v in edges:
                 print(f'{u} {v}', file=f)
