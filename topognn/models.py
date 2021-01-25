@@ -9,6 +9,7 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 from torch_geometric.data import DataLoader, Batch, Data
 
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
+from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched
 
 import topognn.coord_transforms as coord_transforms
 import numpy as np
@@ -66,32 +67,41 @@ class TopologyLayer(torch.nn.Module):
         Returns the persistence pairs as a list of tensors with shape [X.shape[0],2].
         The lenght of the list is the number of filtrations.
         """
+        edge_index = batch.edge_index
         filtered_v_ = torch.cat([filtration_mod.forward(x)
                                  for filtration_mod in self.filtration_modules], 1)
+        filtered_e_, _ = torch.max(torch.stack(
+            (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
 
-        filtered_v_cpu = filtered_v_.cpu()
+        vertex_slices = torch.Tensor(batch.__slices__['x']).cpu().long()
+        edge_slices = torch.Tensor(batch.__slices__['edge_index']).cpu().long()
+
+        persistence0_new, persistence1_new = compute_persistence_homology_batched(
+            filtered_v_.cpu(), filtered_e_.cpu(), edge_index.cpu(),
+            vertex_slices, edge_slices)
 
         # TEST
-        #persistence0 = parallel_persistence_routine(filtered_v_cpu, batch).to(filtered_v_.device)
-        #persistence0 = torch.split(persistence0,1,2)
-        #persistence0 = [p.squeeze(-1) for p in persistence0]
+        # persistence0 = parallel_persistence_routine(filtered_v_cpu, batch).to(filtered_v_.device)
+        # persistence0 = torch.split(persistence0,1,2)
+        # persistence0 = [p.squeeze(-1) for p in persistence0]
 
-        persistence0 = []
-        persistence1 = []
+        # persistence0 = []
+        # persistence1 = []
+        # filtered_v_cpu = filtered_v_.cpu()
 
-        for f_idx in range(self.num_filtrations):
+        # for f_idx in range(self.num_filtrations):
+        #     batch_cpu = batch.clone().to("cpu")
+        #     # TODO: Test on a single instance
+        #     batch_p_ = batch_persistence_routine(
+        #         filtered_v_cpu[:, f_idx], batch_cpu, self.dim1)
 
-            batch_cpu = batch.clone().to("cpu")
-            batch_p_ = batch_persistence_routine(
-                filtered_v_cpu[:, f_idx], batch_cpu, self.dim1)
+        #     if self.dim1:  # cycles were computed
+        #         persistence0.append(batch_p_[0].to(filtered_v_.device))
+        #         persistence1.append(batch_p_[1].to(filtered_v_.device))
+        #     else:
+        #         persistence0.append(batch_p_.to(filtered_v_.device))
 
-            if self.dim1:  # cycles were computed
-                persistence0.append(batch_p_[0].to(filtered_v_.device))
-                persistence1.append(batch_p_[1].to(filtered_v_.device))
-            else:
-                persistence0.append(batch_p_.to(filtered_v_.device))
-
-        return persistence0, persistence1
+        return persistence0_new, persistence1_new
 
     def compute_coord_fun(self, persistence, dim1=False):
         """
@@ -120,7 +130,7 @@ class TopologyLayer(torch.nn.Module):
 
     def collapse_dim1(self, activations, mask, slices):
         """
-        #TODO: @edward Comment this
+        # TODO: @edward Comment this
         """
         collapsed_activations = []
         for el in range(len(slices)-1):
@@ -149,7 +159,7 @@ class TopologyLayer(torch.nn.Module):
                 persistences1, batch, dim1=True)
 
             graph_activations1 = self.collapse_dim1(coord_activations1, persistence1_mask, batch.__slices__[
-                                                    "edge_index"])  # returns a vector for each graph
+                "edge_index"])  # returns a vector for each graph
         else:
             graph_activations1 = None
 
@@ -349,9 +359,9 @@ class GCNModel(pl.LightningModule):
         y = batch.y
         y_hat = self(batch)
 
-        loss = self.loss(y_hat,y)
-        self.log("test_loss",loss, on_epoch = True)
-        
+        loss = self.loss(y_hat, y)
+        self.log("test_loss", loss, on_epoch=True)
+
         self.accuracy_test(y_hat, y)
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)

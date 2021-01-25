@@ -20,12 +20,12 @@ GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
 
 
 def main(args):
-    
+
     model_type = args.type
 
     wandb_logger = WandbLogger(
-        name=f"TopoGNN_{args.dataset}", project="topo_gnn", entity="topo_gnn", log_model=True, tags = [args.dataset])
-    
+        name=f"TopoGNN_{args.dataset}", project="topo_gnn", entity="topo_gnn", log_model=True, tags=[args.dataset])
+
     early_stopping_cb = EarlyStopping(monitor="val_acc", patience=200)
     checkpoint_cb = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
@@ -42,12 +42,13 @@ def main(args):
         callbacks=[early_stopping_cb, checkpoint_cb]
     )
 
-    if args.dataset=="IMDB-BINARY":
+    if args.dataset == "IMDB-BINARY":
         add_node_degree = True
     else:
         add_node_degree = False
 
-    data = topodata.TUGraphDataset(args.dataset, batch_size=32, seed = args.seed, add_node_degree = add_node_degree)
+    data = topodata.TUGraphDataset(
+        args.dataset, batch_size=32, seed=args.seed, add_node_degree=add_node_degree)
     data.prepare_data()
 
     num_coord_funs = {"Triangle_transform": args.num_coord_funs,
@@ -83,7 +84,7 @@ def main(args):
         model,
         test_dataloaders=data.val_dataloader()
     )[0]
-    
+
     val_results = {
         name.replace('test', 'best_val'): value
         for name, value in val_results.items()
@@ -98,12 +99,11 @@ def main(args):
         wandb_logger.experiment.summary[name] = value
 
 
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Topo GNN")
     parser.add_argument("--type", type=str, default="TopoGNN")
-    parser.add_argument("--dim1", type=bool, default = False)
+    parser.add_argument("--dim1", type=bool, default=False)
     parser.add_argument("--filtration_hidden", type=int, default=15)
     parser.add_argument("--num_filtrations", type=int, default=2)
     parser.add_argument("--hidden_dim", type=int, default=34)
@@ -112,9 +112,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--dropout_p", type=float, default=0.5)
     parser.add_argument("--max_epochs", type=int, default=1000)
-    parser.add_argument("--dataset",type=str, default = "ENZYMES")
-    parser.add_argument("--seed",type=int, default = 42)
-
+    parser.add_argument("--dataset", type=str, default="ENZYMES")
+    parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
 

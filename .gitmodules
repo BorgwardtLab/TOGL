@@ -1,0 +1,6 @@
+[submodule "repos/torch_persistent_homology"]
+	path = repos/torch_persistent_homology
+	url = git@github.com:ExpectationMax/torch_persistent_homology.git
+[submodule "repos/pyper"]
+	path = repos/pyper
+	url = git@github.com:Pseudomanifold/pyper.git
