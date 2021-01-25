@@ -79,6 +79,8 @@ class TopologyLayer(torch.nn.Module):
         persistence0_new, persistence1_new = compute_persistence_homology_batched(
             filtered_v_.cpu(), filtered_e_.cpu(), edge_index.cpu(),
             vertex_slices, edge_slices)
+        persistence0_new = persistence0_new.to(x.device)
+        persistence1_new = persistence1_new.to(x.device)
 
         # TEST
         # persistence0 = parallel_persistence_routine(filtered_v_cpu, batch).to(filtered_v_.device)
