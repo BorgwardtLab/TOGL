@@ -31,6 +31,7 @@ torch_persistent_homology = { path = "repos/torch_persistent_homology", develop 
 giotto-tda = "^0.4.0"
 python-igraph = "^0.8.3"
 networkx = "^2.5"
+scikit-learn = "^0.24.1"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.4"
