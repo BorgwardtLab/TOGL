@@ -1,7 +1,8 @@
-"""Create graphs with a pre-defined number of cycles"""
+"""Create graphs with a pre-defined number of cycles."""
 
 import argparse
 
+import igraph as ig
 import numpy as np
 
 
@@ -77,6 +78,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # Will contain all graphs in `igraph` format. They will form the
+    # basis for the analysis in terms of Weisfeiler--Lehman features
+    # later on.
+    graphs = []
+
     for i in range(args.n_graphs):
         edges, n_vertices = make_cycle_graph(
             args.n_cycles,
@@ -84,6 +90,14 @@ if __name__ == '__main__':
             args.max_length
         )
 
+        g = ig.Graph()
+        g.add_vertices(n_vertices)
+        g.add_edges(edges)
+
+        graphs.append(g)
+
+        # FIXME: Also store the graph for persistent homology
+        # calculations. Need to decide on a format here.
         with open(f'/tmp/G_{args.n_cycles}_{i:02d}.txt', 'w') as f:
             for u, v in edges:
                 print(f'{u} {v}', file=f)
