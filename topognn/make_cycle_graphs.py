@@ -5,6 +5,8 @@ import argparse
 import igraph as ig
 import numpy as np
 
+from weisfeiler_lehman import WeisfeilerLehman
+
 
 def make_vertex_chain(start, n, edges):
     """Create chain of vertices, starting from a given index."""
@@ -94,6 +96,10 @@ if __name__ == '__main__':
         g.add_vertices(n_vertices)
         g.add_edges(edges)
 
+        # Initial label of the graph to work with the WL calculation
+        # later on.
+        g.vs['label'] = g.degree()
+
         graphs.append(g)
 
         # FIXME: Also store the graph for persistent homology
@@ -101,3 +107,51 @@ if __name__ == '__main__':
         with open(f'/tmp/G_{args.n_cycles}_{i:02d}.txt', 'w') as f:
             for u, v in edges:
                 print(f'{u} {v}', file=f)
+
+    # First analysis step: degree distribution
+    #
+    # The idea is to obtain a mean degree distribution that does not
+    # depend on the number of cycles.
+    X = []
+
+    for g in graphs:
+        degrees = g.degree()
+        X.append(np.bincount(degrees))
+
+    X = np.asarray(X)
+    print(np.mean(X, axis=0))
+
+    # Second analysis step: Weisfeiler--Lehman feature vectors
+    #
+    # The idea is to show that the feature vectors are the same between
+    # two distributions of graphs (or require more steps than warranted
+    # as the cycle length increases).
+
+    wl = WeisfeilerLehman()
+    H = 5
+
+    label_dicts = wl.fit_transform(graphs, num_iterations=H)
+
+    # Will contain the feature matrix. Rows are indexing individual
+    # graphs, columns are indexing all iterations of the scheme, so 
+    # that the full WL iteration is contained in one vector.
+    X = []
+
+    for i, g in enumerate(graphs):
+
+        # All feature vectors of the current graph
+        x = []
+        for h in range(H):
+            _, compressed_labels = label_dicts[h][i]
+            x.extend(np.bincount(compressed_labels).tolist())
+
+        X.append(x)
+
+    # Ensure that all feature vectors have the same length.
+
+    L = 0
+    for x in X:
+        L = max(L, len(x))
+
+    X = [x + [0] * (L - len(x)) for x in X]
+    X = np.asarray(X)
