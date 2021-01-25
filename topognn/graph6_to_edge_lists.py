@@ -28,4 +28,4 @@ if __name__ == '__main__':
 
     for i, g in enumerate(graphs):
         out = os.path.join(args.output, f'G_{i:0{n_digits}d}.txt')
-        nx.write_edgelist(g, out)
+        nx.write_edgelist(g, out, data=False)
