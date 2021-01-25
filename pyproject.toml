@@ -26,7 +26,7 @@ torch-geometric = {version = "==1.6.3", allow-prereleases = true}  # Depends on 
 # ]
 pytorch-lightning = "^1.1.3"
 wandb = "^0.10.12"
-pyper = { path = "repos/pyper", develop = true }  # Unfortunately there seems to be an issue with poetry and editable repos
+pyper = { path = "repos/pyper", develop = true }
 torch_persistent_homology = { path = "repos/torch_persistent_homology", develop = true }
 
 

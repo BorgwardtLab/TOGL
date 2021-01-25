@@ -75,7 +75,7 @@ def persistence_routine(filtered_v_, data: Data, cycles=False):
 
     unpaired_value = filtered_e[-1]
 
-    persistence[:,0] = filtered_v_
+    persistence[:, 0] = filtered_v_
 
     for edge_index, edge_weight in zip(e_indices, filtered_e):
 
