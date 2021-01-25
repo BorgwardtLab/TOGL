@@ -5,6 +5,8 @@ import argparse
 import igraph as ig
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 from weisfeiler_lehman import WeisfeilerLehman
 
 
@@ -155,3 +157,7 @@ if __name__ == '__main__':
 
     X = [x + [0] * (L - len(x)) for x in X]
     X = np.asarray(X)
+
+    # Norm distribution of all vectors; not sure whether this will be
+    # useful.
+    norms = np.sqrt(np.sum(np.abs(X)**2, axis=-1))
