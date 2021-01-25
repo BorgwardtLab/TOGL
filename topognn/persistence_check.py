@@ -11,6 +11,8 @@ from pyper.persistent_homology.graphs import calculate_persistence_diagrams
 
 import igraph as ig
 
+import time
+
 def compute_persistence_giotto(edge_index, filtered_v):
     adj = np.zeros((len(filtered_v),len(filtered_v)))
 
@@ -135,4 +137,79 @@ if __name__ =="__main__":
         b = pers_to_set(persistences_batch[ib])
         assert len(b-a) == len(a-b)
         assert {a_[0] for a_ in a} == {b_[0] for b_ in b}
+
+    #---------------------------
+    #---------- Test 3 ---------
+    #---------------------------
+
+    data = topodata.TUGraphDataset('ENZYMES', batch_size=1)
+    data.prepare_data()
+
+    mod = torch.nn.Linear(32,1)
+    for i,b in enumerate(data.train_dataloader()):
+        print(i)
+        b.x = torch.mean(b.x,axis=1) + 0.01*np.random.randn(len(b.x))
+        edge_index = b.edge_index
+        filtered_v = b.x
+
+        # --------- Giotto ---------
+        persistence_giotto = compute_persistence_giotto(edge_index.numpy(), filtered_v.numpy())[0]
+
+        #print("-----Giotto----")
+        #print(persistence_giotto)
+
+        # --------- TopoGNN --------
+        batch = Batch()
+        batch.edge_index = torch.tensor(edge_index)
+        persistence_torch, persistence_torch1 = persistence_routine(torch.tensor(filtered_v), b, cycles = True)
+    
+        #print("------TopoGNN------")
+        #print(persistence_torch)
+
+        # --------- Pyper ---------
+        persistence_pyper, persistence_pyper1 = compute_pyper_persistence(edge_index.numpy(), filtered_v.numpy())
+
+        #print("------Pyper-----")
+        #print(persistence_pyper)
+
+        assert pers_to_set(persistence_pyper) == pers_to_set(persistence_torch)
+        #assert pers_to_set(persistence_giotto) == pers_to_set(filter_persistence(persistence_torch))
+
+        assert pers_to_set(filter_persistence(persistence_pyper1)) == pers_to_set(filter_persistence(persistence_torch1))
+
+    #------------Test 3 :--------------------
+    #----------------------------------------
+    print("Test 3 (Multiple Cycles) ")
+    edge_index = np.array([[0,0,1,1,2,2,4],[1,5,2,5,3,4,5]])
+    filtered_v = np.array([1.,1.,1.,1.,1.,1.])
+    dim0, dim1 = compute_persistence_giotto(edge_index, filtered_v)
+   
+    batch = Batch()
+    batch.edge_index = torch.tensor(edge_index)
+    dim0_torch, dim1_torch = persistence_routine(torch.tensor(filtered_v),batch,cycles = True) 
+
+    persistence_pyper, persistence_pyper1 = compute_pyper_persistence(edge_index, filtered_v) 
+
+    #assert pers_to_set(persistence_pyper) == pers_to_set(dim0_torch)
+    #assert pers_to_set(filter_persistence(dim1_torch)) == pers_to_set(persistence_pyper1)
+
+
+    #TEST 4 : performance !
+
+    print("Test 4 (Performance) ")
+    data = topodata.TUGraphDataset('ENZYMES', batch_size=32)
+    data.prepare_data()
+    batch = next(iter(data.train_dataloader()))
+    batch.x = torch.mean(batch.x,axis=1)
+    batch_list = batch.to_data_list()
+
+    #batch computation
+    start_time = time.time()
+    for i in range(20):
+        persistence_torch, persistence_torch1 = persistence_routine(batch.x, batch, cycles = True)
+    
+    end_time = time.time()
+
+    print(f"Average time for the persistence computation : {(end_time-start_time)/20}")
+
 

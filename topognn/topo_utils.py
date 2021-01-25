@@ -81,7 +81,7 @@ def persistence_routine(filtered_v_, data: Data, cycles=False):
 
         # nodes connected to this edge
         nodes = data.edge_index[:, edge_index]
-
+        
         younger = uf.find(nodes[0])
         older = uf.find(nodes[1])
 
