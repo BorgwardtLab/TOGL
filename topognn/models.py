@@ -105,7 +105,7 @@ class TopologyLayer(torch.nn.Module):
 
         return persistence0_new, persistence1_new
 
-    def compute_coord_fun(self, persistence, dim1=False):
+    def compute_coord_fun(self, persistence, batch, dim1=False):
         """
         Input : persistence [N_points,2]
         Output : coord_fun mean-aggregated [self.num_coord_fun]
@@ -114,6 +114,7 @@ class TopologyLayer(torch.nn.Module):
             coord_activation = torch.cat(
                 [mod.forward(persistence) for mod in self.coord_fun_modules1], 1)
         else:
+            import ipdb; ipdb.set_trace()
             coord_activation = torch.cat(
                 [mod.forward(persistence) for mod in self.coord_fun_modules], 1)
 
@@ -126,7 +127,7 @@ class TopologyLayer(torch.nn.Module):
         """
 
         coord_activations = [self.compute_coord_fun(
-            persistence, dim1=dim1) for persistence in persistences]
+            persistence, batch = batch, dim1=dim1) for persistence in persistences]
 
         return torch.cat(coord_activations, 1)
 
