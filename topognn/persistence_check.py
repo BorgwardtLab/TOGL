@@ -1,17 +1,44 @@
+#!/usr/bin/env python
 from gtda.homology import VietorisRipsPersistence
 import numpy as np 
 import copy
 import torch
-from torch_geometric.data import Batch
+from torch_geometric.data import Batch, Data
 
 from topognn.topo_utils import persistence_routine
 
 import topognn.data_utils as topodata
 from pyper.persistent_homology.graphs import calculate_persistence_diagrams
 
+
+from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
+
+
 import igraph as ig
 
 import time
+
+
+def compute_persistence_torch(edge_index, filtered_v_, batch):
+        """
+        Persistence computation with torch_persistence_computation
+        """
+        filtered_e_, _ = torch.max(torch.stack(
+            (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
+
+        vertex_slices = torch.Tensor(batch.__slices__['x']).cpu().long()
+        edge_slices = torch.Tensor(batch.__slices__['edge_index']).cpu().long()
+
+        filtered_v_ = filtered_v_.cpu().transpose(1, 0).contiguous()
+        filtered_e_ = filtered_e_.cpu().transpose(1, 0).contiguous()
+        edge_index = edge_index.cpu().transpose(1, 0).contiguous()
+
+        persistence0_new, persistence1_new = compute_persistence_homology_batched_mt(
+            filtered_v_, filtered_e_, edge_index,
+            vertex_slices, edge_slices)
+
+        return persistence0_new, persistence1_new
+
 
 def compute_persistence_giotto(edge_index, filtered_v):
     adj = np.zeros((len(filtered_v),len(filtered_v)))
@@ -69,21 +96,29 @@ if __name__ =="__main__":
     filtered_v = np.array([1.,1.,2.,3.,4.])
     dim0, dim1 = compute_persistence_giotto(edge_index, filtered_v)
    
-    batch = Batch()
-    batch.edge_index = torch.tensor(edge_index)
-    dim0_torch, dim1_torch = persistence_routine(torch.tensor(filtered_v),batch,cycles = True) 
+    data = Data()    
+    data.edge_index = torch.tensor(edge_index)
+    data.x = torch.tensor(filtered_v)
+    batch = Batch().from_data_list([data])
 
+    dim0_torch, dim1_torch = persistence_routine(torch.tensor(filtered_v),batch,cycles = True)
+
+    dim0_torch_new, dim1_torch_new = compute_persistence_torch(torch.tensor(edge_index), torch.tensor(filtered_v[:,None]), batch)
+    
     persistence_pyper, persistence_pyper1 = compute_pyper_persistence(edge_index, filtered_v) 
 
     assert pers_to_set(persistence_pyper) == pers_to_set(dim0_torch)
     assert pers_to_set(filter_persistence(dim1_torch)) == pers_to_set(persistence_pyper1)
+    assert (dim0_torch == dim0_torch_new).all()
+    assert (dim1_torch == dim1_torch_new).all()
+
 
     #---------------------------
     #---------- Test 1 ---------
     #---------------------------
-    edge_index = np.array(torch.load("edge_index.pt"))
-    filtered_v = np.array(torch.load("filtered_v_.pt"))
-    filtered_v += 0.01*np.random.randn(len(filtered_v))
+    edge_index = np.array(torch.load("./topognn/edge_index.pt"))
+    filtered_v = np.array(torch.load("./topognn/filtered_v_.pt"))
+    filtered_v += 0.05*np.random.randn(len(filtered_v))
 
     # --------- Giotto ---------
     persistence_giotto = compute_persistence_giotto(edge_index, filtered_v)[0]
@@ -92,8 +127,12 @@ if __name__ =="__main__":
     print(persistence_giotto)
 
     # --------- TopoGNN --------
-    batch = Batch()
-    batch.edge_index = torch.tensor(edge_index)
+
+    data = Data()    
+    data.edge_index = torch.tensor(edge_index)
+    data.x = torch.tensor(filtered_v)
+    batch = Batch().from_data_list([data])
+
     persistence_torch, persistence_torch1 = persistence_routine(torch.tensor(filtered_v), batch, cycles = True)
     
     print("------TopoGNN------")
@@ -105,11 +144,23 @@ if __name__ =="__main__":
     print("------Pyper-----")
     print(persistence_pyper)
 
+    #----- new persistence torch
+    rnd_gen = torch.Generator().manual_seed(421)
+
+    noise = torch.zeros_like(filtered_e_)
+    noise.random_(generator = rnd_gen)
+
+    dim0_torch_new, dim1_torch_new = compute_persistence_torch(torch.tensor(edge_index), torch.tensor(filtered_v[:,None]), batch)
+    
+
     assert pers_to_set(persistence_pyper) == pers_to_set(persistence_torch)
     assert pers_to_set(persistence_giotto) == pers_to_set(filter_persistence(persistence_torch))
 
     assert pers_to_set(filter_persistence(persistence_pyper1)) == pers_to_set(filter_persistence(persistence_torch1))
 
+    #import ipdb; ipdb.set_trace()
+    assert (persistence_torch == dim0_torch_new).all()
+    #assert (persistence_torch1 == dim1_torch_new[0]).all()
 
     #-------------------------
     #--------- Test2 ---------
@@ -120,18 +171,36 @@ if __name__ =="__main__":
     data = topodata.TUGraphDataset('ENZYMES', batch_size=32)
     data.prepare_data()
     batch = next(iter(data.train_dataloader()))
-    batch.x = torch.mean(batch.x,axis=1)
+    batch.x = torch.mean(batch.x,axis=1) + torch.randn(batch.x.shape[0])
     batch_list = batch.to_data_list()
 
+    #new torch persistence
+    dim0_torch_new, dim1_torch_new = compute_persistence_torch(torch.tensor(batch.edge_index), torch.tensor(batch.x[:,None]), batch)
+
+    
     #batch computation
     persistence_torch, persistence_torch1 = persistence_routine(batch.x, batch, cycles = True)
     batch_persistence = copy.copy(batch)
     batch_persistence.x = persistence_torch
     persistences_batch = [ b.x for b in batch_persistence.to_data_list()]
 
+    x1 = persistence_torch[torch.where(dim0_torch_new[0]!=persistence_torch)[0]]
+    x2 = dim0_torch_new[0,torch.where(dim0_torch_new[0]!=persistence_torch)[0]]
+    diffs = torch.cat((x1,x2),1)
+
+
     #graph computation
     persistences_single = [persistence_routine(b.x,b,cycles = True)[0] for b in batch_list]
-   
+    persistences_single_tensor = torch.cat(persistences_single,0)
+
+    persistences_single1 = [persistence_routine(b.x,b,cycles = True)[1] for b in batch_list]
+    persistences_single1_tensor = torch.cat(persistences_single1,0)
+
+    import ipdb; ipdb.set_trace() 
+    assert (persistences_single_tensor == dim0_torch_new[0]).all()
+    assert (persistences_single1_tensor == dim1_torch_new[0]).all()
+
+
     for ib in range(32):
         a = pers_to_set(persistences_single[ib]) 
         b = pers_to_set(persistences_batch[ib])

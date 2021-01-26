@@ -70,6 +70,7 @@ class TopologyLayer(torch.nn.Module):
         edge_index = batch.edge_index
         filtered_v_ = torch.cat([filtration_mod.forward(x)
                                  for filtration_mod in self.filtration_modules], 1)
+
         filtered_e_, _ = torch.max(torch.stack(
             (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
 
@@ -118,7 +119,6 @@ class TopologyLayer(torch.nn.Module):
             coord_activation = torch.cat(
                 [mod.forward(persistence) for mod in self.coord_fun_modules1], 1)
         else:
-            import ipdb; ipdb.set_trace()
             coord_activation = torch.cat(
                 [mod.forward(persistence) for mod in self.coord_fun_modules], 1)
 
