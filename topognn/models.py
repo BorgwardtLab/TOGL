@@ -9,7 +9,7 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 from torch_geometric.data import DataLoader, Batch, Data
 
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
-from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched
+from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
 import topognn.coord_transforms as coord_transforms
 import numpy as np
@@ -76,8 +76,12 @@ class TopologyLayer(torch.nn.Module):
         vertex_slices = torch.Tensor(batch.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(batch.__slices__['edge_index']).cpu().long()
 
-        persistence0_new, persistence1_new = compute_persistence_homology_batched(
-            filtered_v_.cpu(), filtered_e_.cpu(), edge_index.cpu(),
+        filtered_v_ = filtered_v_.cpu().transpose(1, 0).contiguous()
+        filtered_e_ = filtered_e_.cpu().transpose(1, 0).contiguous()
+        edge_index = edge_index.cpu().transpose(1, 0).contiguous()
+
+        persistence0_new, persistence1_new = compute_persistence_homology_batched_mt(
+            filtered_v_, filtered_e_, edge_index,
             vertex_slices, edge_slices)
         persistence0_new = persistence0_new.to(x.device)
         persistence1_new = persistence1_new.to(x.device)
