@@ -49,7 +49,7 @@ def main(args):
     else:
         add_node_degree = False
     
-    data = topodata.TUGraphDataset(args.dataset, batch_size=32,add_node_degree=add_node_degree, seed = args.seed)
+    data = topodata.TUGraphDataset(args.dataset, batch_size=32,add_node_degree=add_node_degree, fold = args.fold)
     data.prepare_data()
 
     model = models.GCNModel(hidden_dim=args.hidden_dim,
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("--dropout_p",type=float, default = 0.1)
     parser.add_argument("--max_epochs",type=int,default = 1000)
     parser.add_argument("--dataset",type=str, default = "ENZYMES")
-    parser.add_argument("--seed",type=int, default = 42)
+    parser.add_argument("--fold",type=int, default = 0)
     
     args = parser.parse_args()
 

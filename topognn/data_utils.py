@@ -140,7 +140,7 @@ class TUGraphDataset(pl.LightningDataModule):
         self.seed = seed
         self.num_workers = num_workers
 
-        max_degrees = {"IMDB-BINARY":540}
+        max_degrees = {"IMDB-BINARY":540,"COLLAB":2000}
         if add_node_degree:
             self.pre_transform = OneHotDegree(max_degrees[name])
         else:

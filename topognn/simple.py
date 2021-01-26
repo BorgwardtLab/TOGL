@@ -26,7 +26,7 @@ def main(args):
     wandb_logger = WandbLogger(
         name=f"TopoGNN_{args.dataset}", project="topo_gnn", entity="topo_gnn", log_model=True, tags=[args.dataset])
 
-    early_stopping_cb = EarlyStopping(monitor="val_acc", patience=200)
+    early_stopping_cb = EarlyStopping(monitor="val_acc", patience=100)
     checkpoint_cb = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
         monitor='val_acc',
@@ -48,7 +48,7 @@ def main(args):
         add_node_degree = False
 
     data = topodata.TUGraphDataset(
-        args.dataset, batch_size=32, seed=args.seed, add_node_degree=add_node_degree)
+        args.dataset, batch_size=32, fold=args.fold, add_node_degree=add_node_degree)
     data.prepare_data()
 
     num_coord_funs = {"Triangle_transform": args.num_coord_funs,
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     parser.add_argument("--dropout_p", type=float, default=0.5)
     parser.add_argument("--max_epochs", type=int, default=1000)
     parser.add_argument("--dataset", type=str, default="ENZYMES")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--fold", type=int, default=0)
 
     args = parser.parse_args()
 
