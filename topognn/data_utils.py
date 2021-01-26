@@ -4,11 +4,15 @@ from topognn import DATA_DIR
 from torch_geometric.data import DataLoader, Batch, Data
 from torch_geometric.datasets import TUDataset
 from torch_geometric.transforms import OneHotDegree
-from torch.utils.data import random_split
+from torch.utils.data import random_split, Subset
 import torch
 import math
 import pickle
+import numpy as np
 from torch_geometric.data import InMemoryDataset
+
+import itertools
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
 class SyntheticBaseDataset(InMemoryDataset):
@@ -116,11 +120,17 @@ class SyntheticDataset(pl.LightningDataModule):
 
 
 
+def get_label_fromTU(dataset):
+    labels = []
+    for i in range(len(dataset)):
+        labels.append(dataset[i].y)
+    return labels
+
 
 
 class TUGraphDataset(pl.LightningDataModule):
     def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree = False):
+                 val_fraction=0.1, test_fraction=0.1, fold = 0, seed=42, num_workers=4, add_node_degree = False, n_splits = 5):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -136,6 +146,9 @@ class TUGraphDataset(pl.LightningDataModule):
         else:
             self.pre_transform = None
 
+        self.n_splits = n_splits
+        self.fold = fold
+
     def prepare_data(self):
 
         dataset = TUDataset(
@@ -148,17 +161,21 @@ class TUGraphDataset(pl.LightningDataModule):
         self.node_attributes = dataset.num_node_features
         self.num_classes = dataset.num_classes
         n_instances = len(dataset)
-        n_train = math.floor(
-            (1 - self.val_fraction) * (1 - self.test_fraction) * n_instances)
-        n_val = math.ceil(
-            (self.val_fraction) * (1 - self.test_fraction) * n_instances)
-        n_test = n_instances - n_train - n_val
 
-        self.train, self.val, self.test = random_split(
-            dataset,
-            [n_train, n_val, n_test],
-            generator=torch.Generator().manual_seed(self.seed)
-        )
+
+        skf  =  StratifiedKFold(n_splits = self.n_splits,random_state = self.seed, shuffle = True)
+
+        skf_iterator = skf.split([i for i in range(n_instances)], get_label_fromTU(dataset))
+
+        train_index, test_index = next(itertools.islice(skf_iterator,self.fold, None))
+        train_index, val_index = train_test_split(train_index,random_state = self.seed)
+
+        
+        self.train = Subset(dataset,train_index.tolist())
+        self.val   = Subset(dataset,val_index.tolist())
+        self.test  = Subset(dataset,test_index.tolist())
+
+
 
     def train_dataloader(self):
         return DataLoader(
