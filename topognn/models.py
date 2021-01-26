@@ -72,8 +72,8 @@ class TopologyLayer(torch.nn.Module):
                                                      dim_out = set_out_dim,
                                                      num_heads = 4,
                                                      num_inds = 10)
-
-            self.set_transformer1 = coord_transforms.ISAB(dim_in = 2 * num_filtrations,
+            if self.dim1:
+                self.set_transformer1 = coord_transforms.ISAB(dim_in = 2 * num_filtrations,
                                                      dim_out = set_out_dim,
                                                      num_heads = 4,
                                                      num_inds = 10)
@@ -199,7 +199,14 @@ class TopologyLayer(torch.nn.Module):
 
     def collapse_dim1(self, activations, mask, slices):
         """
-        # TODO: @edward Comment this
+        Takes a flattened tensor of activations along with a mask and collapses it (sum) to have a graph-wise features
+
+        Inputs : 
+        * activations [N_edges,d]
+        * mask [N_edge]
+        * slices [N_graphs]
+        Output:
+        * collapsed activations [N_graphs,d]
         """
         collapsed_activations = []
         for el in range(len(slices)-1):
