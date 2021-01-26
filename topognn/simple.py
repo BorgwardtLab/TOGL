@@ -111,6 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_coord_funs1", type=int, default=3)
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--dropout_p", type=float, default=0.5)
+    parser.add_argument("--set2set",type=bool, default = False)
     parser.add_argument("--max_epochs", type=int, default=1000)
     parser.add_argument("--dataset", type=str, default="ENZYMES")
     parser.add_argument("--fold", type=int, default=0)
