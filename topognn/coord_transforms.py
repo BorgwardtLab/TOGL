@@ -100,13 +100,13 @@ class MAB(nn.Module):
         super(MAB, self).__init__()
         self.dim_V = dim_V
         self.num_heads = num_heads
-        self.fc_q = nn.Linear(dim_Q, dim_V)
-        self.fc_k = nn.Linear(dim_K, dim_V)
-        self.fc_v = nn.Linear(dim_K, dim_V)
+        self.fc_q = nn.Linear(dim_Q, dim_V )#* num_heads)
+        self.fc_k = nn.Linear(dim_K, dim_V )#* num_heads)
+        self.fc_v = nn.Linear(dim_K, dim_V )#* num_heads)
         if ln:
             self.ln0 = nn.LayerNorm(dim_V)
             self.ln1 = nn.LayerNorm(dim_V)
-        self.fc_o = nn.Linear(dim_V, dim_V)
+        self.fc_o = nn.Linear(dim_V , dim_V)
 
     def forward(self, Q, K, mask = None):
         """
@@ -149,10 +149,10 @@ class ISAB(nn.Module):
 
 
 
-mod = ISAB(dim_in = 2, dim_out = 32, num_heads = 4, num_inds = 6, ln = False)
+#mod = ISAB(dim_in = 2, dim_out = 32, num_heads = 4, num_inds = 6, ln = False)
 
-x = torch.randn((2,12,2))
+#x = torch.randn((2,12,2))
 
-y = mod(x, mask = torch.randint(high=2, size = (2,12)))
+#y = mod(x, mask = torch.randint(high=2, size = (2,12)))
 
 

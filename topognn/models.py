@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 import pytorch_lightning as pl
 
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_pool
 
 from torch_geometric.data import DataLoader, Batch, Data
 
@@ -41,7 +41,7 @@ def batch_to_tensor(batch, external_tensor, attribute = 'x'):
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
 
-    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set = False, set_out_dim = 16):
+    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set = False, set_out_dim = 32):
         """
         num_coord_funs is a dictionary with the numbers of coordinate functions of each type.
         dim1 is a boolean. True if we have to return dim1 persistence.
@@ -68,15 +68,18 @@ class TopologyLayer(torch.nn.Module):
 
         self.set2set = set2set
         if self.set2set:
-            self.set_transformer = coord_transforms.ISAB(dim_in = 2*num_filtrations,
+            #NB if we want to have a single set transformer for all filtrations, the dim_in should be 2*num_filtrations.
+            self.set_transformer = coord_transforms.ISAB(dim_in = 2 ,
                                                      dim_out = set_out_dim,
                                                      num_heads = 4,
-                                                     num_inds = 10)
+                                                     num_inds = 256)
+
+
             if self.dim1:
-                self.set_transformer1 = coord_transforms.ISAB(dim_in = 2 * num_filtrations,
+                self.set_transformer1 = coord_transforms.ISAB(dim_in = 2 ,
                                                      dim_out = set_out_dim,
                                                      num_heads = 4,
-                                                     num_inds = 10)
+                                                     num_inds = 256)
 
 
         if self.dim1:
@@ -96,7 +99,7 @@ class TopologyLayer(torch.nn.Module):
         ])
 
         if self.set2set:
-            in_out_dim = self.features_in + 16 
+            in_out_dim = self.features_in + set_out_dim*self.num_filtrations
         else:
             in_out_dim = self.features_in + self.num_filtrations * self.total_num_coord_funs
 
@@ -158,8 +161,9 @@ class TopologyLayer(torch.nn.Module):
         """
         if dim1:
             if self.set2set:
-                
-                persistence = persistence.permute(1,0,2).reshape(-1,self.num_filtrations*2)
+                persistence = persistence.unsqueeze(0) # remove if one set2set for each filtration
+
+                persistence = persistence.permute(1,0,2).reshape(-1,persistence.shape[0]*2)
                 stacked_tensor, mask, mask_zeros = batch_to_tensor(batch, persistence, attribute = "edge_index")
                 coord_activation = self.set_transformer1(stacked_tensor,mask_zeros)
                 coord_activation[mask_zeros] = 0
@@ -170,8 +174,11 @@ class TopologyLayer(torch.nn.Module):
         else:
             
             if self.set2set:
+                
+                persistence = persistence.unsqueeze(0) #remove if one set2set for each filtration
+
                 # expand along the last dimension.
-                persistence = persistence.permute(1,0,2).reshape(-1,self.num_filtrations*2)
+                persistence = persistence.permute(1,0,2).reshape(-1,persistence.shape[0]*2)
                 #return as stacked tensor
                 stacked_tensor, mask, mask_zeros = batch_to_tensor(batch, persistence)
                 #compute coordinate activations of each node and map back to flatten version.
@@ -188,13 +195,13 @@ class TopologyLayer(torch.nn.Module):
         Output dims : list of length number of filtrations with elements : [N_graphs in batch, number fo coordinate functions]
         """
 
-        if self.set2set:
-            coord_activations = self.compute_coord_fun(persistences,batch= batch, dim1 = dim1)
-            return coord_activations
-        else:
-            coord_activations = [self.compute_coord_fun(
-            persistence, batch = batch, dim1=dim1) for persistence in persistences]
-            return torch.cat(coord_activations, 1)
+        #if self.set2set:
+        #    coord_activations = self.compute_coord_fun(persistences,batch= batch, dim1 = dim1)
+        #    return coord_activations
+        #else:
+        coord_activations = [self.compute_coord_fun(
+        persistence, batch = batch, dim1=dim1) for persistence in persistences]
+        return torch.cat(coord_activations, 1)
 
 
     def collapse_dim1(self, activations, mask, slices):
@@ -247,7 +254,7 @@ class FiltrationGCNModel(pl.LightningModule):
     GCN Model with a Graph Filtration Readout function.
     """
 
-    def __init__(self, hidden_dim, filtration_hidden, num_node_features, num_classes, num_filtrations, num_coord_funs, dim1=False, num_coord_funs1=None, lr=0.001, dropout_p=0.2, set2set = True, set_out_dim = 16):
+    def __init__(self, hidden_dim, filtration_hidden, num_node_features, num_classes, num_filtrations, num_coord_funs, dim1=False, num_coord_funs1=None, lr=0.001, dropout_p=0.2, set2set = False, set_out_dim = 32):
         """
         num_filtrations = number of filtration functions
         num_coord_funs = number of different coordinate function
@@ -265,7 +272,7 @@ class FiltrationGCNModel(pl.LightningModule):
         # number of extra dimension for each embedding from cycles (dim1)
         if dim1:
             if self.set2set:
-                cycles_dim = set_out_dim
+                cycles_dim = set_out_dim * num_filtrations
             else:
                 cycles_dim = num_filtrations * \
                 np.array(list(num_coord_funs1.values())).sum()
@@ -360,12 +367,34 @@ class FiltrationGCNModel(pl.LightningModule):
 
 
 class GCNModel(pl.LightningModule):
-    def __init__(self, hidden_dim, num_node_features, num_classes, lr=0.001, dropout_p=0.2):
+    def __init__(self, hidden_dim, num_node_features, num_classes, lr=0.001, dropout_p=0.2, GIN = False):
         super().__init__()
         self.save_hyperparameters()
-        self.conv1 = GCNConv(num_node_features, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, hidden_dim)
-        self.conv3 = GCNConv(hidden_dim, hidden_dim)
+
+
+        if GIN:
+            
+            gin_net1 = torch.nn.Sequential(torch.nn.Linear(num_node_features,hidden_dim),
+                                            torch.nn.ReLU(),
+                                            torch.nn.Linear(hidden_dim,hidden_dim))
+            
+            gin_net2 = torch.nn.Sequential(torch.nn.Linear(hidden_dim,hidden_dim),
+                                            torch.nn.ReLU(),
+                                            torch.nn.Linear(hidden_dim,hidden_dim))
+            
+            self.conv1 = GINConv(nn = gin_net1)
+            self.conv3 = GINConv(nn = gin_net2)
+
+            self.pooling_fun = global_add_pool
+
+        else:
+            self.conv1 = GCNConv(num_node_features, hidden_dim)
+            self.conv2 = GCNConv(hidden_dim, hidden_dim)
+            self.conv3 = GCNConv(hidden_dim, hidden_dim)
+
+
+            self.pooling_fun = global_mean_pool
+
 
         self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
 
@@ -399,7 +428,7 @@ class GCNModel(pl.LightningModule):
 
         x = self.conv3(x, edge_index)
 
-        x = global_mean_pool(x, data.batch)
+        x = self.pooling_fun(x, data.batch)
 
         x_out = self.classif(x)
 

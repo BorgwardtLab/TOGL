@@ -23,8 +23,13 @@ GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
 def main(args):
     
     model_type = args.type
+    
+    if args.GIN:
+        model_name = "GIN"
+    else:
+        model_name = "GCN"
 
-    wandb_logger = WandbLogger(name = f"GCN_{args.dataset}",project = "topo_gnn",entity = "topo_gnn", tags = [args.dataset], log_model = True)
+    wandb_logger = WandbLogger(name = f"{model_name}_{args.dataset}",project = "topo_gnn",entity = "topo_gnn", tags = [args.dataset], log_model = True)
     
     #wandb_logger = WandbLogger(name = f"Attempt_{model_type}",project = "TopoGNN",entity="edebrouwer")
 
@@ -56,7 +61,7 @@ def main(args):
                 num_node_features=data.node_attributes,
                 num_classes=data.num_classes,
                 dropout_p = args.dropout_p,
-                lr = args.lr)
+                lr = args.lr, GIN = args.GIN)
 
 
     trainer.fit(model, datamodule=data)
@@ -95,6 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_epochs",type=int,default = 1000)
     parser.add_argument("--dataset",type=str, default = "Cycles")
     parser.add_argument("--seed",type=int, default = 42)
+    parser.add_argument("--GIN",type=bool, default= False)
     
     args = parser.parse_args()
 
