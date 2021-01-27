@@ -55,7 +55,7 @@ def persistence_routine(filtered_v_, data: Data, cycles=False):
     # Only the edges need to be sorted, since they determine the
     # filtration ordering. For the vertices, we will look up the
     # values directly in the tensor.
-    filtered_e, e_indices = torch.stable_sort(filtered_e_)
+    filtered_e, e_indices = torch.sort(filtered_e_)
 
     n_vertices = len(filtered_v_)
 

@@ -72,7 +72,7 @@ def main(args):
                                       dim1=args.dim1,
                                       num_coord_funs1=num_coord_funs1,
                                       lr=args.lr,
-                                      dropout_p=args.dropout_p)
+                                      dropout_p=args.dropout_p,set2set = args.set2set)
 
     trainer.fit(model, datamodule=data)
     checkpoint_path = checkpoint_cb.best_model_path
@@ -110,9 +110,10 @@ if __name__ == "__main__":
     parser.add_argument("--num_coord_funs", type=int, default=3)
     parser.add_argument("--num_coord_funs1", type=int, default=3)
     parser.add_argument("--lr", type=float, default=0.005)
-    parser.add_argument("--dropout_p", type=float, default=0.5)
+    parser.add_argument("--dropout_p", type=float, default=0.1)
+    parser.add_argument("--set2set",type=bool, default = False)
     parser.add_argument("--max_epochs", type=int, default=1000)
-    parser.add_argument("--dataset", type=str, default="ENZYMES")
+    parser.add_argument("--dataset", type=str, default="Cycles")
     parser.add_argument("--seed", type=int, default=42)
 
     args = parser.parse_args()
@@ -122,5 +123,9 @@ if __name__ == "__main__":
         print(f"Using dim1 in the persistence !")
     else:
         print(f"Using dim0 only !")
+
+    if args.set2set:
+        print("Using set2set coordinate function")
+
 
     main(args)

@@ -72,7 +72,8 @@ def main(args):
                                       dim1=args.dim1,
                                       num_coord_funs1=num_coord_funs1,
                                       lr=args.lr,
-                                      dropout_p=args.dropout_p)
+                                      dropout_p=args.dropout_p,
+                                      set2set = args.set2set)
 
     trainer.fit(model, datamodule=data)
     checkpoint_path = checkpoint_cb.best_model_path
@@ -123,5 +124,10 @@ if __name__ == "__main__":
         print(f"Using dim1 in the persistence !")
     else:
         print(f"Using dim0 only !")
+
+    if args.set2set:
+        print("Using set2set coordinate function")
+    else:
+        print("Using classical coordinate functions")
 
     main(args)

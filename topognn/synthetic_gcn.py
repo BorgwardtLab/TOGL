@@ -93,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr",type=float, default = 0.005)
     parser.add_argument("--dropout_p",type=float, default = 0.1)
     parser.add_argument("--max_epochs",type=int,default = 1000)
-    parser.add_argument("--dataset",type=str, default = "ENZYMES")
+    parser.add_argument("--dataset",type=str, default = "Cycles")
     parser.add_argument("--seed",type=int, default = 42)
     
     args = parser.parse_args()

@@ -113,6 +113,21 @@ if __name__ =="__main__":
     assert (dim1_torch == dim1_torch_new).all()
 
 
+    #Test 0 bis :
+    print("Test 0bis (arbitrary graph) ")
+    edge_index = np.array([[0,1,2,3,2,2,5,8,6,6,7,9],[1,2,3,4,7,5,6,7,8,9,8,10]])
+    filtered_v = np.array([1.,2.,4.,2.,2.,2.,4.,2.,2.,2.,1.])
+    
+    persistence_pyper, persistence_pyper1 = compute_pyper_persistence(edge_index, filtered_v)     
+
+
+    edge_index = np.array([[0,1,2,3,2,2,5,6,6,6,7,9],[1,2,3,4,4,5,6,7,8,9,8,10]])
+    filtered_v = np.array([1.,2.,4.,2.,2.,2.,4.,2.,2.,2.,1.])
+    persistence_pyper_bis, persistence_pyper1_bis = compute_pyper_persistence(edge_index, filtered_v)
+
+    import ipdb; ipdb.set_trace()
+
+
     #---------------------------
     #---------- Test 1 ---------
     #---------------------------
