@@ -9,6 +9,8 @@ from pytorch_lightning.loggers import WandbLogger
 
 import topognn.models as models
 import topognn.data_utils as topodata
+from topognn import Tasks
+from topognn.cli_utils import str2bool
 
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
@@ -50,6 +52,7 @@ def main(args):
                                       filtration_hidden=args.filtration_hidden,
                                       num_node_features=data.node_attributes,
                                       num_classes=data.num_classes,
+                                      task=Tasks.GRAPH_CLASSIFICATION,
                                       num_filtrations=args.num_filtrations,
                                       num_coord_funs=args.num_coord_funs,
                                       dim1=args.dim1,
@@ -87,7 +90,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Topo GNN")
     parser.add_argument("--type", type=str, default="TopoGNN")
-    parser.add_argument("--dim1", type=bool, default=False)
+    parser.add_argument("--dim1", type=str2bool, default=False)
     parser.add_argument("--filtration_hidden", type=int, default=15)
     parser.add_argument("--num_filtrations", type=int, default=2)
     parser.add_argument("--hidden_dim", type=int, default=34)
@@ -95,7 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_coord_funs1", type=int, default=3)
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--dropout_p", type=float, default=0.5)
-    parser.add_argument("--set2set",type=bool, default = False)
+    parser.add_argument("--set2set",type=str2bool, default = False)
     parser.add_argument("--max_epochs", type=int, default=1000)
     parser.add_argument("--dataset", type=str, default="ENZYMES")
     parser.add_argument("--fold", type=int, default=0)
