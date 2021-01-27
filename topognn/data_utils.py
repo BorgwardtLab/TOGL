@@ -1,8 +1,8 @@
 import os
 import pytorch_lightning as pl
-from topognn import DATA_DIR
+from topognn import DATA_DIR, Tasks
 from torch_geometric.data import DataLoader, Batch, Data
-from torch_geometric.datasets import TUDataset
+from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset
 from torch_geometric.transforms import OneHotDegree
 from torch.utils.data import random_split, Subset
 import torch
@@ -51,7 +51,7 @@ class SyntheticBaseDataset(InMemoryDataset):
 
 
 class SyntheticDataset(pl.LightningDataModule):
-    task = 'GRAPH_CLASSIFICATION'
+    task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(self, name, batch_size, use_node_attributes=True,
                  val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree=False):
@@ -128,7 +128,7 @@ def get_label_fromTU(dataset):
 
 
 class TUGraphDataset(pl.LightningDataModule):
-    task = 'GRAPH_CLASSIFICATION'
+    task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(self, name, batch_size, use_node_attributes=True,
                  val_fraction=0.1, test_fraction=0.1, fold=0, seed=42, num_workers=0, n_splits=5, **kwargs):
@@ -243,4 +243,88 @@ class Enzymes(TUGraphDataset):
 
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
-        super().__init__(name='IMDB-b', **kwargs)
+        super().__init__(name='MUTAG', **kwargs)
+
+
+class GNNBenchmark(pl.LightningDataModule):
+    def __init__(self, name, batch_size, num_workers=4, **kwargs):
+        super().__init__()
+        self.name = name
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.root = os.path.join(DATA_DIR, self.name)
+        if name in ['MNIST', 'CIFAR10']:
+            self.task = Tasks.GRAPH_CLASSIFICATION
+            self.num_classes = 10
+        elif name == 'PATTERN':
+            self.task = Tasks.NODE_CLASSIFICATION
+            self.num_classes = 2
+        elif name == 'CLUSTER':
+            self.task = Tasks.NODE_CLASSIFICATION
+            self.num_classes = 5
+        else:
+            raise RuntimeError('Unsupported dataset')
+
+    def prepare_data(self):
+        # Just download the data
+        train = GNNBenchmarkDataset(self.root, self.name, split='train')
+        self.node_attributes = train[0].x.shape[-1]
+        GNNBenchmarkDataset(self.root, self.name, split='val')
+        GNNBenchmarkDataset(self.root, self.name, split='test')
+
+    def train_dataloader(self):
+        return DataLoader(
+            GNNBenchmarkDataset(self.root, self.name, split='train'),
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            GNNBenchmarkDataset(self.root, self.name, split='val'),
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            GNNBenchmarkDataset(self.root, self.name, split='test'),
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    @classmethod
+    def add_dataset_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser.add_argument('--batch_size', type=int, default=32)
+        return parser
+
+
+class MNIST(GNNBenchmark):
+    def __init__(self, **kwargs):
+        super().__init__('MNIST', **kwargs)
+
+
+class CIFAR10(GNNBenchmark):
+    def __init__(self, **kwargs):
+        super().__init__('CIFAR10', **kwargs)
+
+
+class PATTERN(GNNBenchmark):
+    def __init__(self, **kwargs):
+        super().__init__('PATTERN', **kwargs)
+
+
+class CLUSTER(GNNBenchmark):
+    def __init__(self, **kwargs):
+        super().__init__('CLUSTER', **kwargs)
