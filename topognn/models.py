@@ -262,7 +262,7 @@ class FiltrationGCNModel(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.conv1 = GCNConv(num_node_features, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, hidden_dim)
+        # self.conv2 = GCNConv(hidden_dim, hidden_dim)
 
         coord_funs = {"Triangle_transform": num_coord_funs,
                       "Gaussian_transform": num_coord_funs,
