@@ -25,6 +25,7 @@ def make_cycle_graph(
     n_cycles,
     min_length,
     max_length,
+    n_branches,
     n_pre=10,
     n_mid=5,
     n_post=10
@@ -60,6 +61,13 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
+        '-b', '--n-branches',
+        type=int,
+        help='Number of branches',
+        default=0
+    )
+
+    parser.add_argument(
         '-m', '--n-graphs',
         type=int,
         help='Number of graphs to generate',
@@ -91,7 +99,8 @@ if __name__ == '__main__':
         edges, n_vertices = make_cycle_graph(
             args.n_cycles,
             args.min_length,
-            args.max_length
+            args.max_length,
+            args.n_branches,
         )
 
         g = ig.Graph()
@@ -121,7 +130,6 @@ if __name__ == '__main__':
         X.append(np.bincount(degrees))
 
     X = np.asarray(X)
-    print(np.mean(X, axis=0))
 
     # Second analysis step: Weisfeiler--Lehman feature vectors
     #
@@ -135,7 +143,7 @@ if __name__ == '__main__':
     label_dicts = wl.fit_transform(graphs, num_iterations=H)
 
     # Will contain the feature matrix. Rows are indexing individual
-    # graphs, columns are indexing all iterations of the scheme, so 
+    # graphs, columns are indexing all iterations of the scheme, so
     # that the full WL iteration is contained in one vector.
     X = []
 
@@ -161,3 +169,4 @@ if __name__ == '__main__':
     # Norm distribution of all vectors; not sure whether this will be
     # useful.
     norms = np.sqrt(np.sum(np.abs(X)**2, axis=-1))
+    print(norms)

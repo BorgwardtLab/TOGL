@@ -47,6 +47,8 @@ if __name__ == '__main__':
 
     X = np.asarray(X)
 
+    print('Mean degree', np.mean(X, axis=0))
+
     # Second analysis step: Weisfeiler--Lehman feature vectors
     #
     # The idea is to show that the feature vectors are the same between
