@@ -50,10 +50,11 @@ class SyntheticBaseDataset(InMemoryDataset):
         torch.save((data, slices), self.processed_paths[0])
 
 
-
 class SyntheticDataset(pl.LightningDataModule):
+    task = 'GRAPH_CLASSIFICATION'
+
     def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree = False):
+                 val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree=False):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -119,7 +120,6 @@ class SyntheticDataset(pl.LightningDataModule):
         )
 
 
-
 def get_label_fromTU(dataset):
     labels = []
     for i in range(len(dataset)):
@@ -127,10 +127,11 @@ def get_label_fromTU(dataset):
     return labels
 
 
-
 class TUGraphDataset(pl.LightningDataModule):
+    task = 'GRAPH_CLASSIFICATION'
+
     def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, fold = 0, seed=42, num_workers=4, add_node_degree = False, n_splits = 5):
+                 val_fraction=0.1, test_fraction=0.1, fold=0, seed=42, num_workers=0, n_splits=5, **kwargs):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -140,11 +141,15 @@ class TUGraphDataset(pl.LightningDataModule):
         self.seed = seed
         self.num_workers = num_workers
 
-        max_degrees = {"IMDB-BINARY":540,"COLLAB":2000}
-        if add_node_degree:
-            self.pre_transform = OneHotDegree(max_degrees[name])
+        max_degrees = {"IMDB-BINARY": 540,
+                       "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18}
+        self.has_node_attributes = (
+            name not in ['IMDB-BINARY'] and use_node_attributes)
+        if not self.has_node_attributes:
+            self.max_degree = max_degrees[name]
+            self.transform = OneHotDegree(self.max_degree)
         else:
-            self.pre_transform = None
+            self.transform = None
 
         self.n_splits = n_splits
         self.fold = fold
@@ -153,29 +158,32 @@ class TUGraphDataset(pl.LightningDataModule):
 
         dataset = TUDataset(
             root=os.path.join(DATA_DIR, self.name),
-            use_node_attr=True,
-            cleaned=self.use_node_attributes,
+            use_node_attr=self.has_node_attributes,
+            cleaned=True,
             name=self.name,
-            pre_transform = self.pre_transform
+            transform=self.transform
         )
-        self.node_attributes = dataset.num_node_features
+        self.node_attributes = (
+            dataset.num_node_features if self.has_node_attributes
+            else self.max_degree + 1
+        )
         self.num_classes = dataset.num_classes
         n_instances = len(dataset)
 
+        skf = StratifiedKFold(n_splits=self.n_splits,
+                              random_state=self.seed, shuffle=True)
 
-        skf  =  StratifiedKFold(n_splits = self.n_splits,random_state = self.seed, shuffle = True)
+        skf_iterator = skf.split(
+            [i for i in range(n_instances)], get_label_fromTU(dataset))
 
-        skf_iterator = skf.split([i for i in range(n_instances)], get_label_fromTU(dataset))
+        train_index, test_index = next(
+            itertools.islice(skf_iterator, self.fold, None))
+        train_index, val_index = train_test_split(
+            train_index, random_state=self.seed)
 
-        train_index, test_index = next(itertools.islice(skf_iterator,self.fold, None))
-        train_index, val_index = train_test_split(train_index,random_state = self.seed)
-
-        
-        self.train = Subset(dataset,train_index.tolist())
-        self.val   = Subset(dataset,val_index.tolist())
-        self.test  = Subset(dataset,test_index.tolist())
-
-
+        self.train = Subset(dataset, train_index.tolist())
+        self.val = Subset(dataset, val_index.tolist())
+        self.test = Subset(dataset, test_index.tolist())
 
     def train_dataloader(self):
         return DataLoader(
@@ -207,5 +215,32 @@ class TUGraphDataset(pl.LightningDataModule):
             pin_memory=True
         )
 
+    @classmethod
+    def add_dataset_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser.add_argument('--use_node_attributes', type=bool, default=True)
+        parser.add_argument('--fold', type=int, default=0)
+        parser.add_argument('--seed', type=int, default=42)
+        parser.add_argument('--batch_size', type=int, default=32)
+        return parser
 
 
+class IMDB_Binary(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='IMDB-BINARY', **kwargs)
+
+
+class Proteins(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='PROTEINS', **kwargs)
+
+
+class Enzymes(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='ENZYMES', **kwargs)
+
+
+class MUTAG(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='IMDB-b', **kwargs)
