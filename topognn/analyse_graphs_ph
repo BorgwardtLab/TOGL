@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#
+# Analysis script for a directory of graphs. Uses an external
+# tool, namely Aleph, to calculate persistent homology of the
+# set of graphs. Then writes their statistics to STDOUT.
+
+TOOL="graph_analysis -l "
+
+for file in `ls $1/G_*.txt`; do
+  >&2 echo Processing $file...
+  $TOOL $file $2
+done
+
+persistence_diagram_statistics -p 1 /tmp/G_*_d?.txt

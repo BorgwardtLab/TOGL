@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# Analysis script for the cycle graphs. Assumes that an Aleph
+# installation exists. Creates two sets of cycle graphs, then
+# compares them using their mean topological representation.
+
+TOOL="graph_analysis -l "
+
+poetry run python make_cycle_graphs.py --n-cycles 3
+poetry run python make_cycle_graphs.py --n-cycles 1
+
+for file in `ls /tmp/G_{3,1}_??.txt`; do
+  $TOOL $file
+done
+
+persistence_diagram_statistics -p 1 /tmp/G_*_d?.txt > Statistics_Cycle_Graphs.csv

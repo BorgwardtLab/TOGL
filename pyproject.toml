@@ -8,28 +8,30 @@ authors = []
 python = ">=3.7,<3.9"
 torch = "==1.7.1"
 torch-geometric = {version = "==1.6.3", allow-prereleases = true}  # Depends on some prerelease packages
-# torch-cluster = [
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_cluster-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin"},
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_cluster-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux"}
-# ]
-# torch-scatter = [
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_scatter-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin", optional = true},
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_scatter-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux", optional = true}
-# ]
-# torch-sparse = [
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_sparse-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin"},
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_sparse-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux"}
-# ]
-# torch-spline-conv = [
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_spline_conv-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin"},
-#     { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_spline_conv-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux",  optional = true }
-# ]
+torch-cluster = [
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_cluster-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin"},
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_cluster-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux"}
+]
+torch-scatter = [
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_scatter-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin", optional = true},
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_scatter-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux", optional = true}
+]
+torch-sparse = [
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_sparse-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin"},
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_sparse-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux"}
+]
+torch-spline-conv = [
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_spline_conv-latest+cpu-cp37-cp37m-macosx_10_9_x86_64.whl", platform = "darwin"},
+    { url = "https://pytorch-geometric.com/whl/torch-1.7.0/torch_spline_conv-latest+cu102-cp37-cp37m-linux_x86_64.whl", platform = "linux",  optional = true }
+]
 pytorch-lightning = "^1.1.3"
 wandb = "^0.10.12"
 pyper = { path = "repos/pyper", develop = true }
 torch_persistent_homology = { path = "repos/torch_persistent_homology", develop = true }
 giotto-tda = "^0.4.0"
-
+python-igraph = "^0.8.3"
+networkx = "^2.5"
+scikit-learn = "^0.24.1"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.4"

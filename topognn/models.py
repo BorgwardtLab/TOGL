@@ -91,7 +91,7 @@ class TopologyLayer(torch.nn.Module):
             in_out_dim = self.features_in + self.num_filtrations * self.total_num_coord_funs
 
         self.out = torch.nn.Linear(
-           in_out_dim , features_out)
+            in_out_dim, features_out)
 
     def compute_persistence(self, x, batch):
         """
@@ -225,7 +225,7 @@ class FiltrationGCNModel(pl.LightningModule):
     GCN Model with a Graph Filtration Readout function.
     """
 
-    def __init__(self, hidden_dim, filtration_hidden, num_node_features, num_classes, num_filtrations, num_coord_funs, dim1=False, num_coord_funs1=None, lr=0.001, dropout_p=0.2, set2set = False, set_out_dim = 32):
+    def __init__(self, hidden_dim, filtration_hidden, num_node_features, num_classes, num_filtrations, num_coord_funs, dim1=False, num_coord_funs1=None, lr=0.001, dropout_p=0.2, set2set=False, set_out_dim=32, **kwargs):
         """
         num_filtrations = number of filtration functions
         num_coord_funs = number of different coordinate function
@@ -233,9 +233,25 @@ class FiltrationGCNModel(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.conv1 = GCNConv(num_node_features, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, hidden_dim)
-        self.topo1 = TopologyLayer(hidden_dim, hidden_dim, num_filtrations=num_filtrations,
-                                   num_coord_funs=num_coord_funs, filtration_hidden=filtration_hidden, dim1=dim1, num_coord_funs1=num_coord_funs1, set2set = set2set, set_out_dim = set_out_dim)
+        # self.conv2 = GCNConv(hidden_dim, hidden_dim)
+
+        coord_funs = {"Triangle_transform": num_coord_funs,
+                      "Gaussian_transform": num_coord_funs,
+                      "Line_transform": num_coord_funs,
+                      "RationalHat_transform": num_coord_funs
+                      }
+
+        coord_funs1 = {"Triangle_transform": num_coord_funs1,
+                       "Gaussian_transform": num_coord_funs1,
+                       "Line_transform": num_coord_funs1,
+                       "RationalHat_transform": num_coord_funs1
+                       }
+        self.topo1 = TopologyLayer(
+            hidden_dim, hidden_dim, num_filtrations=num_filtrations,
+            num_coord_funs=coord_funs, filtration_hidden=filtration_hidden,
+            dim1=dim1, num_coord_funs1=coord_funs1, set2set=set2set,
+            set_out_dim=set_out_dim
+        )
         self.conv3 = GCNConv(hidden_dim, hidden_dim)
 
         self.set2set = set2set
@@ -246,7 +262,7 @@ class FiltrationGCNModel(pl.LightningModule):
                 cycles_dim = set_out_dim * num_filtrations
             else:
                 cycles_dim = num_filtrations * \
-                np.array(list(num_coord_funs1.values())).sum()
+                    np.array(list(num_coord_funs1.values())).sum()
         else:
             cycles_dim = 0
 
@@ -336,6 +352,22 @@ class FiltrationGCNModel(pl.LightningModule):
         self.accuracy_test(y_hat, y)
         self.log("test_acc", self.accuracy_test, on_epoch=True)
 
+    @classmethod
+    def add_model_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent])
+        parser.add_argument('--hidden_dim', type=int, default=34)
+        parser.add_argument('--filtration_hidden', type=int, default=15)
+        parser.add_argument('--num_filtrations', type=int, default=2)
+        parser.add_argument('--dim1', type=bool, default=False)
+        parser.add_argument('--num_coord_funs', type=int, default=3)
+        parser.add_argument('--num_coord_funs1', type=int, default=3)
+        parser.add_argument('--lr', type=float, default=0.005)
+        parser.add_argument('--dropout_p', type=int, default=0.2)
+        parser.add_argument('--set2set', type=bool, default=False)
+        parser.add_argument('--set_out_dim', type=int, default=32)
+        return parser
+
 
 
 
@@ -343,33 +375,33 @@ class FiltrationGCNModel(pl.LightningModule):
 
 
 class GCNModel(pl.LightningModule):
-    def __init__(self, hidden_dim, num_node_features, num_classes, lr=0.001, dropout_p=0.2, GIN = False, set2set = False):
+    def __init__(self, hidden_dim, num_node_features, num_classes, lr=0.001, dropout_p=0.2, GIN = False, set2set = False, **kwargs):
+
         super().__init__()
         self.save_hyperparameters()
 
-
         if GIN:
-            
-            gin_net1 = torch.nn.Sequential(torch.nn.Linear(num_node_features,hidden_dim),
-                                            torch.nn.ReLU(),
-                                            torch.nn.Linear(hidden_dim,hidden_dim))
-            
-            gin_net2 = torch.nn.Sequential(torch.nn.Linear(hidden_dim,hidden_dim),
-                                            torch.nn.ReLU(),
-                                            torch.nn.Linear(hidden_dim,hidden_dim))
-            
-            self.conv1 = GINConv(nn = gin_net1)
-            self.conv3 = GINConv(nn = gin_net2)
+
+            gin_net1 = torch.nn.Sequential(torch.nn.Linear(num_node_features, hidden_dim),
+                                           torch.nn.ReLU(),
+                                           torch.nn.Linear(hidden_dim, hidden_dim))
+
+            gin_net2 = torch.nn.Sequential(torch.nn.Linear(hidden_dim, hidden_dim),
+                                           torch.nn.ReLU(),
+                                           torch.nn.Linear(hidden_dim, hidden_dim))
+
+            self.conv1 = GINConv(nn=gin_net1)
+            self.conv3 = GINConv(nn=gin_net2)
 
             self.pooling_fun = global_add_pool
 
         else:
             self.conv1 = GCNConv(num_node_features, hidden_dim)
-            self.conv2 = GCNConv(hidden_dim, hidden_dim)
+            # self.conv2 = GCNConv(hidden_dim, hidden_dim)
             self.conv3 = GCNConv(hidden_dim, hidden_dim)
 
-
             self.pooling_fun = global_mean_pool
+
 
 
         if set2set:
@@ -378,6 +410,7 @@ class GCNModel(pl.LightningModule):
         else:
             self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
         
+
 
         self.classif = torch.nn.Sequential(torch.nn.Linear(hidden_dim, hidden_dim),
                                            torch.nn.ReLU(),
@@ -461,6 +494,16 @@ class GCNModel(pl.LightningModule):
         self.accuracy_test(y_hat, y)
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)
+
+    @classmethod
+    def add_model_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent])
+        parser.add_argument("--hidden_dim", type=int, default=34)
+        parser.add_argument("--lr", type=float, default=0.005)
+        parser.add_argument("--dropout_p", type=float, default=0.1)
+        parser.add_argument('--GIN', type=bool, default=False)
+        return parser
 
     # def validation_epoch_end(self,outputs):
     #    self.log("val_acc_epoch", self.accuracy_val.compute())

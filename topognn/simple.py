@@ -42,38 +42,21 @@ def main(args):
         callbacks=[early_stopping_cb, checkpoint_cb]
     )
 
-    if args.dataset == "IMDB-BINARY":
-        add_node_degree = True
-    else:
-        add_node_degree = False
-
     data = topodata.TUGraphDataset(
-        args.dataset, batch_size=32, fold=args.fold, add_node_degree=add_node_degree)
+        args.dataset, batch_size=32, fold=args.fold)
     data.prepare_data()
-
-    num_coord_funs = {"Triangle_transform": args.num_coord_funs,
-                      "Gaussian_transform": args.num_coord_funs,
-                      "Line_transform": args.num_coord_funs,
-                      "RationalHat_transform": args.num_coord_funs
-                      }
-
-    num_coord_funs1 = {"Triangle_transform": args.num_coord_funs1,
-                       "Gaussian_transform": args.num_coord_funs1,
-                       "Line_transform": args.num_coord_funs1,
-                       "RationalHat_transform": args.num_coord_funs1
-                       }
 
     model = models.FiltrationGCNModel(hidden_dim=args.hidden_dim,
                                       filtration_hidden=args.filtration_hidden,
                                       num_node_features=data.node_attributes,
                                       num_classes=data.num_classes,
                                       num_filtrations=args.num_filtrations,
-                                      num_coord_funs=num_coord_funs,
+                                      num_coord_funs=args.num_coord_funs,
                                       dim1=args.dim1,
-                                      num_coord_funs1=num_coord_funs1,
+                                      num_coord_funs1=args.num_coord_funs1,
                                       lr=args.lr,
                                       dropout_p=args.dropout_p,
-                                      set2set = args.set2set)
+                                      set2set=args.set2set)
 
     trainer.fit(model, datamodule=data)
     checkpoint_path = checkpoint_cb.best_model_path
