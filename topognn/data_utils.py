@@ -261,7 +261,7 @@ class GNNBenchmark(pl.LightningDataModule):
             self.num_classes = 2
         elif name == 'CLUSTER':
             self.task = Tasks.NODE_CLASSIFICATION
-            self.num_classes = 5
+            self.num_classes = 6
         else:
             raise RuntimeError('Unsupported dataset')
 
