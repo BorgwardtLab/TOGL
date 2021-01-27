@@ -56,7 +56,7 @@ def main(args):
                 num_node_features=data.node_attributes,
                 num_classes=data.num_classes,
                 dropout_p = args.dropout_p,
-                lr = args.lr)
+                lr = args.lr, set2set = args.set2set)
 
 
     trainer.fit(model, datamodule=data)
@@ -89,12 +89,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Topo GNN")
     parser.add_argument("--type",type=str,default = "GCN")
     parser.add_argument("--num_filtrations",type = int, default = 2)
-    parser.add_argument("--hidden_dim",type=int, default = 34)
+    parser.add_argument("--hidden_dim",type=int, default = 32)
     parser.add_argument("--lr",type=float, default = 0.005)
     parser.add_argument("--dropout_p",type=float, default = 0.1)
     parser.add_argument("--max_epochs",type=int,default = 1000)
     parser.add_argument("--dataset",type=str, default = "ENZYMES")
     parser.add_argument("--fold",type=int, default = 0)
+    parser.add_argument("--set2set",type=bool,default = False)
     
     args = parser.parse_args()
 

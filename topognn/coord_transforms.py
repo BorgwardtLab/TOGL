@@ -21,6 +21,28 @@ class Triangle_transform(nn.Module):
 
         return torch.nn.functional.relu( x[:,1][:,None] - torch.abs(self.t_param-x[:,0][:,None] ) )
 
+def batch_to_tensor(batch, external_tensor, attribute = 'x'):
+    """
+    Takes a pytorch geometric batch and returns the data as a regular tensor padded with 0 and the associated mask
+    stacked_tensor [Num graphs, Max num nodes, D]
+    mask [Num_graphs, Max num nodes]
+    """
+
+    batch_list = []
+    idx = batch.__slices__[attribute]
+    
+    for i in range(1,1+len(batch.y)):
+        batch_list.append(external_tensor[idx[i-1]:idx[i]])
+
+    stacked_tensor = torch.nn.utils.rnn.pad_sequence(batch_list,batch_first = True)#.permute(1,0,2)
+    mask = torch.zeros(stacked_tensor.shape[:2])
+    
+    for i in range(1, 1+len(batch.y)):
+        mask[i-1,:(idx[i]-idx[i-1])] = 1
+
+    mask_zeros = (stacked_tensor!=0).any(2)
+    return stacked_tensor, mask.to(bool), mask_zeros.to(bool)
+
 
 class Gaussian_transform(nn.Module):
 
@@ -112,6 +134,7 @@ class MAB(nn.Module):
         """
         mask should be of shape [batch, length]
         """
+
         Q = self.fc_q(Q)
         K, V = self.fc_k(K), self.fc_v(K)
 
@@ -147,6 +170,27 @@ class ISAB(nn.Module):
         H = self.mab0(self.I.repeat(X.size(0), 1, 1), X, mask)
         return self.mab1(X, H)
 
+class Set2SetMod(torch.nn.Module):
+    def __init__(self,dim_in,dim_out,num_heads, num_inds):
+        super().__init__()
+        self.set_transform = ISAB(dim_in = dim_in ,
+                            dim_out = dim_out,
+                            num_heads = num_heads,
+                            num_inds = num_inds)
+
+    def forward(self,x,batch, dim1_flag = False):
+
+        if dim1_flag:
+            stacked_tensor, mask, mask_zeros = batch_to_tensor(batch,x, attribute = "edge_index")
+            out_ = self.set_transform(stacked_tensor,mask)
+            out_[mask_zeros] = 0
+            out = out_[mask]
+        else:
+            stacked_tensor, mask, mask_zeros = batch_to_tensor(batch,x)
+            out_ = self.set_transform(stacked_tensor,mask)
+            out = out_[mask]
+
+        return out
 
 
 #mod = ISAB(dim_in = 2, dim_out = 32, num_heads = 4, num_inds = 6, ln = False)

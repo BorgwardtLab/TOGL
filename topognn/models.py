@@ -15,27 +15,6 @@ import topognn.coord_transforms as coord_transforms
 import numpy as np
 
 
-def batch_to_tensor(batch, external_tensor, attribute = 'x'):
-    """
-    Takes a pytorch geometric batch and returns the data as a regular tensor padded with 0 and the associated mask
-    stacked_tensor [Num graphs, Max num nodes, D]
-    mask [Num_graphs, Max num nodes]
-    """
-
-    batch_list = []
-    idx = batch.__slices__[attribute]
-    
-    for i in range(1,1+len(batch.y)):
-        batch_list.append(external_tensor[idx[i-1]:idx[i]])
-
-    stacked_tensor = torch.nn.utils.rnn.pad_sequence(batch_list,batch_first = True)#.permute(1,0,2)
-    mask = torch.zeros(stacked_tensor.shape[:2])
-    
-    for i in range(1, 1+len(batch.y)):
-        mask[i-1,:(idx[i]-idx[i-1])] = 1
-
-    mask_zeros = (stacked_tensor!=0).any(2)
-    return stacked_tensor, mask.to(bool), mask_zeros.to(bool)
 
 
 class TopologyLayer(torch.nn.Module):
@@ -69,17 +48,25 @@ class TopologyLayer(torch.nn.Module):
         self.set2set = set2set
         if self.set2set:
             #NB if we want to have a single set transformer for all filtrations, the dim_in should be 2*num_filtrations.
-            self.set_transformer = coord_transforms.ISAB(dim_in = 2 ,
-                                                     dim_out = set_out_dim,
-                                                     num_heads = 4,
-                                                     num_inds = 256)
+
+            self.set_transformer  = coord_transforms.Set2SetMod(dim_in = 2, dim_out = set_out_dim,
+                                        num_heads = 4, num_inds = 256)
+            
+            #self.set_transformer = coord_transforms.ISAB(dim_in = 2 ,
+            #                                         dim_out = set_out_dim,
+            #                                         num_heads = 4,
+            #                                         num_inds = 256)
 
 
             if self.dim1:
-                self.set_transformer1 = coord_transforms.ISAB(dim_in = 2 ,
-                                                     dim_out = set_out_dim,
-                                                     num_heads = 4,
-                                                     num_inds = 256)
+                self.set_transformer1 = coord_transforms.Set2SetMod(dim_in = 2, dim_out = set_out_dim,
+                                        num_heads = 4, num_inds = 256)
+
+
+                #coord_transforms.ISAB(dim_in = 2 ,
+                #                                     dim_out = set_out_dim,
+                #                                     num_heads = 4,
+                #                                     num_inds = 256)
 
 
         if self.dim1:
@@ -161,28 +148,14 @@ class TopologyLayer(torch.nn.Module):
         """
         if dim1:
             if self.set2set:
-                persistence = persistence.unsqueeze(0) # remove if one set2set for each filtration
-
-                persistence = persistence.permute(1,0,2).reshape(-1,persistence.shape[0]*2)
-                stacked_tensor, mask, mask_zeros = batch_to_tensor(batch, persistence, attribute = "edge_index")
-                coord_activation = self.set_transformer1(stacked_tensor,mask_zeros)
-                coord_activation[mask_zeros] = 0
-                coord_activation = coord_activation[mask]
+                coord_activation = self.set_transformer1(persistence,batch, dim1_flag = True)
             else:
                 coord_activation = torch.cat(
                 [mod.forward(persistence) for mod in self.coord_fun_modules1], 1)
         else:
             
             if self.set2set:
-                
-                persistence = persistence.unsqueeze(0) #remove if one set2set for each filtration
-
-                # expand along the last dimension.
-                persistence = persistence.permute(1,0,2).reshape(-1,persistence.shape[0]*2)
-                #return as stacked tensor
-                stacked_tensor, mask, mask_zeros = batch_to_tensor(batch, persistence)
-                #compute coordinate activations of each node and map back to flatten version.
-                coord_activation = self.set_transformer(stacked_tensor,mask)[mask]
+                coord_activation = self.set_transformer(persistence,batch)
             else:
                 coord_activation = torch.cat(
                     [mod.forward(persistence) for mod in self.coord_fun_modules], 1)
@@ -195,10 +168,7 @@ class TopologyLayer(torch.nn.Module):
         Output dims : list of length number of filtrations with elements : [N_graphs in batch, number fo coordinate functions]
         """
 
-        #if self.set2set:
-        #    coord_activations = self.compute_coord_fun(persistences,batch= batch, dim1 = dim1)
-        #    return coord_activations
-        #else:
+
         coord_activations = [self.compute_coord_fun(
         persistence, batch = batch, dim1=dim1) for persistence in persistences]
         return torch.cat(coord_activations, 1)
@@ -239,6 +209,7 @@ class TopologyLayer(torch.nn.Module):
             # TODO potential save here by only computing the activation on the masked persistences
             coord_activations1 = self.compute_coord_activations(
                 persistences1, batch, dim1=True)
+
 
             graph_activations1 = self.collapse_dim1(coord_activations1, persistence1_mask, batch.__slices__[
                 "edge_index"])  # returns a vector for each graph
@@ -366,8 +337,13 @@ class FiltrationGCNModel(pl.LightningModule):
         self.log("test_acc", self.accuracy_test, on_epoch=True)
 
 
+
+
+
+
+
 class GCNModel(pl.LightningModule):
-    def __init__(self, hidden_dim, num_node_features, num_classes, lr=0.001, dropout_p=0.2, GIN = False):
+    def __init__(self, hidden_dim, num_node_features, num_classes, lr=0.001, dropout_p=0.2, GIN = False, set2set = False):
         super().__init__()
         self.save_hyperparameters()
 
@@ -396,7 +372,12 @@ class GCNModel(pl.LightningModule):
             self.pooling_fun = global_mean_pool
 
 
-        self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
+        if set2set:
+            self.fake_topo = coord_transforms.Set2SetMod(dim_in = hidden_dim, dim_out = hidden_dim, num_heads = 4, num_inds = 256)
+
+        else:
+            self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
+        
 
         self.classif = torch.nn.Sequential(torch.nn.Linear(hidden_dim, hidden_dim),
                                            torch.nn.ReLU(),
@@ -412,6 +393,8 @@ class GCNModel(pl.LightningModule):
 
         self.dropout_p = dropout_p
 
+        self.set2set = set2set
+
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
@@ -422,7 +405,11 @@ class GCNModel(pl.LightningModule):
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout_p, training=self.training)
 
-        x = self.fake_topo(x)
+        if self.set2set:
+            x = self.fake_topo(x,data)
+        else:
+            x = self.fake_topo(x)
+
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout_p, training=self.training)
 
@@ -432,7 +419,7 @@ class GCNModel(pl.LightningModule):
 
         x_out = self.classif(x)
 
-        return x
+        return x_out
 
     def training_step(self, batch, batch_idx):
         y = batch.y
