@@ -8,6 +8,7 @@ from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_po
 
 from torch_geometric.data import DataLoader, Batch, Data
 
+from topognn import Tasks
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
@@ -393,14 +394,24 @@ class GCNModel(pl.LightningModule):
             self.conv1 = GINConv(nn=gin_net1)
             self.conv3 = GINConv(nn=gin_net2)
 
-            self.pooling_fun = global_add_pool
+            if task is Tasks.GRAPH_CLASSIFICATION:
+                self.pooling_fun = global_add_pool
+            elif task is Tasks.NODE_CLASSIFICATION:
+                def fake_pool(x, batch):
+                    return x
+                self.pooling_fun = fake_pool
 
         else:
             self.conv1 = GCNConv(num_node_features, hidden_dim)
             # self.conv2 = GCNConv(hidden_dim, hidden_dim)
             self.conv3 = GCNConv(hidden_dim, hidden_dim)
 
-            self.pooling_fun = global_mean_pool
+            if task is Tasks.GRAPH_CLASSIFICATION:
+                self.pooling_fun = global_mean_pool
+            elif task is Tasks.NODE_CLASSIFICATION:
+                def fake_pool(x, batch):
+                    return x
+                self.pooling_fun = fake_pool
 
 
 
@@ -456,7 +467,10 @@ class GCNModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         y = batch.y
+        # Flatten to make graph classification the same as node classification
+        y = y.view(-1)
         y_hat = self(batch)
+        y_hat = y_hat.view(-1, y_hat.shape[-1])
 
         loss = self.loss(y_hat, y)
 
@@ -471,7 +485,10 @@ class GCNModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         y = batch.y
+        # Flatten to make graph classification the same as node classification
+        y = y.view(-1)
         y_hat = self(batch)
+        y_hat = y_hat.view(-1, y_hat.shape[-1])
 
         loss = self.loss(y_hat, y)
 
