@@ -11,4 +11,4 @@ for file in `ls $1/G_*.txt`; do
   $TOOL $file $2
 done
 
-persistence_diagram_statistics -p 1 /tmp/G_*_d?.txt
+persistence_diagram_statistics -p 1 /tmp/G_*_d*.txt
