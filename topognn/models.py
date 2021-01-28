@@ -1,6 +1,7 @@
 import argparse
 import math
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 import pytorch_lightning as pl
@@ -12,6 +13,8 @@ from torch_geometric.data import DataLoader, Batch, Data
 from topognn import Tasks
 from topognn.cli_utils import str2bool
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
+from topognn.layers import GCNLayer, GINLayer
+from topognn.metrics import WeightedAccuracy
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
 import topognn.coord_transforms as coord_transforms
@@ -522,7 +525,157 @@ class GCNModel(pl.LightningModule):
         parser.add_argument("--lr", type=float, default=0.005)
         parser.add_argument("--dropout_p", type=float, default=0.1)
         parser.add_argument('--GIN', type=str2bool, default=False)
+        parser.add_argument('--set2set', type=str2bool, default=False)
         return parser
 
     # def validation_epoch_end(self,outputs):
     #    self.log("val_acc_epoch", self.accuracy_val.compute())
+
+
+class LargerGCNModel(pl.LightningModule):
+    def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
+                 lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
+                 batch_norm=False, residual=False, train_eps=True, **kwargs):
+        super().__init__()
+        self.save_hyperparameters()
+        self.embedding = torch.nn.Linear(num_node_features, hidden_dim)
+
+        if GIN:
+            def build_gnn_layer():
+                return GINLayer(hidden_dim, hidden_dim, train_eps=train_eps)
+            graph_pooling_operation = global_add_pool
+        else:
+            def build_gnn_layer():
+                return GCNLayer(
+                    hidden_dim, hidden_dim, F.relu, dropout_p, batch_norm)
+            graph_pooling_operation = global_mean_pool
+
+        self.layers = nn.ModuleList([
+            build_gnn_layer() for _ in range(depth)])
+
+        if task is Tasks.GRAPH_CLASSIFICATION:
+            self.pooling_fun = graph_pooling_operation
+        elif task is Tasks.NODE_CLASSIFICATION:
+            def fake_pool(x, batch):
+                return x
+            self.pooling_fun = fake_pool
+        else:
+            raise RuntimeError('Unsupported task.')
+
+        self.classif = torch.nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 4, num_classes)
+        )
+
+        if task is Tasks.GRAPH_CLASSIFICATION:
+            self.accuracy = pl.metrics.Accuracy()
+            self.accuracy_val = pl.metrics.Accuracy()
+            self.accuracy_test = pl.metrics.Accuracy()
+            self.loss = torch.nn.CrossEntropyLoss()
+        elif task is Tasks.NODE_CLASSIFICATION:
+            self.accuracy = WeightedAccuracy()
+            self.accuracy_val = WeightedAccuracy()
+            self.accuracy_test = WeightedAccuracy()
+
+            def weighted_loss(pred, label):
+                # calculating label weights for weighted loss computation
+                with torch.no_grad():
+                    n_classes = pred.shape[1]
+                    V = label.size(0)
+                    label_count = torch.bincount(label)
+                    label_count = label_count[label_count.nonzero(
+                        as_tuple=True)].squeeze()
+                    cluster_sizes = torch.zeros(
+                        n_classes, dtype=torch.long, device=pred.device)
+                    cluster_sizes[torch.unique(label)] = label_count
+                    weight = (V - cluster_sizes).float() / V
+                    weight *= (cluster_sizes > 0).float()
+                return F.cross_entropy(pred, label, weight)
+
+            self.loss = weighted_loss
+
+        self.lr = lr
+        self.dropout_p = dropout_p
+
+    def configure_optimizers(self):
+        """Reduce learning rate if val_loss doesnt improve."""
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.5, patience=10,
+            min_lr=self.lr / 100
+        )
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': scheduler,
+            'monitor': 'val_loss'
+        }
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.embedding(x)
+
+        for layer in self.layers:
+            x = layer(x, edge_index=edge_index, data=data)
+
+        x = self.pooling_fun(x, data.batch)
+        x = self.classif(x)
+
+        return x
+
+    def training_step(self, batch, batch_idx):
+        y = batch.y
+        # Flatten to make graph classification the same as node classification
+        y = y.view(-1)
+        y_hat = self(batch)
+        y_hat = y_hat.view(-1, y_hat.shape[-1])
+
+        loss = self.loss(y_hat, y)
+
+        self.accuracy(y_hat, y)
+
+        self.log("train_loss", loss, on_step=True, on_epoch=True)
+        self.log("train_acc", self.accuracy, on_step=True, on_epoch=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        y = batch.y
+        # Flatten to make graph classification the same as node classification
+        y = y.view(-1)
+        y_hat = self(batch)
+        y_hat = y_hat.view(-1, y_hat.shape[-1])
+
+        loss = self.loss(y_hat, y)
+
+        self.accuracy_val(y_hat, y)
+        self.log("val_loss", loss)
+
+        self.log("val_acc", self.accuracy_val, on_epoch=True)
+
+    def test_step(self, batch, batch_idx):
+
+        y = batch.y
+        y_hat = self(batch)
+
+        loss = self.loss(y_hat, y)
+        self.log("test_loss", loss, on_epoch=True)
+
+        self.accuracy_test(y_hat, y)
+
+        self.log("test_acc", self.accuracy_test, on_epoch=True)
+
+    @ classmethod
+    def add_model_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent])
+        parser.add_argument("--hidden_dim", type=int, default=146)
+        parser.add_argument("--depth", type=int, default=4)
+        parser.add_argument("--lr", type=float, default=0.001)
+        parser.add_argument("--dropout_p", type=float, default=0.0)
+        parser.add_argument('--GIN', type=str2bool, default=False)
+        parser.add_argument('--set2set', type=str2bool, default=False)
+        parser.add_argument('--batch_norm', type=str2bool, default=True)
+        parser.add_argument('--residual', type=str2bool, default=True)
+        return parser
