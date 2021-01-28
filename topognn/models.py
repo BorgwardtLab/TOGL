@@ -521,7 +521,7 @@ class GCNModel(pl.LightningModule):
         parser.add_argument("--hidden_dim", type=int, default=34)
         parser.add_argument("--lr", type=float, default=0.005)
         parser.add_argument("--dropout_p", type=float, default=0.1)
-        parser.add_argument('--GIN', type=bool, default=False)
+        parser.add_argument('--GIN', type=str2bool, default=False)
         return parser
 
     # def validation_epoch_end(self,outputs):

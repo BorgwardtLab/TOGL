@@ -9,6 +9,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from topognn import Tasks
 import topognn.models as models
 import topognn.data_utils as topodata
 
@@ -60,6 +61,7 @@ def main(args):
     model = models.GCNModel(hidden_dim=args.hidden_dim,
                 num_node_features=data.node_attributes,
                 num_classes=data.num_classes,
+                task = Tasks.GRAPH_CLASSIFICATION,
                 dropout_p = args.dropout_p,
                 lr = args.lr, GIN = args.GIN)
 

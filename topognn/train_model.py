@@ -98,6 +98,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, choices=MODEL_MAP.keys())
     parser.add_argument('--dataset', type=str, choices=DATASET_MAP.keys())
     parser.add_argument('--max_epochs', type=int, default=1000)
+    parser.add_argument('--dummy_var',type=int,default = 0)
     partial_args, _ = parser.parse_known_args()
 
     if partial_args.model is None or partial_args.dataset is None:
