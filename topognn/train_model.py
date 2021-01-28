@@ -22,6 +22,7 @@ DATASET_MAP = {
     'IMDB-BINARY': datasets.IMDB_Binary,
     'PROTEINS': datasets.Proteins,
     'ENZYMES': datasets.Enzymes,
+    'DD': datasets.DD,
     'MNIST': datasets.MNIST,
     'CIFAR10': datasets.CIFAR10,
     'PATTERN': datasets.PATTERN,

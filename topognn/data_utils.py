@@ -240,6 +240,9 @@ class Enzymes(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='ENZYMES', **kwargs)
 
+class DD(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='DD', **kwargs)
 
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
