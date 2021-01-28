@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Train a model."""
+"""Train a model using the same routine as used in the GNN Benchmarks dataset."""
 import argparse
 import sys
 
@@ -8,25 +8,9 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
+from pytorch_lightning.callbacks import LearningRateMonitor
 
-import topognn.models as models
-import topognn.data_utils as datasets
-
-MODEL_MAP = {
-    'TopoGNN': models.FiltrationGCNModel,
-    'GCN': models.GCNModel,
-    'LargerGCN': models.LargerGCNModel
-}
-
-DATASET_MAP = {
-    'IMDB-BINARY': datasets.IMDB_Binary,
-    'PROTEINS': datasets.Proteins,
-    'ENZYMES': datasets.Enzymes,
-    'MNIST': datasets.MNIST,
-    'CIFAR10': datasets.CIFAR10,
-    'PATTERN': datasets.PATTERN,
-    'CLUSTER': datasets.CLUSTER
-}
+from topognn.train_model import MODEL_MAP, DATASET_MAP
 
 
 def main(model_cls, dataset_cls, args):
@@ -51,11 +35,13 @@ def main(model_cls, dataset_cls, args):
         log_model=True,
         tags=[args.model, args.dataset]
     )
-    early_stopping_cb = EarlyStopping(monitor="val_acc", patience=100)
+    lr_monitor = LearningRateMonitor('epoch')
+    early_stopping_cb = EarlyStopping(monitor="val_loss", patience=30)
+
     checkpoint_cb = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
-        monitor='val_acc',
-        mode='max',
+        monitor='val_loss',
+        mode='min',
         verbose=True
     )
 
@@ -65,7 +51,7 @@ def main(model_cls, dataset_cls, args):
         logger=wandb_logger,
         log_every_n_steps=5,
         max_epochs=args.max_epochs,
-        callbacks=[early_stopping_cb, checkpoint_cb]
+        callbacks=[early_stopping_cb, checkpoint_cb, lr_monitor]
     )
     trainer.fit(model, datamodule=dataset)
     checkpoint_path = checkpoint_cb.best_model_path
