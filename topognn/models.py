@@ -14,6 +14,7 @@ from topognn import Tasks
 from topognn.cli_utils import str2bool
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
 from topognn.layers import GCNLayer, GINLayer
+from topognn.metrics import WeightedAccuracy
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
 import topognn.coord_transforms as coord_transforms
@@ -569,15 +570,34 @@ class LargerGCNModel(pl.LightningModule):
             nn.Linear(hidden_dim // 4, num_classes)
         )
 
-        self.loss = torch.nn.CrossEntropyLoss()
-
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
             self.accuracy_val = pl.metrics.Accuracy()
             self.accuracy_test = pl.metrics.Accuracy()
+            self.loss = torch.nn.CrossEntropyLoss()
         elif task is Tasks.NODE_CLASSIFICATION:
-            # TODO: Implement other evaluation metrics
-            raise NotImplementedError()
+            self.accuracy = WeightedAccuracy()
+            self.accuracy_val = WeightedAccuracy()
+            self.accuracy_test = WeightedAccuracy()
+
+            def weighted_loss(pred, label):
+                # calculating label weights for weighted loss computation
+                with torch.no_grad():
+                    n_classes = pred.shape[1]
+                    V = label.size(0)
+                    label_count = torch.bincount(label)
+                    import ipdb
+                    ipdb.set_trace()
+                    label_count = label_count[label_count.nonzero(
+                        as_tuple=True)].squeeze()
+                    cluster_sizes = torch.zeros(
+                        n_classes, dtype=torch.long, device=pred.device)
+                    cluster_sizes[torch.unique(label)] = label_count
+                    weight = (V - cluster_sizes).float() / V
+                    weight *= (cluster_sizes > 0).float()
+                return F.cross_entropy(pred, label, weight)
+
+            self.loss = weighted_loss
 
         self.lr = lr
         self.dropout_p = dropout_p
