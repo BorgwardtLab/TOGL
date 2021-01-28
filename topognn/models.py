@@ -586,8 +586,6 @@ class LargerGCNModel(pl.LightningModule):
                     n_classes = pred.shape[1]
                     V = label.size(0)
                     label_count = torch.bincount(label)
-                    import ipdb
-                    ipdb.set_trace()
                     label_count = label_count[label_count.nonzero(
                         as_tuple=True)].squeeze()
                     cluster_sizes = torch.zeros(
