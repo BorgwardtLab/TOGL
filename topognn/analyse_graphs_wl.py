@@ -1,13 +1,29 @@
 """Analyse set of graphs using Weisfeiler--Lehman feature iteration."""
 
 import argparse
+import pickle
+import torch
 
 import igraph as ig
 import numpy as np
 
-
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.metrics import accuracy_score
 from sklearn.metrics.pairwise import euclidean_distances
+
 from weisfeiler_lehman import WeisfeilerLehman
+
+
+def build_graph_from_edge_list(edge_list):
+    """Build graph from edge list and return it."""
+    n_vertices = edge_list.max().numpy() + 1
+    g = ig.Graph(n_vertices)
+
+    for u, v in edge_list.numpy().transpose():
+        g.add_edge(u, v)
+
+    g.vs['label'] = g.degree()
+    return g
 
 
 if __name__ == '__main__':
@@ -20,6 +36,16 @@ if __name__ == '__main__':
         type=int,
         help='Number of iterations for the Weisfeiler--Lehman algorithm'
     )
+    parser.add_argument(
+        '-p', '--pickle',
+        action='store_true',
+        help='If set, loads graphs from pickle file'
+    )
+    parser.add_argument(
+        '-l', '--labels',
+        type=str,
+        help='Path to labels'
+    )
 
     args = parser.parse_args()
     H = args.num_iterations
@@ -29,11 +55,24 @@ if __name__ == '__main__':
     # later on.
     graphs = []
 
-    for filename in args.INPUT:
-        g = ig.Graph.Read_Edgelist(filename, directed=False)
-        g.vs['label'] = g.degree()
+    # Ditto for labels, but this is optional.
+    labels = []
 
-        graphs.append(g)
+    if args.labels is not None:
+        labels = torch.load(args.labels).numpy()
+
+    for filename in args.INPUT:
+        if args.pickle:
+            with open(filename, 'rb') as f:
+                x_list, edge_lists = pickle.load(f)
+
+                for edge_list in edge_lists:
+                    graphs.append(build_graph_from_edge_list(edge_list))
+        else:
+            g = ig.Graph.Read_Edgelist(filename, directed=False)
+            g.vs['label'] = g.degree()
+
+            graphs.append(g)
 
     # First analysis step: degree distribution
     #
@@ -89,3 +128,7 @@ if __name__ == '__main__':
 
     distances = euclidean_distances(X)
     print(np.mean(distances))
+
+    clf = LogisticRegressionCV(Cs=10, cv=10)
+    clf.fit(X, labels)
+    print(clf.score(X, labels))
