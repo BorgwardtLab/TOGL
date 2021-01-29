@@ -15,6 +15,9 @@ from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.svm import SVC
 
 
+from weisfeiler_lehman import WeisfeilerLehman
+
+
 def build_graph_from_edge_list(edge_list):
     """Build graph from edge list and return it."""
     n_vertices = edge_list.max().numpy() + 1
@@ -36,11 +39,18 @@ if __name__ == '__main__':
         type=str,
         help='Path to labels'
     )
+    parser.add_argument(
+        '-H', '--num-iterations',
+        default=3,
+        type=int,
+        help='Number of iterations for the Weisfeiler--Lehman algorithm'
+    )
 
     parser.add_argument('FIRST', type=int, help='First graph to plot')
     parser.add_argument('SECOND', type=int, help='Second graph to plot')
 
     args = parser.parse_args()
+    H = args.num_iterations
 
     # Will contain all graphs in `igraph` format. They will form the
     # basis for the plotting later.
@@ -67,6 +77,20 @@ if __name__ == '__main__':
     if len(labels) != 0:
         print(f'  Labels: {labels[args.FIRST]}/{labels[args.SECOND]}')
 
-    for g in [g1, g2]:
-        layout = g.layout('kk')
-        ig.plot(g, layout=layout)
+    wl = WeisfeilerLehman()
+    label_dicts = wl.fit_transform([g1, g2], num_iterations=H)
+
+    for i, g in enumerate([g1, g2]):
+        for h in label_dicts:
+
+            # We only want the compressed labels here.
+            _, labels = label_dicts[h][i]
+            g.vs['label'] = labels
+
+            print(
+                f'Graph {i + 1} @ iteration {h + 1}: ',
+                np.bincount(labels)
+            )
+
+            layout = g.layout('kk')
+            ig.plot(g, layout=layout, target=f'/tmp/G_{h + 1}_{i}.png')
