@@ -240,13 +240,20 @@ class Enzymes(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='ENZYMES', **kwargs)
 
+
 class DD(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='DD', **kwargs)
 
+
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
+
+
+def add_pos_to_node_features(instance: Data):
+    instance.x = torch.cat([instance.x, instance.pos], axis=-1)
+    return instance
 
 
 class GNNBenchmark(pl.LightningDataModule):
@@ -259,25 +266,30 @@ class GNNBenchmark(pl.LightningDataModule):
         if name in ['MNIST', 'CIFAR10']:
             self.task = Tasks.GRAPH_CLASSIFICATION
             self.num_classes = 10
+            self.transform = add_pos_to_node_features
         elif name == 'PATTERN':
             self.task = Tasks.NODE_CLASSIFICATION
             self.num_classes = 2
+            self.transform = None
         elif name == 'CLUSTER':
             self.task = Tasks.NODE_CLASSIFICATION
             self.num_classes = 6
+            self.transform = None
         else:
             raise RuntimeError('Unsupported dataset')
 
     def prepare_data(self):
         # Just download the data
-        train = GNNBenchmarkDataset(self.root, self.name, split='train')
+        train = GNNBenchmarkDataset(
+            self.root, self.name, split='train', transform=self.transform)
         self.node_attributes = train[0].x.shape[-1]
         GNNBenchmarkDataset(self.root, self.name, split='val')
         GNNBenchmarkDataset(self.root, self.name, split='test')
 
     def train_dataloader(self):
         return DataLoader(
-            GNNBenchmarkDataset(self.root, self.name, split='train'),
+            GNNBenchmarkDataset(
+                self.root, self.name, split='train', transform=self.transform),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -287,7 +299,8 @@ class GNNBenchmark(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            GNNBenchmarkDataset(self.root, self.name, split='val'),
+            GNNBenchmarkDataset(
+                self.root, self.name, split='val', transform=self.transform),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
@@ -297,7 +310,8 @@ class GNNBenchmark(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(
-            GNNBenchmarkDataset(self.root, self.name, split='test'),
+            GNNBenchmarkDataset(
+                self.root, self.name, split='test', transform=self.transform),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
