@@ -14,6 +14,50 @@ from torch_geometric.data import InMemoryDataset
 import itertools
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
+class BenchmarkDataset(InMemoryDataset):
+    def __init__(self, root = DATA_DIR, transform=None, pre_transform=None):
+        super(BenchmarkDataset, self).__init__(root, transform, pre_transform)
+        self.data, self.slices = torch.load(self.processed_paths[0])
+
+    @property
+    def raw_file_names(self):
+        return ['edges.txt','x.txt','e.txt','labels.pt']
+
+    @property
+    def processed_file_names(self):
+        return ['benchmark_data.pt']
+
+    #def download(self):
+    #    # Download to `self.raw_dir`.
+    #    raise("Not Implemented")
+
+    def process(self):
+        # Read data into huge `Data` list.
+        with open(f"{self.root}/edges.txt", "rb") as fp:   # Unpickling
+            edge_list = pickle.load(fp)
+        with open(f"{self.root}/e.txt", "rb") as fp:   # Unpickling
+            e_list = pickle.load(fp)
+        with open(f"{self.root}/x.txt", "rb") as fp:   # Unpickling
+            x_list = pickle.load(fp)
+
+
+        labels = torch.load(f"{self.root}/labels.pt")
+        
+        data_list = [Data(x=x_list[i],
+            edge_index=edge_list[i],
+            edge_attr = e_list[i],
+            y = labels[i][None]) for i in range(len(x_list))]
+            
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
+
+        if self.pre_transform is not None:
+            data_list = [self.pre_transform(data) for data in data_list]
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
+
+
 
 class SyntheticBaseDataset(InMemoryDataset):
     def __init__(self, root = DATA_DIR, transform=None, pre_transform=None):
@@ -156,10 +200,15 @@ class TUGraphDataset(pl.LightningDataModule):
 
     def prepare_data(self):
 
+        if self.name=="PROTEINS_full":
+            cleaned = False
+        else:
+            cleaned = True
+
         dataset = TUDataset(
             root=os.path.join(DATA_DIR, self.name),
             use_node_attr=self.has_node_attributes,
-            cleaned=True,
+            cleaned=cleaned,
             name=self.name,
             transform=self.transform
         )
@@ -235,6 +284,9 @@ class Proteins(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='PROTEINS', **kwargs)
 
+class Proteins_full(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='PROTEINS_full', **kwargs)
 
 class Enzymes(TUGraphDataset):
     def __init__(self, **kwargs):
