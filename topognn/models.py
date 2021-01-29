@@ -576,9 +576,9 @@ class LargerGCNModel(pl.LightningModule):
             self.accuracy_test = pl.metrics.Accuracy()
             self.loss = torch.nn.CrossEntropyLoss()
         elif task is Tasks.NODE_CLASSIFICATION:
-            self.accuracy = WeightedAccuracy()
-            self.accuracy_val = WeightedAccuracy()
-            self.accuracy_test = WeightedAccuracy()
+            self.accuracy = WeightedAccuracy(num_classes)
+            self.accuracy_val = WeightedAccuracy(num_classes)
+            self.accuracy_test = WeightedAccuracy(num_classes)
 
             def weighted_loss(pred, label):
                 # calculating label weights for weighted loss computation

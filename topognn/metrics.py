@@ -1,7 +1,7 @@
 """Implementation of metrics."""
 import torch
 from typing import Any, Callable, Optional
-from pytorch_lightning.metrics import Metric, Accuracy
+from pytorch_lightning.metrics import Metric
 from pytorch_lightning.metrics.functional import confusion_matrix
 from pytorch_lightning.metrics.utils import _input_format_classification
 
@@ -9,6 +9,7 @@ from pytorch_lightning.metrics.utils import _input_format_classification
 class WeightedAccuracy(Metric):
     def __init__(
         self,
+        n_classes,
         threshold: float = 0.5,
         compute_on_step: bool = True,
         dist_sync_on_step: bool = False,
@@ -22,11 +23,13 @@ class WeightedAccuracy(Metric):
             dist_sync_fn=dist_sync_fn,
         )
 
-        self.add_state("correct", default=torch.tensor(0.),
+        self.add_state("correct", default=torch.zeros(n_classes, dtype=int),
                        dist_reduce_fx="sum")
-        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("total", default=torch.zeros(
+            n_classes, dtype=int), dist_reduce_fx="sum")
 
         self.threshold = threshold
+        self.n_classes = n_classes
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         """
@@ -36,19 +39,17 @@ class WeightedAccuracy(Metric):
             preds: Predictions from model
             target: Ground truth values
         """
-
-        nb_classes = preds.shape[1]
+        assert preds.shape[1] == self.n_classes
         preds, target = _input_format_classification(
             preds, target, self.threshold)
         assert preds.shape == target.shape
         CM = confusion_matrix(
-            preds, target, num_classes=nb_classes, normalize='true')
-        n_elements = target.numel()
-        self.correct += torch.mean(torch.diag(CM)) * n_elements
-        self.total += n_elements
+            preds, target, num_classes=self.n_classes)
+        self.correct += torch.diag(CM).long()
+        self.total += torch.bincount(target, minlength=self.n_classes).long()
 
     def compute(self):
         """
         Computes accuracy over state.
         """
-        return self.correct / self.total
+        return (self.correct.float() / self.total.float()).sum() / self.n_classes
