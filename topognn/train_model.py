@@ -15,12 +15,14 @@ import topognn.data_utils as datasets
 MODEL_MAP = {
     'TopoGNN': models.FiltrationGCNModel,
     'GCN': models.GCNModel,
-    'LargerGCN': models.LargerGCNModel
+    'LargerGCN': models.LargerGCNModel,
+    'LargerTopoGNN': models.LargerTopoGNNModel
 }
 
 DATASET_MAP = {
     'IMDB-BINARY': datasets.IMDB_Binary,
     'PROTEINS': datasets.Proteins,
+    'PROTEINS_full':datasets.Proteins_full,
     'ENZYMES': datasets.Enzymes,
     'DD': datasets.DD,
     'MNIST': datasets.MNIST,

@@ -11,51 +11,11 @@ import pickle
 import numpy as np
 from torch_geometric.data import InMemoryDataset
 
+from topognn.cli_utils import str2bool
 import itertools
 from sklearn.model_selection import StratifiedKFold, train_test_split
+import csv
 
-class BenchmarkDataset(InMemoryDataset):
-    def __init__(self, root = DATA_DIR, transform=None, pre_transform=None):
-        super(BenchmarkDataset, self).__init__(root, transform, pre_transform)
-        self.data, self.slices = torch.load(self.processed_paths[0])
-
-    @property
-    def raw_file_names(self):
-        return ['edges.txt','x.txt','e.txt','labels.pt']
-
-    @property
-    def processed_file_names(self):
-        return ['benchmark_data.pt']
-
-    #def download(self):
-    #    # Download to `self.raw_dir`.
-    #    raise("Not Implemented")
-
-    def process(self):
-        # Read data into huge `Data` list.
-        with open(f"{self.root}/edges.txt", "rb") as fp:   # Unpickling
-            edge_list = pickle.load(fp)
-        with open(f"{self.root}/e.txt", "rb") as fp:   # Unpickling
-            e_list = pickle.load(fp)
-        with open(f"{self.root}/x.txt", "rb") as fp:   # Unpickling
-            x_list = pickle.load(fp)
-
-
-        labels = torch.load(f"{self.root}/labels.pt")
-        
-        data_list = [Data(x=x_list[i],
-            edge_index=edge_list[i],
-            edge_attr = e_list[i],
-            y = labels[i][None]) for i in range(len(x_list))]
-            
-        if self.pre_filter is not None:
-            data_list = [data for data in data_list if self.pre_filter(data)]
-
-        if self.pre_transform is not None:
-            data_list = [self.pre_transform(data) for data in data_list]
-
-        data, slices = self.collate(data_list)
-        torch.save((data, slices), self.processed_paths[0])
 
 
 
@@ -198,6 +158,8 @@ class TUGraphDataset(pl.LightningDataModule):
         self.n_splits = n_splits
         self.fold = fold
 
+        self.benchmark_idx = kwargs["benchmark_idx"]
+
     def prepare_data(self):
 
         if self.name=="PROTEINS_full":
@@ -217,22 +179,38 @@ class TUGraphDataset(pl.LightningDataModule):
             else self.max_degree + 1
         )
         self.num_classes = dataset.num_classes
-        n_instances = len(dataset)
+        
+        if self.benchmark_idx:
+            all_idx = {}
+            for section in ['train', 'val', 'test']:
+                with open(os.path.join(DATA_DIR,'Benchmark_idx',self.name+"_"+section+'.index'),'r') as f:
+                    reader = csv.reader(f)
+                    all_idx[section] = [list(map(int, idx)) for idx in reader]
+            train_index = all_idx["train"][self.fold] 
+            val_index = all_idx["val"][self.fold]
+            test_index = all_idx["test"][self.fold]
+        
+        else:
+            n_instances = len(dataset)
 
-        skf = StratifiedKFold(n_splits=self.n_splits,
+            skf = StratifiedKFold(n_splits=self.n_splits,
                               random_state=self.seed, shuffle=True)
 
-        skf_iterator = skf.split(
+            skf_iterator = skf.split(
             [i for i in range(n_instances)], get_label_fromTU(dataset))
 
-        train_index, test_index = next(
+            train_index, test_index = next(
             itertools.islice(skf_iterator, self.fold, None))
-        train_index, val_index = train_test_split(
+            train_index, val_index = train_test_split(
             train_index, random_state=self.seed)
+            
+            train_index = train_index.tolist()
+            val_index = val_index.tolist()
+            test_index = test_index.tolist()
 
-        self.train = Subset(dataset, train_index.tolist())
-        self.val = Subset(dataset, val_index.tolist())
-        self.test = Subset(dataset, test_index.tolist())
+        self.train = Subset(dataset, train_index)
+        self.val = Subset(dataset, val_index)
+        self.test = Subset(dataset, test_index)
 
     def train_dataloader(self):
         return DataLoader(
@@ -272,6 +250,7 @@ class TUGraphDataset(pl.LightningDataModule):
         parser.add_argument('--fold', type=int, default=0)
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
         return parser
 
 

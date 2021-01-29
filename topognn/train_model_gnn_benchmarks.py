@@ -17,7 +17,7 @@ def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
-
+    
     model = model_cls(
         **vars(args),
         num_node_features=dataset.node_attributes,
@@ -36,7 +36,7 @@ def main(model_cls, dataset_cls, args):
         tags=[args.model, args.dataset]
     )
     lr_monitor = LearningRateMonitor('epoch')
-    early_stopping_cb = EarlyStopping(monitor="val_loss", patience=30)
+    early_stopping_cb = EarlyStopping(monitor="val_loss", patience=500)
 
     checkpoint_cb = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
@@ -54,6 +54,9 @@ def main(model_cls, dataset_cls, args):
         callbacks=[early_stopping_cb, checkpoint_cb, lr_monitor]
     )
     trainer.fit(model, datamodule=dataset)
+    test_results = trainer.test(test_dataloaders = dataset.test_dataloader())[0]
+
+    """
     checkpoint_path = checkpoint_cb.best_model_path
     trainer2 = pl.Trainer(logger=False)
 
@@ -74,7 +77,9 @@ def main(model_cls, dataset_cls, args):
         test_dataloaders=dataset.test_dataloader()
     )[0]
 
-    for name, value in {**val_results, **test_results}.items():
+    """
+
+    for name, value in { **test_results}.items():
         wandb_logger.experiment.summary[name] = value
 
 
