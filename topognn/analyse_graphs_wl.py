@@ -132,3 +132,33 @@ if __name__ == '__main__':
     clf = LogisticRegressionCV(Cs=10, cv=10)
     clf.fit(X, labels)
     print(clf.score(X, labels))
+
+    y_pred = clf.predict(X)
+
+    n = 0
+
+    for i, g in enumerate(graphs):
+        indices = np.nonzero(distances[i, :] == 0)
+
+        #if len(indices) != 0 and (labels[indices] != labels[i]).any():
+        #    layout = graphs[i].layout('kk')
+        #    ig.plot(graphs[i], layout=layout)
+
+        for index in indices[0]:
+            if labels[index] != labels[i]:
+                pass
+                #print(index)
+
+                #layout = graphs[index].layout('kk')
+                #ig.plot(graphs[index], layout=layout)
+
+        #print('NEXT GRAPHS')
+
+        distances_other = distances[i, labels != labels[i]]
+        n += np.sum(distances_other == 0)
+
+    print(n // 2)
+
+    #for g in np.asarray(graphs)[y_pred != labels]:
+    #    layout = g.layout('kk')
+    #    ig.plot(g, layout=layout)
