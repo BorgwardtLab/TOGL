@@ -8,9 +8,11 @@ import sys
 import igraph as ig
 import numpy as np
 
-from sklearn.linear_model import LogisticRegressionCV
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.svm import SVC
 
 from weisfeiler_lehman import WeisfeilerLehman
 
@@ -133,19 +135,26 @@ if __name__ == '__main__':
     if args.labels is None:
         sys.exit(0)
 
-    print('Fitting logistic regression (cross-validated) on data...')
+    print('Fitting cross-validated classifier on data...')
 
     scores = []
 
     for i in range(10):
         cv = StratifiedKFold(n_splits=5, shuffle=True)
-        clf = LogisticRegressionCV(Cs=10, cv=cv)
+
+        param_grid = {
+            'C': 10. ** np.arange(-3, 4),  # 10^{-3}..10^{3}
+        }
+
+        # This follows the original WL paper as closely as possible. The
+        # goal is *not* to obtain the highest performance but to show to
+        # what extent deeper iterations help in classifying the graphs.
+        svm = SVC(kernel='linear')
+        clf = GridSearchCV(svm, param_grid, scoring='accuracy')
         clf.fit(X, labels)
 
-        score = clf.score(X, labels)
-        scores.append(score)
-
-        print(f'Iteration {i}: {100 * score:.2f}')
+        scores.append(np.mean(cross_val_score(clf, X, labels, cv=cv)))
+        print(f'Iteration {i}: {100 * scores[-1]:.2f}')
 
     print(f'{100 * np.mean(scores):.2f} +- {100 * np.std(scores):.2f}')
 
