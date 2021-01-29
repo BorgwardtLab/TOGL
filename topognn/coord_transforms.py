@@ -147,7 +147,7 @@ class MAB(nn.Module):
         if mask is not None:
             mask_repeat = mask[:,None,:].repeat(self.num_heads,Q.shape[1],1)
             before_softmax = Q_.bmm(K_.transpose(1,2))/math.sqrt(self.dim_V)
-            before_softmax[mask_repeat==0] = -1e10 
+            before_softmax[~mask_repeat] = -1e10 
         else:
             before_softmax = Q_.bmm(K_.transpose(1,2))/math.sqrt(self.dim_V)
 

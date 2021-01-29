@@ -13,7 +13,7 @@ class GCNLayer(nn.Module):
             nn.BatchNorm1d(out_features) if batch_norm
             else nn.Identity()
         )
-        self.conv = GCNConv(in_features, out_features)
+        self.conv = GCNConv(in_features, out_features, add_self_loops= False)
 
     def forward(self, x, edge_index, **kwargs):
         h = self.conv(x, edge_index)

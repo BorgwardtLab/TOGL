@@ -11,8 +11,12 @@ import pickle
 import numpy as np
 from torch_geometric.data import InMemoryDataset
 
+from topognn.cli_utils import str2bool
 import itertools
 from sklearn.model_selection import StratifiedKFold, train_test_split
+import csv
+
+
 
 
 class SyntheticBaseDataset(InMemoryDataset):
@@ -154,12 +158,19 @@ class TUGraphDataset(pl.LightningDataModule):
         self.n_splits = n_splits
         self.fold = fold
 
+        self.benchmark_idx = kwargs["benchmark_idx"]
+
     def prepare_data(self):
+
+        if self.name=="PROTEINS_full":
+            cleaned = False
+        else:
+            cleaned = True
 
         dataset = TUDataset(
             root=os.path.join(DATA_DIR, self.name),
             use_node_attr=self.has_node_attributes,
-            cleaned=True,
+            cleaned=cleaned,
             name=self.name,
             transform=self.transform
         )
@@ -168,22 +179,38 @@ class TUGraphDataset(pl.LightningDataModule):
             else self.max_degree + 1
         )
         self.num_classes = dataset.num_classes
-        n_instances = len(dataset)
+        
+        if self.benchmark_idx:
+            all_idx = {}
+            for section in ['train', 'val', 'test']:
+                with open(os.path.join(DATA_DIR,'Benchmark_idx',self.name+"_"+section+'.index'),'r') as f:
+                    reader = csv.reader(f)
+                    all_idx[section] = [list(map(int, idx)) for idx in reader]
+            train_index = all_idx["train"][self.fold] 
+            val_index = all_idx["val"][self.fold]
+            test_index = all_idx["test"][self.fold]
+        
+        else:
+            n_instances = len(dataset)
 
-        skf = StratifiedKFold(n_splits=self.n_splits,
+            skf = StratifiedKFold(n_splits=self.n_splits,
                               random_state=self.seed, shuffle=True)
 
-        skf_iterator = skf.split(
+            skf_iterator = skf.split(
             [i for i in range(n_instances)], get_label_fromTU(dataset))
 
-        train_index, test_index = next(
+            train_index, test_index = next(
             itertools.islice(skf_iterator, self.fold, None))
-        train_index, val_index = train_test_split(
+            train_index, val_index = train_test_split(
             train_index, random_state=self.seed)
+            
+            train_index = train_index.tolist()
+            val_index = val_index.tolist()
+            test_index = test_index.tolist()
 
-        self.train = Subset(dataset, train_index.tolist())
-        self.val = Subset(dataset, val_index.tolist())
-        self.test = Subset(dataset, test_index.tolist())
+        self.train = Subset(dataset, train_index)
+        self.val = Subset(dataset, val_index)
+        self.test = Subset(dataset, test_index)
 
     def train_dataloader(self):
         return DataLoader(
@@ -223,6 +250,7 @@ class TUGraphDataset(pl.LightningDataModule):
         parser.add_argument('--fold', type=int, default=0)
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
         return parser
 
 
@@ -235,18 +263,28 @@ class Proteins(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='PROTEINS', **kwargs)
 
+class Proteins_full(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='PROTEINS_full', **kwargs)
 
 class Enzymes(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='ENZYMES', **kwargs)
 
+
 class DD(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='DD', **kwargs)
 
+
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
+
+
+def add_pos_to_node_features(instance: Data):
+    instance.x = torch.cat([instance.x, instance.pos], axis=-1)
+    return instance
 
 
 class GNNBenchmark(pl.LightningDataModule):
@@ -259,25 +297,30 @@ class GNNBenchmark(pl.LightningDataModule):
         if name in ['MNIST', 'CIFAR10']:
             self.task = Tasks.GRAPH_CLASSIFICATION
             self.num_classes = 10
+            self.transform = add_pos_to_node_features
         elif name == 'PATTERN':
             self.task = Tasks.NODE_CLASSIFICATION
             self.num_classes = 2
+            self.transform = None
         elif name == 'CLUSTER':
             self.task = Tasks.NODE_CLASSIFICATION
             self.num_classes = 6
+            self.transform = None
         else:
             raise RuntimeError('Unsupported dataset')
 
     def prepare_data(self):
         # Just download the data
-        train = GNNBenchmarkDataset(self.root, self.name, split='train')
+        train = GNNBenchmarkDataset(
+            self.root, self.name, split='train', transform=self.transform)
         self.node_attributes = train[0].x.shape[-1]
         GNNBenchmarkDataset(self.root, self.name, split='val')
         GNNBenchmarkDataset(self.root, self.name, split='test')
 
     def train_dataloader(self):
         return DataLoader(
-            GNNBenchmarkDataset(self.root, self.name, split='train'),
+            GNNBenchmarkDataset(
+                self.root, self.name, split='train', transform=self.transform),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -287,7 +330,8 @@ class GNNBenchmark(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            GNNBenchmarkDataset(self.root, self.name, split='val'),
+            GNNBenchmarkDataset(
+                self.root, self.name, split='val', transform=self.transform),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
@@ -297,7 +341,8 @@ class GNNBenchmark(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(
-            GNNBenchmarkDataset(self.root, self.name, split='test'),
+            GNNBenchmarkDataset(
+                self.root, self.name, split='test', transform=self.transform),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
