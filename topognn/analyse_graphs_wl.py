@@ -3,12 +3,13 @@
 import argparse
 import pickle
 import torch
+import sys
 
 import igraph as ig
 import numpy as np
 
 from sklearn.linear_model import LogisticRegressionCV
-from sklearn.metrics import accuracy_score
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics.pairwise import euclidean_distances
 
 from weisfeiler_lehman import WeisfeilerLehman
@@ -124,14 +125,29 @@ if __name__ == '__main__':
     # Norm distribution of all vectors; not sure whether this will be
     # useful.
     norms = np.sqrt(np.sum(np.abs(X)**2, axis=-1))
-    print(norms)
+    print(f'Norm distribution of WL feature vectors: {norms}')
 
     distances = euclidean_distances(X)
-    print(np.mean(distances))
+    print(f'Mean distance between WL feature vectors: {np.mean(distances)}')
 
-    clf = LogisticRegressionCV(Cs=10, cv=10)
-    clf.fit(X, labels)
-    print(clf.score(X, labels))
+    if args.labels is None:
+        sys.exit(0)
+
+    print('Fitting logistic regression (cross-validated) on data...')
+
+    scores = []
+
+    for i in range(10):
+        cv = StratifiedKFold(n_splits=5, shuffle=True)
+        clf = LogisticRegressionCV(Cs=10, cv=cv)
+        clf.fit(X, labels)
+
+        score = clf.score(X, labels)
+        scores.append(score)
+
+        print(f'Iteration {i}: {100 * score:.2f}')
+
+    print(f'{100 * np.mean(scores):.2f} +- {100 * np.std(scores):.2f}')
 
     y_pred = clf.predict(X)
 
