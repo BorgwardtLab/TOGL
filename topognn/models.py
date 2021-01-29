@@ -598,20 +598,26 @@ class LargerGCNModel(pl.LightningModule):
             self.loss = weighted_loss
 
         self.lr = lr
+
+        self.lr_patience = kwargs["lr_patience"]
+
+        self.min_lr = kwargs["min_lr"]
+
+
+
         self.dropout_p = dropout_p
 
     def configure_optimizers(self):
         """Reduce learning rate if val_loss doesnt improve."""
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.5, patience=10,
-            min_lr=self.lr / 100
-        )
-        return {
-            'optimizer': optimizer,
-            'lr_scheduler': scheduler,
-            'monitor': 'val_loss'
-        }
+        scheduler =  {'scheduler':torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=0.5, patience=self.lr_patience,
+            min_lr=self.min_lr),
+            "monitor":"val_loss",
+            "frequency":1,
+            "interval":"epoch"}
+
+        return [optimizer], [scheduler]
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -650,7 +656,8 @@ class LargerGCNModel(pl.LightningModule):
         loss = self.loss(y_hat, y)
 
         self.accuracy_val(y_hat, y)
-        self.log("val_loss", loss)
+
+        self.log("val_loss", loss, on_epoch = True)
 
         self.log("val_acc", self.accuracy_val, on_epoch=True)
 
@@ -673,6 +680,8 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument("--hidden_dim", type=int, default=146)
         parser.add_argument("--depth", type=int, default=4)
         parser.add_argument("--lr", type=float, default=0.001)
+        parser.add_argument("--lr_patience", type=int, default=10)
+        parser.add_argument("--min_lr", type=float, default=0.00001)
         parser.add_argument("--dropout_p", type=float, default=0.0)
         parser.add_argument('--GIN', type=str2bool, default=False)
         parser.add_argument('--set2set', type=str2bool, default=False)
