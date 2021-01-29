@@ -77,22 +77,6 @@ if __name__ == '__main__':
 
             graphs.append(g)
 
-    # First analysis step: degree distribution
-    #
-    # The idea is to obtain a mean degree distribution that does not
-    # depend on the number of cycles.
-    X = []
-
-    for g in graphs:
-        degrees = g.degree()
-        X.append(np.bincount(degrees))
-
-    X = np.asarray(X)
-
-    print('Mean degree', np.mean(X, axis=0))
-
-    # Second analysis step: Weisfeiler--Lehman feature vectors
-    #
     # The idea is to show that the feature vectors are the same between
     # two distributions of graphs (or require more steps than warranted
     # as the cycle length increases).
@@ -116,7 +100,6 @@ if __name__ == '__main__':
         X.append(x)
 
     # Ensure that all feature vectors have the same length.
-
     L = 0
     for x in X:
         L = max(L, len(x))
