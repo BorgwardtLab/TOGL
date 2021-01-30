@@ -162,7 +162,7 @@ class TUGraphDataset(pl.LightningDataModule):
 
     def prepare_data(self):
 
-        if self.name=="PROTEINS_full":
+        if self.name=="PROTEINS_full" or self.name == "ENZYMES":
             cleaned = False
         else:
             cleaned = True
