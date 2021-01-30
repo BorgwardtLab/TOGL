@@ -17,7 +17,10 @@ def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
-    
+   
+    if args.set2set:
+        raise("Aborting set2set runs")
+
     model = model_cls(
         **vars(args),
         num_node_features=dataset.node_attributes,

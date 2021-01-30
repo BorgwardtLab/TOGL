@@ -28,7 +28,9 @@ DATASET_MAP = {
     'MNIST': datasets.MNIST,
     'CIFAR10': datasets.CIFAR10,
     'PATTERN': datasets.PATTERN,
-    'CLUSTER': datasets.CLUSTER
+    'CLUSTER': datasets.CLUSTER,
+    'Necklaces': datasets.Necklaces,
+    'Cycles':datasets.Cycles
 }
 
 

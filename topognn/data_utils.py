@@ -58,7 +58,7 @@ class SyntheticDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree=False):
+                 val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree=False, **kwargs):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -123,6 +123,16 @@ class SyntheticDataset(pl.LightningDataModule):
             pin_memory=True
         )
 
+    @classmethod
+    def add_dataset_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser.add_argument('--use_node_attributes', type=bool, default=True)
+        #parser.add_argument('--fold', type=int, default=0)
+        parser.add_argument('--seed', type=int, default=42)
+        parser.add_argument('--batch_size', type=int, default=32)
+        #parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
+        return parser
 
 def get_label_fromTU(dataset):
     labels = []
@@ -135,7 +145,7 @@ class TUGraphDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, fold=0, seed=42, num_workers=0, n_splits=5, **kwargs):
+                 val_fraction=0.1, test_fraction=0.1, fold=0, seed=42, num_workers=2, n_splits=5, **kwargs):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -280,6 +290,14 @@ class DD(TUGraphDataset):
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
+
+class Cycles(SyntheticDataset):
+    def __init__(self,**kwargs):
+        super().__init__(name="Cycles", **kwargs)
+
+class Necklaces(SyntheticDataset):
+    def __init__(self,**kwargs):
+        super().__init__(name="Necklaces", **kwargs)
 
 
 def add_pos_to_node_features(instance: Data):

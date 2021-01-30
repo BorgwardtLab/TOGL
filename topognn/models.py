@@ -703,7 +703,8 @@ class LargerTopoGNNModel(LargerGCNModel):
         self.num_filtrations = kwargs["num_filtrations"]
         self.filtration_hidden = kwargs["filtration_hidden"]
         self.num_coord_funs = kwargs["num_coord_funs"]
-        self.num_coord_funs1 = kwargs["num_coord_funs1"]
+        
+        self.num_coord_funs1 = self.num_coord_funs #kwargs["num_coord_funs1"]
 
         self.set2set = set2set
         self.dim1 = kwargs["dim1"]
@@ -846,7 +847,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--num_filtrations', type=int, default=2)
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
-        parser.add_argument('--num_coord_funs1', type=int, default=3)
+        #parser.add_argument('--num_coord_funs1', type=int, default=3)
         parser.add_argument('--set_out_dim', type=int, default=32)
         parser.add_argument('--q_dim_set2set', type=int, default=128, help = "Bottleneck dimension in the set2set transformer")
         return parser
