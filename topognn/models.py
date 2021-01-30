@@ -542,7 +542,7 @@ class LargerGCNModel(pl.LightningModule):
 
         if GIN:
             def build_gnn_layer():
-                return GINLayer(hidden_dim, hidden_dim, train_eps=train_eps)
+                return GINLayer( in_features = hidden_dim, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
             graph_pooling_operation = global_add_pool
         else:
             def build_gnn_layer():

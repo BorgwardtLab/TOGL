@@ -25,9 +25,13 @@ class GCNLayer(nn.Module):
 
 
 class GINLayer(nn.Module):
-    def __init__(self, in_features, out_features, mlp_hidden_dim, activation,
-                 dropout, batch_norm, residual=True, train_eps=False):
+    def __init__(self, in_features, out_features, activation, dropout, batch_norm, mlp_hidden_dim = None,
+            residual=True, train_eps=False, **kwargs):
         super().__init__()
+
+        if mlp_hidden_dim is None:
+            mlp_hidden_dim = in_features
+
         self.activation = activation
         self.residual = residual
         self.dropout = nn.Dropout(dropout)
