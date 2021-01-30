@@ -8,16 +8,47 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
-from pytorch_lightning.callbacks import LearningRateMonitor
-
+from pytorch_lightning.callbacks import LearningRateMonitor, Callback
+from pytorch_lightning.utilities import rank_zero_info
 from topognn.train_model import MODEL_MAP, DATASET_MAP
+
+
+class StopOnMinLR(Callback):
+    """Callback to stop training as soon as the min_lr is reached.
+
+    This is to mimic the training routine from the publication
+    `Benchmarking Graph Neural Networks, V. P. Dwivedi, K. Joshi et al.`
+    """
+
+    def __init__(self, min_lr):
+        super().__init__()
+        self.min_lr = min_lr
+
+    def on_train_epoch_start(self, trainer, *args, **kwargs):
+        """Check if lr is lower than min_lr.
+
+        This is the closest to after the update of the lr where we can
+        intervene via callback. The lr logger also uses this hook to log
+        learning rates.
+        """
+        for scheduler in trainer.lr_schedulers:
+            opt = scheduler['scheduler'].optimizer
+            param_groups = opt.param_groups
+            for pg in param_groups:
+                lr = pg.get('lr')
+                if lr < self.min_lr:
+                    trainer.should_stop = True
+                    rank_zero_info(
+                        'lr={} is lower than min_lr={}. '
+                        'Stopping training.'.format(lr, self.min_lr)
+                    )
 
 
 def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
-   
+
     if args.set2set:
         raise("Aborting set2set runs")
 
@@ -38,9 +69,8 @@ def main(model_cls, dataset_cls, args):
         log_model=True,
         tags=[args.model, args.dataset]
     )
+    stop_on_min_lr_cb = StopOnMinLR(args.min_lr)
     lr_monitor = LearningRateMonitor('epoch')
-    early_stopping_cb = EarlyStopping(monitor="val_loss", patience=500)
-
     checkpoint_cb = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
         monitor='val_loss',
@@ -54,12 +84,13 @@ def main(model_cls, dataset_cls, args):
         logger=wandb_logger,
         log_every_n_steps=5,
         max_epochs=args.max_epochs,
-        callbacks=[early_stopping_cb, checkpoint_cb, lr_monitor]
+        callbacks=[stop_on_min_lr_cb, checkpoint_cb, lr_monitor]
     )
     trainer.fit(model, datamodule=dataset)
-    test_results = trainer.test(test_dataloaders = dataset.test_dataloader())[0]
+    test_results = trainer.test(test_dataloaders=dataset.test_dataloader())[0]
 
-    """
+    # Just for interest see if loading the state with lowest val loss actually
+    # gives better generalization performance.
     checkpoint_path = checkpoint_cb.best_model_path
     trainer2 = pl.Trainer(logger=False)
 
@@ -71,7 +102,7 @@ def main(model_cls, dataset_cls, args):
     )[0]
 
     val_results = {
-        name.replace('test', 'best_val'): value
+        name.replace('test', 'val'): value
         for name, value in val_results.items()
     }
 
@@ -80,10 +111,8 @@ def main(model_cls, dataset_cls, args):
         test_dataloaders=dataset.test_dataloader()
     )[0]
 
-    """
-
-    for name, value in { **test_results}.items():
-        wandb_logger.experiment.summary[name] = value
+    for name, value in {**test_results}.items():
+        wandb_logger.experiment.summary['restored_' + name] = value
 
 
 if __name__ == '__main__':
