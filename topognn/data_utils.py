@@ -264,7 +264,7 @@ class TUGraphDataset(pl.LightningDataModule):
         return parser
 
 
-class PairedTUGraphDataset(InMemoryDataset):
+class PairedTUGraphDataset(TUDataset):
     """Pair graphs in TU data set."""
 
     def __init__(self, name, disjoint=True, **kwargs):
@@ -285,36 +285,31 @@ class PairedTUGraphDataset(InMemoryDataset):
             Optional set of keyword arguments that will be used for
             loading the parent TU data set.
         """
-        dataset = TUDataset(
-            name=name,
-            root=DATA_DIR,
-            **kwargs
-        )
+        super().__init__(name=name, root=DATA_DIR, **kwargs)
 
         # Some sanity checks before continuing with processing the data
         # set.
-        n_classes = len(np.unique(dataset.data.y))
+        n_classes = len(np.unique(self.data.y))
         if n_classes != 2:
             raise RuntimeError(
                 'Paired data set is only defined for binary graph '
                 'classification tasks.'
             )
 
-    def _pair_graphs(self, dataset):
-        """Auxiliary function for performing graph pairing.
+    @property
+    def processed_dir(self):
+        name = 'paired{}'.format('_cleaned' if self.cleaned else '')
+        return os.path.join(self.root, self.name, name)
 
-        Parameters
-        ----------
-        dataset : `TUDataset`
-            Instance of `TUDataset` class to use for the pairing. This
-            parent data set will not be stored or modified in any way.
+    def _pair_graphs(self):
+        """Auxiliary function for performing graph pairing.
 
         Returns
         -------
         Tuple of data tensor and slices array, which can be saved to the
         disk or used for further processing.
         """
-        y = dataset.data.y.numpy()
+        y = self.data.y.numpy()
 
         # Will contain the merged graphs as single `Data` objects,
         # consisting of proper pairings of the respective inputs.
@@ -341,26 +336,26 @@ class PairedTUGraphDataset(InMemoryDataset):
                 merged = {}
 
                 edge_index = torch.cat(
-                    (dataset[i].edge_index, dataset[j].edge_index),
+                    (self.data[i].edge_index, self.data[j].edge_index),
                     1
                 )
 
                 merged['edge_index'] = edge_index
                 merged['y'] = torch.tensor([label], dtype=torch.long)
 
-                for attr_name in dir(dataset[i]):
+                for attr_name in dir(self.data[i]):
 
                     # No need to merge labels or edge_indices
                     if attr_name == 'y' or attr_name == 'edge_index':
                         continue
 
-                    attr = getattr(dataset[i], attr_name)
+                    attr = getattr(self.data[i], attr_name)
 
                     if type(attr) == torch.Tensor:
                         merged[attr_name] = torch.cat(
                             (
-                                getattr(dataset[i], attr_name),
-                                getattr(dataset[j], attr_name)
+                                getattr(self.data[i], attr_name),
+                                getattr(self.data[j], attr_name)
                             ), 0
                         )
 
@@ -368,6 +363,15 @@ class PairedTUGraphDataset(InMemoryDataset):
 
         data, slices = self.collate(data)
         return data, slices
+
+    def process(self):
+        """Process data set according to input parameters."""
+        # First finish everything in the parent data set before starting
+        # to pair the graphs and write them out.
+        super().process()
+
+        self.data, self.slices = self._pair_graphs()
+        torch.save((self.data, self.slices), self.processed_paths[0])
 
 
 data = PairedTUGraphDataset('MUTAG')
