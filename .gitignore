@@ -6,9 +6,27 @@ __pycache__/
 # C extensions
 *.so
 
+unionfind/*
+setup.py
+wandb/*
+topognn/wandb/*
+topognn/unionfind_torch.py
+notebooks/*
+topognn/sandbox.py
+unionfind/*
+topognn/:terminal*
+topognn/Experiments/*
+topognn/TestProject/*
+topognn/launch.sh
+topognn/sandbox*
+TopoGNN/*
 topo_gnn/*
 topognn/*.pt
 topognn/lightning_logs/*
+topognn/data/*
+topognn/topo_gnn/*
+topognn/TopoGNN/*
+topognn/topo_gnn_sandbox/*
 
 # Distribution / packaging
 .Python
