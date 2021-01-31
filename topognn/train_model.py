@@ -16,13 +16,14 @@ MODEL_MAP = {
     'TopoGNN': models.FiltrationGCNModel,
     'GCN': models.GCNModel,
     'LargerGCN': models.LargerGCNModel,
-    'LargerTopoGNN': models.LargerTopoGNNModel
+    'LargerTopoGNN': models.LargerTopoGNNModel,
+    'SimpleTopoGNN': models.SimpleTopoGNNModel
 }
 
 DATASET_MAP = {
     'IMDB-BINARY': datasets.IMDB_Binary,
     'PROTEINS': datasets.Proteins,
-    'PROTEINS_full':datasets.Proteins_full,
+    'PROTEINS_full': datasets.Proteins_full,
     'ENZYMES': datasets.Enzymes,
     'DD': datasets.DD,
     'MNIST': datasets.MNIST,
@@ -30,7 +31,7 @@ DATASET_MAP = {
     'PATTERN': datasets.PATTERN,
     'CLUSTER': datasets.CLUSTER,
     'Necklaces': datasets.Necklaces,
-    'Cycles':datasets.Cycles
+    'Cycles': datasets.Cycles
 }
 
 
@@ -102,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, choices=MODEL_MAP.keys())
     parser.add_argument('--dataset', type=str, choices=DATASET_MAP.keys())
     parser.add_argument('--max_epochs', type=int, default=1000)
-    parser.add_argument('--dummy_var',type=int,default = 0)
+    parser.add_argument('--dummy_var', type=int, default=0)
     partial_args, _ = parser.parse_known_args()
 
     if partial_args.model is None or partial_args.dataset is None:

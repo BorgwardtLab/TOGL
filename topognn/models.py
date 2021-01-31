@@ -13,7 +13,7 @@ from torch_geometric.data import DataLoader, Batch, Data
 from topognn import Tasks
 from topognn.cli_utils import str2bool
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
-from topognn.layers import GCNLayer, GINLayer
+from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer
 from topognn.metrics import WeightedAccuracy
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
@@ -852,3 +852,36 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--q_dim_set2set', type=int, default=128, help = "Bottleneck dimension in the set2set transformer")
         return parser
 
+class SimpleTopoGNNModel(LargerGCNModel):
+    def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, **kwargs):
+        super().__init__(hidden_dim=hidden_dim, **kwargs)
+        self.save_hyperparameters()
+
+        self.num_filtrations = num_filtrations
+        self.filtration_hidden = filtration_hidden
+        self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
+        edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
+
+        x = self.embedding(x)
+        x = self.layers[0](x, edge_index, data=data)
+
+        x = self.topo(x, edge_index, data.batch, vertex_slices, edge_slices)
+        for layer in self.layers[1:]:
+            x = layer(x, edge_index=edge_index)
+
+        x = self.pooling_fun(x, data.batch)
+        x = self.classif(x)
+        return x
+
+
+    @ classmethod
+    def add_model_specific_args(cls, parent):
+        parser = super().add_model_specific_args(parent)
+        parser.add_argument('--filtration_hidden', type=int, default=15)
+        parser.add_argument('--num_filtrations', type=int, default=2)
+        parser.add_argument('--aggregation_fn', type=str, default='mean')
+        return parser
