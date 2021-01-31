@@ -285,16 +285,11 @@ class PairedTUGraphDatasetBase(TUDataset):
             Optional set of keyword arguments that will be used for
             loading the parent TU data set.
         """
-        super().__init__(name=name, root=DATA_DIR, **kwargs)
+        # We only require this for the pairing routine; by default, the
+        # disjoint union of graphs will be calculated.
+        self.disjoint = disjoint
 
-        # Some sanity checks before continuing with processing the data
-        # set.
-        n_classes = len(np.unique(self.data.y))
-        if n_classes != 2:
-            raise RuntimeError(
-                'Paired data set is only defined for binary graph '
-                'classification tasks.'
-            )
+        super().__init__(name=name, root=DATA_DIR, **kwargs)
 
     def _pair_graphs(self):
         """Auxiliary function for performing graph pairing.
@@ -305,6 +300,16 @@ class PairedTUGraphDatasetBase(TUDataset):
         disk or used for further processing.
         """
         y = self.data.y.numpy()
+
+        # Some sanity checks before continuing with processing the data
+        # set.
+        labels = sorted(np.unique(self.data.y))
+        n_classes = len(labels)
+        if n_classes != 2:
+            raise RuntimeError(
+                'Paired data set is only defined for binary graph '
+                'classification tasks.'
+            )
 
         # Will contain the merged graphs as single `Data` objects,
         # consisting of proper pairings of the respective inputs.
@@ -330,10 +335,24 @@ class PairedTUGraphDatasetBase(TUDataset):
 
                 merged = {}
 
+                # Offset all nodes of the second graph correctly to
+                # ensure that we will get new edges and no isolated
+                # nodes.
+                offset = self[i].num_nodes
                 edge_index = torch.cat(
-                    (self[i].edge_index, self[j].edge_index),
+                    (self[i].edge_index, self[j].edge_index + offset),
                     1
                 )
+
+                # Check whether we are dealing with the positive label,
+                # i.e. the last of the unique labels, when creating the
+                # set of *merged* graphs.
+                if not self.disjoint and label == labels[-1]:
+                    u = torch.randint(0, self[i].num_nodes, (1,))
+                    v = torch.randint(0, self[j].num_nodes, (1,)) + offset
+
+                    edge = torch.tensor([[u], [v]], dtype=torch.long)
+                    edge_index = torch.cat((edge_index, edge), 1)
 
                 merged['edge_index'] = edge_index
                 merged['y'] = torch.tensor([label], dtype=torch.long)
@@ -361,7 +380,11 @@ class PairedTUGraphDatasetBase(TUDataset):
 
     @property
     def processed_dir(self):
-        name = 'paired{}'.format('_cleaned' if self.cleaned else '')
+        """Return name of directory for storing paired graphs."""
+        name = 'paired{}{}'.format(
+            '_cleaned' if self.cleaned else '',
+            '_merged' if not self.disjoint else ''
+        )
         return os.path.join(self.root, self.name, name)
 
     def process(self):
@@ -373,6 +396,17 @@ class PairedTUGraphDatasetBase(TUDataset):
         self.data, self.slices = self._pair_graphs()
         torch.save((self.data, self.slices), self.processed_paths[0])
 
+dataset = PairedTUGraphDatasetBase('MUTAG', disjoint=False)
+
+from torch_geometric.utils.convert import to_networkx
+import networkx as nx
+
+for i, data in enumerate(dataset):
+    g = to_networkx(data)
+    if data.y == 0:
+        print(i)
+
+    nx.write_gml(g, f'/tmp/{i:04d}.gml')
 
 
 class PairedTUGraphDataset(pl.LightningDataModule):
