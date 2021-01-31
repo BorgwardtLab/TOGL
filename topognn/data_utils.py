@@ -396,18 +396,6 @@ class PairedTUGraphDatasetBase(TUDataset):
         self.data, self.slices = self._pair_graphs()
         torch.save((self.data, self.slices), self.processed_paths[0])
 
-dataset = PairedTUGraphDatasetBase('MUTAG', disjoint=False)
-
-from torch_geometric.utils.convert import to_networkx
-import networkx as nx
-
-for i, data in enumerate(dataset):
-    g = to_networkx(data)
-    if data.y == 0:
-        print(i)
-
-    nx.write_gml(g, f'/tmp/{i:04d}.gml')
-
 
 class PairedTUGraphDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
