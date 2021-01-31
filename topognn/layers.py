@@ -105,6 +105,7 @@ class DeepSetLayerDim1(nn.Module):
         edge_diff_slices = (edge_slices[1:]-edge_slices[:-1]).to(x.device)
         n_batch = len(edge_diff_slices)
         batch_e = torch.repeat_interleave(torch.arange(n_batch, device = x.device),edge_diff_slices)
+        #Only aggregate over edges with non zero persistence pairs.
         if mask is not None:
             batch_e = batch_e[mask]
 
@@ -241,4 +242,4 @@ class FakeSetTopoLayer(nn.Module):
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
 
-        return x + self.bn(x0)
+        return x + self.bn(x0), None

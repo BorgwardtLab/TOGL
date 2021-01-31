@@ -562,8 +562,8 @@ class LargerGCNModel(pl.LightningModule):
         else:
             raise RuntimeError('Unsupported task.')
 
-        if kwargs.get("dim1",False):
-            dim_before_class = hidden_dim + kwargs["dim1_out_dim"]
+        if (kwargs.get("dim1",False) and ("dim1_out_dim" in kwargs.keys()) and ( not kwargs.get("fake",False))):
+            dim_before_class = hidden_dim + kwargs["dim1_out_dim"] #SimpleTopoGNN with dim1
         else:
             dim_before_class = hidden_dim
 
@@ -743,9 +743,13 @@ class LargerTopoGNNModel(LargerGCNModel):
         else:
             cycles_dim = 0
 
-        self.classif = torch.nn.Sequential(torch.nn.Linear(hidden_dim+cycles_dim, hidden_dim),
-                                           torch.nn.ReLU(),
-                                           torch.nn.Linear(hidden_dim, num_classes))
+        self.classif = torch.nn.Sequential(
+            nn.Linear(cycles_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 4, num_classes)
+        )
 
         
     def configure_optimizers(self):
@@ -859,13 +863,13 @@ class LargerTopoGNNModel(LargerGCNModel):
 
 class SimpleTopoGNNModel(LargerGCNModel):
     def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, fake, dim1,**kwargs):
-        super().__init__(hidden_dim=hidden_dim, dim1 = dim1, **kwargs)
+        super().__init__(hidden_dim=hidden_dim, dim1 = dim1, fake= fake, **kwargs)
         self.save_hyperparameters()
 
         self.num_filtrations = num_filtrations
         self.filtration_hidden = filtration_hidden
 
-        self.dim1_flag = dim1
+        self.dim1_flag = (dim1 and (not fake))
 
         if fake:
             self.topo = FakeSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
