@@ -4,6 +4,33 @@ import numpy as np
 import pickle
 import argparse
 
+def generate_noCycles(N_samples,d):
+    """
+    Dataset where label = 1: cycle
+    label = 0 : no cycle
+    """
+
+    labels = np.random.randint(2,size = N_samples)
+    x_list = []
+    edge_list = []
+    for n in range(N_samples):
+        Nnodes = np.random.randint(10,20)
+        if labels[n]:
+            edge_index = torch.stack((torch.arange(Nnodes-1),(1+torch.arange(Nnodes-1))))
+            x = torch.randn(Nnodes,d)
+        else:
+            edge_index = torch.stack((torch.arange(Nnodes),(1+torch.arange(Nnodes))%Nnodes))
+            x = torch.randn(Nnodes,d)
+        
+        x_list += [x]
+        edge_list += [edge_index]
+            
+            
+    with open("./NoCycles/graphs.txt", "wb") as fp:
+        pickle.dump([x_list, edge_list], fp)
+    torch.save(torch.tensor(labels),"./NoCycles/labels.pt")
+
+
 
 def generate_dummy(N_samples,d):
 
@@ -81,7 +108,8 @@ def generate_cycles(N_samples,d):
     x_list = []
     edge_list = []
     for n in range(N_samples):
-        Nnodes = np.random.randint(10,20)
+        #Nnodes = np.random.randint(10,20)
+        Nnodes = 6
         if labels[n]:
             n_triangles = (Nnodes-3)//3
             extra_cycle_length =  Nnodes - n_triangles*3
@@ -92,10 +120,10 @@ def generate_cycles(N_samples,d):
             edge_index_list += [n_triangles*3 + torch.stack((torch.arange(extra_cycle_length),(1+torch.arange(extra_cycle_length))%extra_cycle_length))]
 
             edge_index = torch.cat(edge_index_list,axis=1)
-            x = torch.randn(Nnodes,d)
+            x = torch.ones(Nnodes,d)
         else:
             edge_index = torch.stack((torch.arange(Nnodes),(1+torch.arange(Nnodes))%Nnodes))
-            x = torch.randn(Nnodes,d)
+            x = torch.ones(Nnodes,d)
         
         x_list += [x]
         edge_list += [edge_index]
@@ -109,7 +137,8 @@ if __name__=="__main__":
     
     DATASET_CHOICES = {"Dummy":generate_dummy,
             "Necklaces":generate_necklaces,
-            "Cycle":generate_cycles
+            "Cycle":generate_cycles,
+            "NoCycle":generate_noCycles
             }
 
     parser = argparse.ArgumentParser(description='Generation of Synthetic Graph Datasets')

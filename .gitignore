@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+topo_gnn/*
+topognn/*.pt
+topognn/lightning_logs/*
+
 # Distribution / packaging
 .Python
 build/

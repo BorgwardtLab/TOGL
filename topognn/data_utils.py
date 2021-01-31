@@ -30,7 +30,8 @@ def dataset_map_dict():
     'PATTERN': PATTERN,
     'CLUSTER': CLUSTER,
     'Necklaces': Necklaces,
-    'Cycles': Cycles
+    'Cycles': Cycles,
+    'NoCycles': NoCycles
     }
 
     return DATASET_MAP
@@ -556,6 +557,10 @@ class MUTAG(TUGraphDataset):
 class Cycles(SyntheticDataset):
     def __init__(self,**kwargs):
         super().__init__(name="Cycles", **kwargs)
+
+class NoCycles(SyntheticDataset):
+    def __init__(self,**kwargs):
+        super().__init__(name="NoCycles", **kwargs)
 
 class Necklaces(SyntheticDataset):
     def __init__(self,**kwargs):
