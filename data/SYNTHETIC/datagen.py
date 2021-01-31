@@ -108,8 +108,7 @@ def generate_cycles(N_samples,d):
     x_list = []
     edge_list = []
     for n in range(N_samples):
-        #Nnodes = np.random.randint(10,20)
-        Nnodes = 6
+        Nnodes = np.random.randint(10,20)
         if labels[n]:
             n_triangles = (Nnodes-3)//3
             extra_cycle_length =  Nnodes - n_triangles*3
@@ -120,10 +119,10 @@ def generate_cycles(N_samples,d):
             edge_index_list += [n_triangles*3 + torch.stack((torch.arange(extra_cycle_length),(1+torch.arange(extra_cycle_length))%extra_cycle_length))]
 
             edge_index = torch.cat(edge_index_list,axis=1)
-            x = torch.ones(Nnodes,d)
+            x = torch.randn(Nnodes,d)
         else:
             edge_index = torch.stack((torch.arange(Nnodes),(1+torch.arange(Nnodes))%Nnodes))
-            x = torch.ones(Nnodes,d)
+            x = torch.randn(Nnodes,d)
         
         x_list += [x]
         edge_list += [edge_index]
