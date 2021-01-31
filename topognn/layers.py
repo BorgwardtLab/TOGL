@@ -16,7 +16,8 @@ class GCNLayer(nn.Module):
         self.activation = activation
         self.residual = residual
         self.dropout = nn.Dropout(dropout)
-        self.batchnorm = nn.BatchNorm1d(out_features) if batch_norm else nn.Identity()
+        self.batchnorm = nn.BatchNorm1d(
+            out_features) if batch_norm else nn.Identity()
         self.conv = GCNConv(in_features, out_features, add_self_loops=False)
 
     def forward(self, x, edge_index, **kwargs):
@@ -49,7 +50,8 @@ class GINLayer(nn.Module):
         self.activation = activation
         self.residual = residual
         self.dropout = nn.Dropout(dropout)
-        self.batchnorm = nn.BatchNorm1d(out_features) if batch_norm else nn.Identity()
+        self.batchnorm = nn.BatchNorm1d(
+            out_features) if batch_norm else nn.Identity()
         gin_net = nn.Sequential(
             nn.Linear(in_features, mlp_hidden_dim),
             nn.ReLU(),
@@ -91,7 +93,6 @@ class SimpleSetTopoLayer(nn.Module):
             nn.Linear(n_features, mlp_hidden_dim),
             nn.ReLU(),
             nn.Linear(mlp_hidden_dim, n_filtrations),
-            nn.BatchNorm1d(n_filtrations),
         )
         self.set_fn0 = nn.ModuleList(
             [
@@ -136,7 +137,45 @@ class SimpleSetTopoLayer(nn.Module):
             x, edge_index, vertex_slices, edge_slices
         )
 
-        x0 = torch.cat([x, pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)], 1)
+        x0 = torch.cat(
+            [x, pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)], 1)
+        for layer in self.set_fn0:
+            if isinstance(layer, DeepSetLayer):
+                x0 = layer(x0, batch)
+            else:
+                x0 = layer(x0)
+
+        # Collect valid
+        # valid_0 = (pers1 != 0).all(-1)
+
+        return x + self.bn(x0)
+
+
+class FakeSetTopoLayer(nn.Module):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn):
+        super().__init__()
+        self.filtrations = nn.Sequential(
+            nn.Linear(n_features, mlp_hidden_dim),
+            nn.ReLU(),
+            nn.Linear(mlp_hidden_dim, n_filtrations),
+        )
+        self.set_fn0 = nn.ModuleList([
+            DeepSetLayer(n_features + n_filtrations,
+                         mlp_hidden_dim, aggregation_fn),
+            nn.ReLU(),
+            DeepSetLayer(mlp_hidden_dim, n_features, aggregation_fn),
+        ])
+        self.bn = nn.BatchNorm1d(n_features)
+        # self.set_fn1 = nn.ModuleList([
+        #     DeepSetLayer(n_filtrations*2, mlp_hidden_dim),
+        #     nn.ReLU(),
+        #     DeepSetLayer(mlp_hidden_dim, n_features),
+        # ])
+
+    def forward(self, x, edge_index, batch, vertex_slices, edge_slices):
+        filtered_v = self.filtrations(x)
+
+        x0 = torch.cat([x, filtered_v], 1)
         for layer in self.set_fn0:
             if isinstance(layer, DeepSetLayer):
                 x0 = layer(x0, batch)

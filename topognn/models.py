@@ -13,7 +13,7 @@ from torch_geometric.data import DataLoader, Batch, Data
 from topognn import Tasks
 from topognn.cli_utils import str2bool
 from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
-from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer
+from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer, FakeSetTopoLayer
 from topognn.metrics import WeightedAccuracy
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
@@ -853,13 +853,16 @@ class LargerTopoGNNModel(LargerGCNModel):
         return parser
 
 class SimpleTopoGNNModel(LargerGCNModel):
-    def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, **kwargs):
+    def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, fake, **kwargs):
         super().__init__(hidden_dim=hidden_dim, **kwargs)
         self.save_hyperparameters()
 
         self.num_filtrations = num_filtrations
         self.filtration_hidden = filtration_hidden
-        self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
+        if fake:
+            self.topo = FakeSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
+        else:
+            self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -884,4 +887,5 @@ class SimpleTopoGNNModel(LargerGCNModel):
         parser.add_argument('--filtration_hidden', type=int, default=15)
         parser.add_argument('--num_filtrations', type=int, default=2)
         parser.add_argument('--aggregation_fn', type=str, default='mean')
+        parser.add_argument('--fake', type=str2bool, default=False)
         return parser
