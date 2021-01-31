@@ -6,11 +6,11 @@ import sys
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback
 from pytorch_lightning.utilities import rank_zero_info
 from topognn.train_model import MODEL_MAP, DATASET_MAP
+from pytorch_lightning.utilities.seed import seed_everything
 
 
 class StopOnMinLR(Callback):
@@ -45,6 +45,7 @@ class StopOnMinLR(Callback):
 
 
 def main(model_cls, dataset_cls, args):
+    args.training_seed = seed_everything(args.training_seed)
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
@@ -119,6 +120,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--model', type=str, choices=MODEL_MAP.keys())
     parser.add_argument('--dataset', type=str, choices=DATASET_MAP.keys())
+    parser.add_argument('--training_seed', type=int, default=None)
     parser.add_argument('--max_epochs', type=int, default=1000)
     partial_args, _ = parser.parse_known_args()
 
