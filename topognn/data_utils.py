@@ -264,7 +264,7 @@ class TUGraphDataset(pl.LightningDataModule):
         return parser
 
 
-class PairedTUGraphDataset(TUDataset):
+class PairedTUGraphDatasetBase(TUDataset):
     """Pair graphs in TU data set."""
 
     def __init__(self, name, disjoint=True, **kwargs):
@@ -295,11 +295,6 @@ class PairedTUGraphDataset(TUDataset):
                 'Paired data set is only defined for binary graph '
                 'classification tasks.'
             )
-
-    @property
-    def processed_dir(self):
-        name = 'paired{}'.format('_cleaned' if self.cleaned else '')
-        return os.path.join(self.root, self.name, name)
 
     def _pair_graphs(self):
         """Auxiliary function for performing graph pairing.
@@ -336,26 +331,26 @@ class PairedTUGraphDataset(TUDataset):
                 merged = {}
 
                 edge_index = torch.cat(
-                    (self.data[i].edge_index, self.data[j].edge_index),
+                    (self[i].edge_index, self[j].edge_index),
                     1
                 )
 
                 merged['edge_index'] = edge_index
                 merged['y'] = torch.tensor([label], dtype=torch.long)
 
-                for attr_name in dir(self.data[i]):
+                for attr_name in dir(self[i]):
 
                     # No need to merge labels or edge_indices
                     if attr_name == 'y' or attr_name == 'edge_index':
                         continue
 
-                    attr = getattr(self.data[i], attr_name)
+                    attr = getattr(self[i], attr_name)
 
                     if type(attr) == torch.Tensor:
                         merged[attr_name] = torch.cat(
                             (
-                                getattr(self.data[i], attr_name),
-                                getattr(self.data[j], attr_name)
+                                getattr(self[i], attr_name),
+                                getattr(self[j], attr_name)
                             ), 0
                         )
 
@@ -363,6 +358,11 @@ class PairedTUGraphDataset(TUDataset):
 
         data, slices = self.collate(data)
         return data, slices
+
+    @property
+    def processed_dir(self):
+        name = 'paired{}'.format('_cleaned' if self.cleaned else '')
+        return os.path.join(self.root, self.name, name)
 
     def process(self):
         """Process data set according to input parameters."""
@@ -374,7 +374,91 @@ class PairedTUGraphDataset(TUDataset):
         torch.save((self.data, self.slices), self.processed_paths[0])
 
 
-data = PairedTUGraphDataset('MUTAG')
+
+class PairedTUGraphDataset(pl.LightningDataModule):
+    task = Tasks.GRAPH_CLASSIFICATION
+
+    def __init__(
+        self,
+        name,
+        batch_size,
+        use_node_attributes=True,
+        val_fraction=0.1,
+        test_fraction=0.1,
+        seed=42,
+        num_workers=4,
+        **kwargs
+    ):
+        """Create new paired data set."""
+        super().__init__()
+
+        self.name = name
+        self.batch_size = batch_size
+        self.val_fraction = val_fraction
+        self.test_fraction = test_fraction
+        self.seed = seed
+        self.num_workers = num_workers
+
+    def prepare_data(self):
+        dataset = PairedTUGraphDatasetBase(
+            self.name
+        )
+
+        self.node_attributes = dataset.num_node_features
+        self.num_classes = dataset.num_classes
+        n_instances = len(dataset)
+
+        # FIXME: should this be updated?
+        n_train = math.floor(
+            (1 - self.val_fraction) * (1 - self.test_fraction) * n_instances)
+        n_val = math.ceil(
+            (self.val_fraction) * (1 - self.test_fraction) * n_instances)
+        n_test = n_instances - n_train - n_val
+
+        self.train, self.val, self.test = random_split(
+            dataset,
+            [n_train, n_val, n_test],
+            generator=torch.Generator().manual_seed(self.seed)
+        )
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    @classmethod
+    def add_dataset_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser.add_argument('--use_node_attributes', type=bool, default=True)
+        parser.add_argument('--seed', type=int, default=42)
+        parser.add_argument('--batch_size', type=int, default=32)
+        return parser
 
 
 class IMDB_Binary(TUGraphDataset):
