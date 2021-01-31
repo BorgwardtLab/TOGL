@@ -265,10 +265,31 @@ class TUGraphDataset(pl.LightningDataModule):
 
 
 class PairedTUGraphDataset(InMemoryDataset):
-    task = Tasks.GRAPH_CLASSIFICATION
+    """Pair graphs in TU data set."""
 
-    def __init__(self, name, **kwargs):
-        dataset = TUDataset(name=name, root=DATA_DIR, **kwargs)
+    def __init__(self, name, disjoint=True, **kwargs):
+        """Create new paired graph data set from named TU data set.
+
+        Parameters
+        ----------
+        name : str
+            Name of the TU data set to use as the parent data set. Must
+            be a data set with a binary classification task.
+
+        disjoint : bool
+            If set, performs a disjoint union between the two graphs
+            that are supposed to be paired, resulting in two connected
+            components.
+
+        **kwargs : kwargs
+            Optional set of keyword arguments that will be used for
+            loading the parent TU data set.
+        """
+        dataset = TUDataset(
+            name=name,
+            root=DATA_DIR,
+            **kwargs
+        )
 
         # Some sanity checks before continuing with processing the data
         # set.
@@ -279,6 +300,20 @@ class PairedTUGraphDataset(InMemoryDataset):
                 'classification tasks.'
             )
 
+    def _pair_graphs(self, dataset):
+        """Auxiliary function for performing graph pairing.
+
+        Parameters
+        ----------
+        dataset : `TUDataset`
+            Instance of `TUDataset` class to use for the pairing. This
+            parent data set will not be stored or modified in any way.
+
+        Returns
+        -------
+        Tuple of data tensor and slices array, which can be saved to the
+        disk or used for further processing.
+        """
         y = dataset.data.y.numpy()
 
         # Will contain the merged graphs as single `Data` objects,
@@ -332,7 +367,7 @@ class PairedTUGraphDataset(InMemoryDataset):
                 data.append(Data(**merged))
 
         data, slices = self.collate(data)
-        print(data)
+        return data, slices
 
 
 data = PairedTUGraphDataset('MUTAG')
