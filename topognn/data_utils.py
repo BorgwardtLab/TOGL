@@ -264,6 +264,80 @@ class TUGraphDataset(pl.LightningDataModule):
         return parser
 
 
+class PairedTUGraphDataset(InMemoryDataset):
+    task = Tasks.GRAPH_CLASSIFICATION
+
+    def __init__(self, name, **kwargs):
+        dataset = TUDataset(name=name, root=DATA_DIR, **kwargs)
+
+        # Some sanity checks before continuing with processing the data
+        # set.
+        n_classes = len(np.unique(dataset.data.y))
+        if n_classes != 2:
+            raise RuntimeError(
+                'Paired data set is only defined for binary graph '
+                'classification tasks.'
+            )
+
+        y = dataset.data.y.numpy()
+
+        # Will contain the merged graphs as single `Data` objects,
+        # consisting of proper pairings of the respective inputs.
+        data = []
+
+        for i, label in enumerate(y):
+            partners = np.nonzero(y == label)[0]
+            partners = partners[i < partners]
+
+            for j in partners:
+
+                # FIXME
+                #
+                # Cannot use `int64` to access the data set. I am
+                # reasonably sure that this is *wrong*.
+                j = int(j)
+
+                # Merge the two graphs into a single graph with two
+                # connected components. This requires merges of all
+                # the tensors (except for `y`, which we *know*, and
+                # `edge_index`, which we have to merge in dimension
+                # 1 instead of 0).
+
+                merged = {}
+
+                edge_index = torch.cat(
+                    (dataset[i].edge_index, dataset[j].edge_index),
+                    1
+                )
+
+                merged['edge_index'] = edge_index
+                merged['y'] = torch.tensor([label], dtype=torch.long)
+
+                for attr_name in dir(dataset[i]):
+
+                    # No need to merge labels or edge_indices
+                    if attr_name == 'y' or attr_name == 'edge_index':
+                        continue
+
+                    attr = getattr(dataset[i], attr_name)
+
+                    if type(attr) == torch.Tensor:
+                        merged[attr_name] = torch.cat(
+                            (
+                                getattr(dataset[i], attr_name),
+                                getattr(dataset[j], attr_name)
+                            ), 0
+                        )
+
+                data.append(Data(**merged))
+
+        data, slices = self.collate(data)
+        print(data)
+
+
+data = PairedTUGraphDataset('MUTAG')
+
+
 class IMDB_Binary(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='IMDB-BINARY', **kwargs)
