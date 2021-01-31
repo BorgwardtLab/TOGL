@@ -25,8 +25,14 @@ def main(args):
 
     model_type = args.type
 
+    name = f"TopoGNN_{args.dataset}"
+    if args.paired:
+        name += '_paired'
+    if args.merged:
+        name += '_merged'
+
     wandb_logger = WandbLogger(
-        name=f"TopoGNN_{args.dataset}", project="topo_gnn", entity="topo_gnn", log_model=True, tags=[args.dataset])
+        name=name, project="topo_gnn", entity="topo_gnn", log_model=True, tags=[args.dataset])
 
     early_stopping_cb = EarlyStopping(monitor="val_acc", patience=100)
     checkpoint_cb = ModelCheckpoint(
@@ -44,8 +50,18 @@ def main(args):
         callbacks=[early_stopping_cb, checkpoint_cb]
     )
 
-    data = topodata.TUGraphDataset(
-        args.dataset, batch_size=32, fold=args.fold)
+    batch_size = 32
+
+    if args.paired:
+        data = topodata.PairedTUGraphDataset(
+            args.dataset,
+            batch_size=batch_size,
+            disjoint=not args.merged,
+        )
+    else:
+        data = topodata.TUGraphDataset(
+            args.dataset, batch_size=batch_size, fold=args.fold)
+
     data.prepare_data()
 
     model = models.FiltrationGCNModel(hidden_dim=args.hidden_dim,
@@ -102,6 +118,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_epochs", type=int, default=1000)
     parser.add_argument("--dataset", type=str, default="ENZYMES")
     parser.add_argument("--fold", type=int, default=0)
+    parser.add_argument("--paired", action='store_true')
+    parser.add_argument("--merged", action='store_true')
 
     args = parser.parse_args()
 

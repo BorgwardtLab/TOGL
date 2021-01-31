@@ -383,6 +383,7 @@ class PairedTUGraphDataset(pl.LightningDataModule):
         name,
         batch_size,
         use_node_attributes=True,
+        disjoint=True,
         val_fraction=0.1,
         test_fraction=0.1,
         seed=42,
@@ -393,15 +394,19 @@ class PairedTUGraphDataset(pl.LightningDataModule):
         super().__init__()
 
         self.name = name
+        self.disjoint = disjoint
         self.batch_size = batch_size
         self.val_fraction = val_fraction
         self.test_fraction = test_fraction
         self.seed = seed
         self.num_workers = num_workers
+        self.use_node_attributes = use_node_attributes
 
     def prepare_data(self):
         dataset = PairedTUGraphDatasetBase(
-            self.name
+            self.name,
+            disjoint=self.disjoint,
+            use_node_attr=self.use_node_attributes,
         )
 
         self.node_attributes = dataset.num_node_features
