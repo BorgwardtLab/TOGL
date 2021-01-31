@@ -77,6 +77,9 @@ if __name__ == '__main__':
 
             graphs.append(g)
 
+    graphs = graphs[:36]
+    labels = labels[:36]
+
     # The idea is to show that the feature vectors are the same between
     # two distributions of graphs (or require more steps than warranted
     # as the cycle length increases).
@@ -122,7 +125,7 @@ if __name__ == '__main__':
 
     scores = []
 
-    for i in range(10):
+    for i in range(0):
         cv = StratifiedKFold(n_splits=5, shuffle=True)
 
         param_grid = {
@@ -141,8 +144,6 @@ if __name__ == '__main__':
 
     print(f'{100 * np.mean(scores):.2f} +- {100 * np.std(scores):.2f}')
 
-    y_pred = clf.predict(X)
-
     n = 0
 
     for i, g in enumerate(graphs):
@@ -154,7 +155,13 @@ if __name__ == '__main__':
 
         for index in indices[0]:
             if labels[index] != labels[i]:
-                pass
+
+                g1 = graphs[i]
+                g2 = graphs[index]
+
+                if g1.vcount() == g2.vcount() and g1.ecount() == g2.ecount():
+                    if i < index:
+                        print(i, index)
                 #print(index)
 
                 #layout = graphs[index].layout('kk')
