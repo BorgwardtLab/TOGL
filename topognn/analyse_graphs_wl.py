@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     scores = []
 
-    for i in range(0):
+    for i in range(10):
         cv = StratifiedKFold(n_splits=5, shuffle=True)
 
         param_grid = {
@@ -143,37 +143,3 @@ if __name__ == '__main__':
         print(f'Iteration {i}: {100 * scores[-1]:.2f}')
 
     print(f'{100 * np.mean(scores):.2f} +- {100 * np.std(scores):.2f}')
-
-    n = 0
-
-    for i, g in enumerate(graphs):
-        indices = np.nonzero(distances[i, :] == 0)
-
-        #if len(indices) != 0 and (labels[indices] != labels[i]).any():
-        #    layout = graphs[i].layout('kk')
-        #    ig.plot(graphs[i], layout=layout)
-
-        for index in indices[0]:
-            if labels[index] != labels[i]:
-
-                g1 = graphs[i]
-                g2 = graphs[index]
-
-                if g1.vcount() == g2.vcount() and g1.ecount() == g2.ecount():
-                    if i < index:
-                        print(i, index)
-                #print(index)
-
-                #layout = graphs[index].layout('kk')
-                #ig.plot(graphs[index], layout=layout)
-
-        #print('NEXT GRAPHS')
-
-        distances_other = distances[i, labels != labels[i]]
-        n += np.sum(distances_other == 0)
-
-    print(n // 2)
-
-    #for g in np.asarray(graphs)[y_pred != labels]:
-    #    layout = g.layout('kk')
-    #    ig.plot(g, layout=layout)
