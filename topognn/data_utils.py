@@ -17,6 +17,33 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 import csv
 
 
+def dataset_map_dict():
+    DATASET_MAP = {
+    'IMDB-BINARY': IMDB_Binary,
+    'PROTEINS': Proteins,
+    'PROTEINS_full': Proteins_full,
+    'ENZYMES': Enzymes,
+    'DD': DD,
+    'MUTAG' : MUTAG,
+    'MNIST': MNIST,
+    'CIFAR10': CIFAR10,
+    'PATTERN': PATTERN,
+    'CLUSTER': CLUSTER,
+    'Necklaces': Necklaces,
+    'Cycles': Cycles
+    }
+
+    return DATASET_MAP
+
+
+def get_dataset_class(**kwargs):
+
+    if kwargs.get("paired",False):
+        dataset_cls = PairedTUGraphDataset#(kwargs["dataset"],batch_size = kwargs["batch_size"], disjoint = not kwargs["merged"] )
+    else:
+        
+        dataset_cls = dataset_map_dict()[kwargs["dataset"]]
+    return dataset_cls
 
 
 class SyntheticBaseDataset(InMemoryDataset):
@@ -168,7 +195,10 @@ class TUGraphDataset(pl.LightningDataModule):
         self.n_splits = n_splits
         self.fold = fold
 
-        self.benchmark_idx = kwargs["benchmark_idx"]
+        if name in ["PROTEINS_full","ENZYMES","DD"]:
+            self.benchmark_idx = kwargs["benchmark_idx"]
+        else:
+            self.benchmark_idx = False
 
     def prepare_data(self):
 
@@ -267,7 +297,7 @@ class TUGraphDataset(pl.LightningDataModule):
 class PairedTUGraphDatasetBase(TUDataset):
     """Pair graphs in TU data set."""
 
-    def __init__(self, name, disjoint=True, **kwargs):
+    def __init__(self,name, disjoint = True, **kwargs):
         """Create new paired graph data set from named TU data set.
 
         Parameters
@@ -289,7 +319,14 @@ class PairedTUGraphDatasetBase(TUDataset):
         # disjoint union of graphs will be calculated.
         self.disjoint = disjoint
 
-        super().__init__(name=name, root=DATA_DIR, **kwargs)
+        if name=="PROTEINS_full" or name == "ENZYMES":
+            cleaned = False
+        else:
+            cleaned = True
+
+        root = os.path.join(DATA_DIR,name) 
+
+        super().__init__(name=name, root=root, cleaned = cleaned, **kwargs)
 
     def _pair_graphs(self):
         """Auxiliary function for performing graph pairing.
@@ -397,12 +434,13 @@ class PairedTUGraphDatasetBase(TUDataset):
         torch.save((self.data, self.slices), self.processed_paths[0])
 
 
+
 class PairedTUGraphDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(
         self,
-        name,
+        dataset,
         batch_size,
         use_node_attributes=True,
         disjoint=True,
@@ -415,7 +453,7 @@ class PairedTUGraphDataset(pl.LightningDataModule):
         """Create new paired data set."""
         super().__init__()
 
-        self.name = name
+        self.name = dataset
         self.disjoint = disjoint
         self.batch_size = batch_size
         self.val_fraction = val_fraction

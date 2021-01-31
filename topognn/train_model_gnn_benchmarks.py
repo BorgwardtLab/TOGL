@@ -9,9 +9,10 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback
 from pytorch_lightning.utilities import rank_zero_info
-from topognn.train_model import MODEL_MAP, DATASET_MAP
+import topognn.data_utils as topo_data
+from topognn.train_model import MODEL_MAP #, DATASET_MAP
 from pytorch_lightning.utilities.seed import seed_everything
-
+from topognn.cli_utils import str2bool
 
 class StopOnMinLR(Callback):
     """Callback to stop training as soon as the min_lr is reached.
@@ -49,6 +50,7 @@ def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
+
 
     if args.set2set:
         raise("Aborting set2set runs")
@@ -119,16 +121,21 @@ def main(model_cls, dataset_cls, args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--model', type=str, choices=MODEL_MAP.keys())
-    parser.add_argument('--dataset', type=str, choices=DATASET_MAP.keys())
+    parser.add_argument('--dataset', type=str, choices=topo_data.dataset_map_dict().keys())
     parser.add_argument('--training_seed', type=int, default=None)
     parser.add_argument('--max_epochs', type=int, default=1000)
+    parser.add_argument("--paired", type = str2bool, default=False)
+    parser.add_argument("--merged", type = str2bool, default=False)
+    
     partial_args, _ = parser.parse_known_args()
 
     if partial_args.model is None or partial_args.dataset is None:
         parser.print_usage()
         sys.exit(1)
     model_cls = MODEL_MAP[partial_args.model]
-    dataset_cls = DATASET_MAP[partial_args.dataset]
+    #dataset_cls = DATASET_MAP[partial_args.dataset]
+    dataset_cls = topo_data.get_dataset_class(**vars(partial_args))
+
 
     parser = model_cls.add_model_specific_args(parser)
     parser = dataset_cls.add_dataset_specific_args(parser)

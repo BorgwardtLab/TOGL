@@ -20,19 +20,19 @@ MODEL_MAP = {
     'SimpleTopoGNN': models.SimpleTopoGNNModel
 }
 
-DATASET_MAP = {
-    'IMDB-BINARY': datasets.IMDB_Binary,
-    'PROTEINS': datasets.Proteins,
-    'PROTEINS_full': datasets.Proteins_full,
-    'ENZYMES': datasets.Enzymes,
-    'DD': datasets.DD,
-    'MNIST': datasets.MNIST,
-    'CIFAR10': datasets.CIFAR10,
-    'PATTERN': datasets.PATTERN,
-    'CLUSTER': datasets.CLUSTER,
-    'Necklaces': datasets.Necklaces,
-    'Cycles': datasets.Cycles
-}
+#DATASET_MAP = {
+#    'IMDB-BINARY': datasets.IMDB_Binary,
+#    'PROTEINS': datasets.Proteins,
+#    'PROTEINS_full': datasets.Proteins_full,
+#    'ENZYMES': datasets.Enzymes,
+#    'DD': datasets.DD,
+#    'MNIST': datasets.MNIST,
+#    'CIFAR10': datasets.CIFAR10,
+#    'PATTERN': datasets.PATTERN,
+#    'CLUSTER': datasets.CLUSTER,
+#    'Necklaces': datasets.Necklaces,
+#    'Cycles': datasets.Cycles
+#}
 
 
 def main(model_cls, dataset_cls, args):
@@ -104,13 +104,17 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, choices=DATASET_MAP.keys())
     parser.add_argument('--max_epochs', type=int, default=1000)
     parser.add_argument('--dummy_var', type=int, default=0)
+    parser.add_argument("--paired", type = str2bool, default=False)
+    parser.add_argument("--merged", type = str2bool, default=False)
+
     partial_args, _ = parser.parse_known_args()
 
     if partial_args.model is None or partial_args.dataset is None:
         parser.print_usage()
         sys.exit(1)
     model_cls = MODEL_MAP[partial_args.model]
-    dataset_cls = DATASET_MAP[partial_args.dataset]
+    #dataset_cls = DATASET_MAP[partial_args.dataset]
+    dataset_cls = topo_data.get_dataset_class(partial_args)
 
     parser = model_cls.add_model_specific_args(parser)
     parser = dataset_cls.add_dataset_specific_args(parser)
