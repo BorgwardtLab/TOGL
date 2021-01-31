@@ -562,8 +562,13 @@ class LargerGCNModel(pl.LightningModule):
         else:
             raise RuntimeError('Unsupported task.')
 
+        if kwargs.get("dim1",False):
+            dim_before_class = hidden_dim + kwargs["dim1_out_dim"]
+        else:
+            dim_before_class = hidden_dim
+
         self.classif = torch.nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(dim_before_class, hidden_dim // 2),
             nn.ReLU(),
             nn.Linear(hidden_dim // 2, hidden_dim // 4),
             nn.ReLU(),
@@ -853,16 +858,19 @@ class LargerTopoGNNModel(LargerGCNModel):
         return parser
 
 class SimpleTopoGNNModel(LargerGCNModel):
-    def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, fake, **kwargs):
-        super().__init__(hidden_dim=hidden_dim, **kwargs)
+    def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, fake, dim1,**kwargs):
+        super().__init__(hidden_dim=hidden_dim, dim1 = dim1, **kwargs)
         self.save_hyperparameters()
 
         self.num_filtrations = num_filtrations
         self.filtration_hidden = filtration_hidden
+
+        self.dim1_flag = dim1
+
         if fake:
             self.topo = FakeSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
         else:
-            self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
+            self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn, dim1 = dim1, **kwargs)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -872,11 +880,15 @@ class SimpleTopoGNNModel(LargerGCNModel):
         x = self.embedding(x)
         x = self.layers[0](x, edge_index, data=data)
 
-        x = self.topo(x, edge_index, data.batch, vertex_slices, edge_slices)
+        x, x_dim1 = self.topo(x, edge_index, data.batch, vertex_slices, edge_slices)
         for layer in self.layers[1:]:
             x = layer(x, edge_index=edge_index)
 
         x = self.pooling_fun(x, data.batch)
+
+        if self.dim1_flag:
+            x = torch.cat([x,x_dim1],1)
+
         x = self.classif(x)
         return x
 
@@ -888,4 +900,8 @@ class SimpleTopoGNNModel(LargerGCNModel):
         parser.add_argument('--num_filtrations', type=int, default=2)
         parser.add_argument('--aggregation_fn', type=str, default='mean')
         parser.add_argument('--fake', type=str2bool, default=False)
+        parser.add_argument('--dim1',type=str2bool,default = False)
+        parser.add_argument('--dim0_out_dim',type=int,default = 16, help = "Inner dim of the set function of the dim0 persistent features")
+        parser.add_argument('--dim1_out_dim',type=int,default = 16, help = "Dimension of the ouput of the dim1 persistent features")
+
         return parser

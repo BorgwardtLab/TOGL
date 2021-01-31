@@ -79,28 +79,71 @@ class DeepSetLayer(nn.Module):
 
     def forward(self, x, batch):
         # Apply aggregation function over graph
+
         xm = scatter(x, batch, dim=0, reduce=self.aggregation_fn)
         xm = self.Lambda(xm)
         x = self.Gamma(x)
         x = x - xm[batch, :]
         return x
 
+class DeepSetLayerDim1(nn.Module):
+    """Simple equivariant deep set layer."""
+
+    def __init__(self, in_dim, out_dim, aggregation_fn, **kwargs):
+        super().__init__()
+        self.Lambda = nn.Linear(in_dim, out_dim, bias=False)
+        assert aggregation_fn in ["mean", "max", "sum"]
+        self.aggregation_fn = aggregation_fn
+
+    def forward(self, x, edge_slices, mask = None):
+        '''
+        Mask is True where the persistence (x) is observed.
+        '''
+        # Apply aggregation function over graph
+        
+        #Computing the equivalent of batch over edges.
+        edge_diff_slices = (edge_slices[1:]-edge_slices[:-1]).to(x.device)
+        n_batch = len(edge_diff_slices)
+        batch_e = torch.repeat_interleave(torch.arange(n_batch, device = x.device),edge_diff_slices)
+        if mask is not None:
+            batch_e = batch_e[mask]
+
+        xm = scatter(x, batch_e, dim= 0, reduce=self.aggregation_fn, dim_size= n_batch)
+        
+        xm = self.Lambda(xm)
+
+        #xm = scatter(x, batch, dim=0, reduce=self.aggregation_fn)
+        #xm = self.Lambda(xm)
+        #x = self.Gamma(x)
+        #x = x - xm[batch, :]
+        return xm
+
+
+
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, **kwargs):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
             nn.ReLU(),
             nn.Linear(mlp_hidden_dim, n_filtrations),
         )
+
+        self.dim1_flag = dim1
+        if self.dim1_flag:
+            self.dim1_fn = DeepSetLayerDim1(in_dim =  2 * n_features + n_filtrations*2,
+                out_dim = dim1_out_dim,
+                aggregation_fn = aggregation_fn,
+                **kwargs)
+
         self.set_fn0 = nn.ModuleList(
             [
                 DeepSetLayer(
-                    n_features + n_filtrations * 2, mlp_hidden_dim, aggregation_fn
+                    n_features + n_filtrations * 2, dim0_out_dim, aggregation_fn
                 ),
                 nn.ReLU(),
-                DeepSetLayer(mlp_hidden_dim, n_features, aggregation_fn),
+                DeepSetLayer(dim0_out_dim, n_features, aggregation_fn),
             ]
         )
         self.bn = nn.BatchNorm1d(n_features)
@@ -139,6 +182,19 @@ class SimpleSetTopoLayer(nn.Module):
 
         x0 = torch.cat(
             [x, pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)], 1)
+
+        if self.dim1_flag:
+        # Dim 1 computations.
+            pers1_reshaped = pers1.permute(1,0,2).reshape(pers1.shape[1],-1)
+            pers1_mask = ~((pers1_reshaped==0).all(-1))
+            nodes_idx_dim1 = edge_index[:,pers1_mask]
+            x0_dim1 = torch.cat(
+                [ x[nodes_idx_dim1[0,:],:], x[nodes_idx_dim1[1,:],:], pers1_reshaped[pers1_mask]  ], 1)
+            x_dim1 = self.dim1_fn(x0_dim1, edge_slices, mask = pers1_mask)
+        else:
+            x_dim1 = None
+        
+        
         for layer in self.set_fn0:
             if isinstance(layer, DeepSetLayer):
                 x0 = layer(x0, batch)
@@ -148,7 +204,7 @@ class SimpleSetTopoLayer(nn.Module):
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
 
-        return x + self.bn(x0)
+        return x + self.bn(x0), x_dim1
 
 
 class FakeSetTopoLayer(nn.Module):
