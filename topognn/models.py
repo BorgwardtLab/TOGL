@@ -779,7 +779,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         #--------------
 
         # Last conv layer
-        x = layer(x,edge_index=edge_index, data = data)
+        x = self.layers[-1](x,edge_index=edge_index, data = data)
         
         # Pooling
         x = self.pooling_fun(x, data.batch)
