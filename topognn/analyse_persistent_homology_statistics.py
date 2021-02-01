@@ -12,6 +12,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('INPUT')
 
+    parser.add_argument(
+        '-c',
+        '--column',
+        default='n_features',
+        type=str,
+        help='Column to use for feature calculation'
+    )
+
     args = parser.parse_args()
 
     df = pd.read_csv(args.INPUT, index_col='file')
@@ -23,13 +31,13 @@ if __name__ == '__main__':
     for name, df_ in df.groupby('name'):
         n_features = max(
             n_features,
-            len(df_.sort_values(by='dimension')['n_features'].values)
+            len(df_.sort_values(by='dimension')[args.column].values)
         )
 
     for name, df_ in df.groupby('name'):
         # This can be seen as an equivalent to the Betti number
         # calculation.
-        feature_vector = df_.sort_values(by='dimension')['n_features'].values
+        feature_vector = df_.sort_values(by='dimension')[args.column].values
 
         feature_vector = np.pad(
             feature_vector,
