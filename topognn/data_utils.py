@@ -353,6 +353,8 @@ class PairedTUGraphDatasetBase(TUDataset):
         # consisting of proper pairings of the respective inputs.
         data = []
 
+        MAX_SIZE = 2000
+
         for i, label in enumerate(y):
             partners = np.nonzero(y == label)[0]
             partners = partners[i < partners]
@@ -412,6 +414,9 @@ class PairedTUGraphDatasetBase(TUDataset):
                         )
 
                 data.append(Data(**merged))
+
+            if len(data)>MAX_SIZE:
+                break
 
         data, slices = self.collate(data)
         return data, slices
