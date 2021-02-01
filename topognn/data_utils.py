@@ -298,7 +298,7 @@ class TUGraphDataset(pl.LightningDataModule):
 class PairedTUGraphDatasetBase(TUDataset):
     """Pair graphs in TU data set."""
 
-    def __init__(self,name, disjoint = True, **kwargs):
+    def __init__(self,name, disjoint, **kwargs):
         """Create new paired graph data set from named TU data set.
 
         Parameters
@@ -444,7 +444,7 @@ class PairedTUGraphDataset(pl.LightningDataModule):
         dataset,
         batch_size,
         use_node_attributes=True,
-        disjoint=True,
+        merged=False,
         val_fraction=0.1,
         test_fraction=0.1,
         seed=42,
@@ -455,7 +455,7 @@ class PairedTUGraphDataset(pl.LightningDataModule):
         super().__init__()
 
         self.name = dataset
-        self.disjoint = disjoint
+        self.disjoint = not merged
         self.batch_size = batch_size
         self.val_fraction = val_fraction
         self.test_fraction = test_fraction
