@@ -88,7 +88,11 @@ class TopologyLayer(torch.nn.Module):
         ])
 
         if self.set2set:
-            in_out_dim = self.features_in + set_out_dim*self.num_filtrations
+            if self.residual_and_bn:
+                in_out_dim = set_out_dim*self.num_filtrations
+                features_out = features_in
+            else:
+                in_out_dim = self.features_in + set_out_dim*self.num_filtrations
         else:
             if self.residual_and_bn:
                 in_out_dim = self.num_filtrations * self.total_num_coord_funs
@@ -186,6 +190,9 @@ class TopologyLayer(torch.nn.Module):
 
         if self.residual_and_bn:
             out_activations = self.out(coord_activations)
+            if self.set2set:
+                # Set2set is a linear operation
+                out_activations = F.relu(out_activations)
             out_activations = self.bn(out_activations)
             out_activations = x + out_activations
         else:
