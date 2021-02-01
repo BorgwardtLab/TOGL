@@ -138,8 +138,10 @@ class TopologyLayer(torch.nn.Module):
             n_edges = edge_slices[1:] - edge_slices[:-1]
             random_edges = (
                 edge_slices[0:-1].unsqueeze(-1) +
-                torch.rand(size=(bs, self.num_filtrations), device=x.device)
-                * n_edges.float().unsqueeze(-1)
+                torch.floor(
+                    torch.rand(size=(bs, self.num_filtrations), device=x.device)
+                    * n_edges.float().unsqueeze(-1)
+                )
             ).long()
             persistence1_new[random_edges, torch.arange(self.num_filtrations).unsqueeze(0), :] = (
                 torch.stack([
