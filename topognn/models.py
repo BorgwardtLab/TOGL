@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import pytorch_lightning as pl
+from torch_scatter import scatter
 
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_pool
 
@@ -24,7 +25,7 @@ import numpy as np
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
 
-    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128, residual_and_bn=False, share_filtration_parameters=False):
+    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128, residual_and_bn=False, share_filtration_parameters=False, fake=False):
         """
         num_coord_funs is a dictionary with the numbers of coordinate functions of each type.
         dim1 is a boolean. True if we have to return dim1 persistence.
@@ -42,6 +43,7 @@ class TopologyLayer(torch.nn.Module):
         self.filtration_hidden = filtration_hidden
         self.residual_and_bn = residual_and_bn
         self.share_filtration_parameters = share_filtration_parameters
+        self.fake = fake
 
         self.total_num_coord_funs = np.array(
             list(num_coord_funs.values())).sum()
@@ -121,9 +123,32 @@ class TopologyLayer(torch.nn.Module):
         else:
             filtered_v_ = torch.cat([filtration_mod.forward(x)
                                      for filtration_mod in self.filtration_modules], 1)
-
         filtered_e_, _ = torch.max(torch.stack(
             (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
+
+        if self.fake:
+            # Make fake tuples for dim 0
+            persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
+            # Make fake dim1 with unpaired values
+            unpaired_values = scatter(filtered_v_, batch.batch, dim=0, reduce='max')
+            persistence1_new = torch.zeros(
+                edge_index.shape[1], filtered_v_.shape[1], 2, device=x.device)
+            edge_slices = torch.Tensor(batch.__slices__['edge_index'], device=x.device)
+            bs = edge_slices.shape[0] - 1
+            n_edges = edge_slices[1:] - edge_slices[:-1]
+            random_edges = (
+                edge_slices[0:-1].unsqueeze(-1) +
+                torch.rand(size=(bs, self.num_filtrations), device=x.device)
+                * n_edges.float().unsqueeze(-1)
+            ).long()
+            persistence1_new[random_edges, torch.arange(self.num_filtrations).unsqueeze(0), :] = (
+                torch.stack([
+                    unpaired_values,
+                    filtered_e_[
+                        random_edges, torch.arange(self.num_filtrations).unsqueeze(0)]
+                ], -1)
+            )
+            return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
 
         vertex_slices = torch.Tensor(batch.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(batch.__slices__['edge_index']).cpu().long()
@@ -613,8 +638,6 @@ class LargerGCNModel(pl.LightningModule):
 
         self.min_lr = kwargs["min_lr"]
 
-
-
         self.dropout_p = dropout_p
 
     def configure_optimizers(self):
@@ -703,7 +726,9 @@ class LargerGCNModel(pl.LightningModule):
 class LargerTopoGNNModel(LargerGCNModel):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
-                 batch_norm=False, residual=False, train_eps=True, early_topo=False, residual_and_bn=False, share_filtration_parameters=False, **kwargs):
+                 batch_norm=False, residual=False, train_eps=True,
+                 early_topo=False, residual_and_bn=False,
+                 share_filtration_parameters=False, fake=False, **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
                  lr=lr, dropout_p=dropout_p, GIN=GIN, set2set=set2set,
                  batch_norm=batch_norm, residual=residual, train_eps=train_eps, **kwargs)
@@ -739,7 +764,8 @@ class LargerTopoGNNModel(LargerGCNModel):
             num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
             dim1=self.dim1, num_coord_funs1=coord_funs1, set2set=self.set2set,
             set_out_dim=self.set_out_dim, q_dim_set2set = kwargs["q_dim_set2set"],
-            residual_and_bn=residual_and_bn, share_filtration_parameters=share_filtration_parameters
+            residual_and_bn=residual_and_bn,
+            share_filtration_parameters=share_filtration_parameters, fake=fake
         )
 
         # number of extra dimension for each embedding from cycles (dim1)
@@ -871,6 +897,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--early_topo', type=str2bool, default=False, help='Use the topo layer early in the architecture.')
         parser.add_argument('--residual_and_bn', type=str2bool, default=False, help='Use residual and batch norm')
         parser.add_argument('--share_filtration_parameters', type=str2bool, default=False, help='Share filtration parameters of topo layer')
+        parser.add_argument('--fake', type=str2bool, default=False, help='Fake topological computations.')
         return parser
 
 class SimpleTopoGNNModel(LargerGCNModel):
