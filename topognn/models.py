@@ -744,7 +744,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             cycles_dim = 0
 
         self.classif = torch.nn.Sequential(
-            nn.Linear(cycles_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Linear(hidden_dim // 2, hidden_dim // 4),
             nn.ReLU(),
