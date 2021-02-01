@@ -24,7 +24,7 @@ import numpy as np
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
 
-    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128):
+    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128, residual_and_bn=False):
         """
         num_coord_funs is a dictionary with the numbers of coordinate functions of each type.
         dim1 is a boolean. True if we have to return dim1 persistence.
@@ -40,6 +40,7 @@ class TopologyLayer(torch.nn.Module):
         self.num_coord_funs = num_coord_funs
 
         self.filtration_hidden = filtration_hidden
+        self.residual_and_bn = residual_and_bn
 
         self.total_num_coord_funs = np.array(
             list(num_coord_funs.values())).sum()
@@ -89,7 +90,12 @@ class TopologyLayer(torch.nn.Module):
         if self.set2set:
             in_out_dim = self.features_in + set_out_dim*self.num_filtrations
         else:
-            in_out_dim = self.features_in + self.num_filtrations * self.total_num_coord_funs
+            if self.residual_and_bn:
+                in_out_dim = self.num_filtrations * self.total_num_coord_funs
+                features_out = features_in
+                self.bn = nn.BatchNorm1d(features_out)
+            else:
+                in_out_dim = self.features_in + self.num_filtrations * self.total_num_coord_funs
 
         self.out = torch.nn.Linear(
             in_out_dim, features_out)
@@ -118,28 +124,6 @@ class TopologyLayer(torch.nn.Module):
             vertex_slices, edge_slices)
         persistence0_new = persistence0_new.to(x.device)
         persistence1_new = persistence1_new.to(x.device)
-
-        # TEST
-        # persistence0 = parallel_persistence_routine(filtered_v_cpu, batch).to(filtered_v_.device)
-        # persistence0 = torch.split(persistence0,1,2)
-        # persistence0 = [p.squeeze(-1) for p in persistence0]
-
-        # persistence0 = []
-        # persistence1 = []
-        # filtered_v_cpu = filtered_v_.cpu()
-
-        # for f_idx in range(self.num_filtrations):
-        #     batch_cpu = batch.clone().to("cpu")
-        #     # TODO: Test on a single instance
-        #     batch_p_ = batch_persistence_routine(
-        #         filtered_v_cpu[:, f_idx], batch_cpu, self.dim1)
-
-        #     if self.dim1:  # cycles were computed
-        #         persistence0.append(batch_p_[0].to(filtered_v_.device))
-        #         persistence1.append(batch_p_[1].to(filtered_v_.device))
-        #     else:
-        #         persistence0.append(batch_p_.to(filtered_v_.device))
-
         return persistence0_new, persistence1_new
 
     def compute_coord_fun(self, persistence, batch, dim1=False):
@@ -200,9 +184,14 @@ class TopologyLayer(torch.nn.Module):
         coord_activations = self.compute_coord_activations(
             persistences0, batch)
 
-        concat_activations = torch.cat((x, coord_activations), 1)
-
-        out_activations = self.out(concat_activations)
+        if self.residual_and_bn:
+            out_activations = self.out(coord_activations)
+            out_activations = self.bn(out_activations)
+            out_activations = x + out_activations
+        else:
+            concat_activations = torch.cat((x, coord_activations), 1)
+            out_activations = self.out(concat_activations)
+            out_activations = F.relu(out_activations)
 
         if self.dim1:
             persistence1_mask = (persistences1 != 0).any(2).any(0)
@@ -698,13 +687,15 @@ class LargerGCNModel(pl.LightningModule):
 class LargerTopoGNNModel(LargerGCNModel):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
-                 batch_norm=False, residual=False, train_eps=True, **kwargs):
+                 batch_norm=False, residual=False, train_eps=True, early_topo=False, residual_and_bn=False, **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
                  lr=lr, dropout_p=dropout_p, GIN=GIN, set2set=set2set,
                  batch_norm=batch_norm, residual=residual, train_eps=train_eps, **kwargs)
 
         self.save_hyperparameters()
 
+        self.early_topo = early_topo
+        self.residual_and_bn = residual_and_bn
         self.num_filtrations = kwargs["num_filtrations"]
         self.filtration_hidden = kwargs["filtration_hidden"]
         self.num_coord_funs = kwargs["num_coord_funs"]
@@ -731,7 +722,8 @@ class LargerTopoGNNModel(LargerGCNModel):
             hidden_dim, hidden_dim, num_filtrations=self.num_filtrations,
             num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
             dim1=self.dim1, num_coord_funs1=coord_funs1, set2set=self.set2set,
-            set_out_dim=self.set_out_dim, q_dim_set2set = kwargs["q_dim_set2set"]
+            set_out_dim=self.set_out_dim, q_dim_set2set = kwargs["q_dim_set2set"],
+            residual_and_bn=residual_and_bn
         )
 
         # number of extra dimension for each embedding from cycles (dim1)
@@ -751,7 +743,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             nn.Linear(hidden_dim // 4, num_classes)
         )
 
-        
+
     def configure_optimizers(self):
         """Reduce learning rate if val_loss doesnt improve."""
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -768,28 +760,30 @@ class LargerTopoGNNModel(LargerGCNModel):
         x, edge_index = data.x, data.edge_index
         x = self.embedding(x)
 
-        for layer in self.layers[:-1]:
-            x = layer(x, edge_index=edge_index, data=data)
+        if self.early_topo:
+            # Topo layer as the second layer
+            x = self.layers[0](x, edge_index=edge_index, data=data)
+            x, x_dim1 = self.topo1(x, data)
+            x = F.dropout(x, p=self.dropout_p, training=self.training)
+            for layer in self.layers[1:]:
+                x = layer(x, edge_index=edge_index, data=data)
+        else:
+            # Topo layer as the second to last layer
+            for layer in self.layers[:-1]:
+                x = layer(x, edge_index=edge_index, data=data)
+            x, x_dim1 = self.topo1(x, data)
+            x = F.dropout(x, p=self.dropout_p, training=self.training)
+            x = self.layers[-1](x,edge_index=edge_index, data = data)
 
-        #Topo Magic----
-        x, x_dim1 = self.topo1(x, data)
-
-        x = F.relu(x)
-        x = F.dropout(x, p=self.dropout_p, training=self.training)
-        #--------------
-
-        # Last conv layer
-        x = self.layers[-1](x,edge_index=edge_index, data = data)
-        
         # Pooling
         x = self.pooling_fun(x, data.batch)
-        
+
         #Aggregating the dim1 topo info
         if self.dim1:
             x_pre_class = torch.cat([x, x_dim1], axis=1)
         else:
             x_pre_class = x
-        
+
         #Final classification
         x = self.classif(x_pre_class)
 
@@ -859,6 +853,8 @@ class LargerTopoGNNModel(LargerGCNModel):
         #parser.add_argument('--num_coord_funs1', type=int, default=3)
         parser.add_argument('--set_out_dim', type=int, default=32)
         parser.add_argument('--q_dim_set2set', type=int, default=128, help = "Bottleneck dimension in the set2set transformer")
+        parser.add_argument('--early_topo', type=str2bool, default=False, help='Use the topo layer early in the architecture.')
+        parser.add_argument('--residual_and_bn', type=str2bool, default=False, help='Use residual and batch norm')
         return parser
 
 class SimpleTopoGNNModel(LargerGCNModel):
