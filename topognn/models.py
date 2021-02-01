@@ -621,8 +621,7 @@ class LargerGCNModel(pl.LightningModule):
         """Reduce learning rate if val_loss doesnt improve."""
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         scheduler =  {'scheduler':torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.5, patience=self.lr_patience,
-            min_lr=self.min_lr),
+            optimizer, mode='min', factor=0.5, patience=self.lr_patience),
             "monitor":"val_loss",
             "frequency":1,
             "interval":"epoch"}
@@ -764,8 +763,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         """Reduce learning rate if val_loss doesnt improve."""
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         scheduler =  {'scheduler':torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.5, patience=self.lr_patience,
-            min_lr=self.min_lr),
+            optimizer, mode='min', factor=0.5, patience=self.lr_patience),
             "monitor":"val_loss",
             "frequency":1,
             "interval":"epoch"}
