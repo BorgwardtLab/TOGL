@@ -17,11 +17,25 @@ if __name__ == '__main__':
     df = pd.read_csv(args.INPUT, index_col='file')
 
     X = []
+    n_features = 0
+
+    # Figure out how long the feature vectors have to be.
+    for name, df_ in df.groupby('name'):
+        n_features = max(
+            n_features,
+            len(df_.sort_values(by='dimension')['n_features'].values)
+        )
 
     for name, df_ in df.groupby('name'):
         # This can be seen as an equivalent to the Betti number
         # calculation.
         feature_vector = df_.sort_values(by='dimension')['n_features'].values
+
+        feature_vector = np.pad(
+            feature_vector,
+            [(0, n_features - len(feature_vector))],
+            mode='constant'
+        )
 
         X.append(feature_vector)
 
