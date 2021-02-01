@@ -94,3 +94,25 @@ if __name__ == '__main__':
 
             layout = g.layout('kk')
             ig.plot(g, layout=layout, target=f'/tmp/G_{h + 1}_{i}.png')
+
+            print('\\begin{tikzpicture}')
+
+            for j, (x, y) in enumerate(layout.coords):
+                print(f'  \\coordinate ({j:02d}) at ({x:.2f}, {y:.2f});')
+
+            for e in g.es:
+                u, v = e.source, e.target
+                print(f'  \\draw ({u:02d}) -- ({v:02d});')
+
+            s = '  \\foreach \\v in {'
+            for j in range(len(layout.coords)):
+                s += f'{j:02d}'
+                s += ',' if j + 1< len(layout.coords) else ''
+            s += '}'
+
+            print(s)
+            print('  {')
+            print(f'    \\filldraw (\\v) circle (1pt);')
+            print('  }')
+
+            print('\\end{tikzpicture}')
