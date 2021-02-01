@@ -24,7 +24,7 @@ import numpy as np
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
 
-    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128, residual_and_bn=False):
+    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128, residual_and_bn=False, share_filtration_parameters=False):
         """
         num_coord_funs is a dictionary with the numbers of coordinate functions of each type.
         dim1 is a boolean. True if we have to return dim1 persistence.
@@ -41,6 +41,7 @@ class TopologyLayer(torch.nn.Module):
 
         self.filtration_hidden = filtration_hidden
         self.residual_and_bn = residual_and_bn
+        self.share_filtration_parameters = share_filtration_parameters
 
         self.total_num_coord_funs = np.array(
             list(num_coord_funs.values())).sum()
@@ -78,14 +79,19 @@ class TopologyLayer(torch.nn.Module):
                 for key in num_coord_funs1
             ])
 
-        # TODO : do we want to do weight sharing ? e.g. one big NN with num_filtrations outputs.
-        self.filtration_modules = torch.nn.ModuleList([
+        if self.share_filtration_parameters:
+            self.filtration_modules = torch.nn.Sequential(
+                    torch.nn.Linear(self.features_in, self.filtration_hidden),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(self.filtration_hidden, num_filtrations))
+        else:
+            self.filtration_modules = torch.nn.ModuleList([
 
-            torch.nn.Sequential(
-                torch.nn.Linear(self.features_in, self.filtration_hidden),
-                torch.nn.ReLU(),
-                torch.nn.Linear(self.filtration_hidden, 1)) for _ in range(num_filtrations)
-        ])
+                torch.nn.Sequential(
+                    torch.nn.Linear(self.features_in, self.filtration_hidden),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(self.filtration_hidden, 1)) for _ in range(num_filtrations)
+            ])
 
         if self.set2set:
             if self.residual_and_bn:
@@ -110,8 +116,11 @@ class TopologyLayer(torch.nn.Module):
         The lenght of the list is the number of filtrations.
         """
         edge_index = batch.edge_index
-        filtered_v_ = torch.cat([filtration_mod.forward(x)
-                                 for filtration_mod in self.filtration_modules], 1)
+        if self.share_filtration_parameters:
+            filtered_v_ = self.filtration_modules(x)
+        else:
+            filtered_v_ = torch.cat([filtration_mod.forward(x)
+                                     for filtration_mod in self.filtration_modules], 1)
 
         filtered_e_, _ = torch.max(torch.stack(
             (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
@@ -694,7 +703,7 @@ class LargerGCNModel(pl.LightningModule):
 class LargerTopoGNNModel(LargerGCNModel):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
-                 batch_norm=False, residual=False, train_eps=True, early_topo=False, residual_and_bn=False, **kwargs):
+                 batch_norm=False, residual=False, train_eps=True, early_topo=False, residual_and_bn=False, share_filtration_parameters=False, **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
                  lr=lr, dropout_p=dropout_p, GIN=GIN, set2set=set2set,
                  batch_norm=batch_norm, residual=residual, train_eps=train_eps, **kwargs)
@@ -730,7 +739,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
             dim1=self.dim1, num_coord_funs1=coord_funs1, set2set=self.set2set,
             set_out_dim=self.set_out_dim, q_dim_set2set = kwargs["q_dim_set2set"],
-            residual_and_bn=residual_and_bn
+            residual_and_bn=residual_and_bn, share_filtration_parameters=share_filtration_parameters
         )
 
         # number of extra dimension for each embedding from cycles (dim1)
@@ -862,6 +871,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--q_dim_set2set', type=int, default=128, help = "Bottleneck dimension in the set2set transformer")
         parser.add_argument('--early_topo', type=str2bool, default=False, help='Use the topo layer early in the architecture.')
         parser.add_argument('--residual_and_bn', type=str2bool, default=False, help='Use residual and batch norm')
+        parser.add_argument('--share_filtration_parameters', type=str2bool, default=False, help='Share filtration parameters of topo layer')
         return parser
 
 class SimpleTopoGNNModel(LargerGCNModel):
