@@ -133,7 +133,7 @@ class TopologyLayer(torch.nn.Module):
             unpaired_values = scatter(filtered_v_, batch.batch, dim=0, reduce='max')
             persistence1_new = torch.zeros(
                 edge_index.shape[1], filtered_v_.shape[1], 2, device=x.device)
-            edge_slices = torch.Tensor(batch.__slices__['edge_index'], device=x.device)
+            edge_slices = torch.Tensor(batch.__slices__['edge_index']).to(x.device)
             bs = edge_slices.shape[0] - 1
             n_edges = edge_slices[1:] - edge_slices[:-1]
             random_edges = (
