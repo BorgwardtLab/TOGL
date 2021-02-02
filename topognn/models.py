@@ -730,7 +730,7 @@ class LargerTopoGNNModel(LargerGCNModel):
                  lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
                  batch_norm=False, residual=False, train_eps=True,
                  early_topo=False, residual_and_bn=False,
-                 share_filtration_parameters=False, fake=False, **kwargs):
+                 share_filtration_parameters=False, fake=False, deepset=False, **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
                  lr=lr, dropout_p=dropout_p, GIN=GIN, set2set=set2set,
                  batch_norm=batch_norm, residual=residual, train_eps=train_eps, **kwargs)
@@ -760,21 +760,28 @@ class LargerTopoGNNModel(LargerGCNModel):
                        "Line_transform": self.num_coord_funs1,
                        "RationalHat_transform": self.num_coord_funs1
                        }
+        
 
-        self.topo1 = TopologyLayer(
+        self.deepset = deepset
+        if self.deepset:
+            self.topo1 = SimpleSetTopoLayer(n_features = hidden_dim,n_filtrations =  self.num_filtrations, mlp_hidden_dim = self.filtration_hidden, fake = fake, **kwargs)
+        else:
+            self.topo1 = TopologyLayer(
             hidden_dim, hidden_dim, num_filtrations=self.num_filtrations,
             num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
             dim1=self.dim1, num_coord_funs1=coord_funs1, set2set=self.set2set,
             set_out_dim=self.set_out_dim, q_dim_set2set = kwargs["q_dim_set2set"],
             residual_and_bn=residual_and_bn,
             share_filtration_parameters=share_filtration_parameters, fake=fake
-        )
+            )
 
         # number of extra dimension for each embedding from cycles (dim1)
         if self.dim1:
             if self.set2set:
                 cycles_dim = self.set_out_dim * self.num_filtrations
-            else:
+            elif self.deepset:
+                cycles_dim = kwargs["dim1_out_dim"]
+            else: #classical coordinate functions.
                 cycles_dim = self.num_filtrations * np.array(list(coord_funs1.values())).sum()
         else:
             cycles_dim = 0
@@ -814,7 +821,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             # Topo layer as the second to last layer
             for layer in self.layers[:-1]:
                 x = layer(x, edge_index=edge_index, data=data)
-            x, x_dim1 = self.topo1(x, data)
+            x, x_dim1 = self.topo1(x, data, )
             x = F.dropout(x, p=self.dropout_p, training=self.training)
             x = self.layers[-1](x,edge_index=edge_index, data = data)
 
@@ -900,7 +907,14 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--residual_and_bn', type=str2bool, default=False, help='Use residual and batch norm')
         parser.add_argument('--share_filtration_parameters', type=str2bool, default=False, help='Share filtration parameters of topo layer')
         parser.add_argument('--fake', type=str2bool, default=False, help='Fake topological computations.')
+        parser.add_argument('--deepset', type=str2bool, default=False, help='Using DeepSet as coordinate function')
+        parser.add_argument('--dim0_out_dim',type=int,default = 16, help = "Inner dim of the set function of the dim0 persistent features")
+        parser.add_argument('--dim1_out_dim',type=int,default = 16, help = "Dimension of the ouput of the dim1 persistent features")
+        parser.add_argument('--aggregation_fn', type=str, default='mean')
         return parser
+
+
+
 
 class SimpleTopoGNNModel(LargerGCNModel):
     def __init__(self, num_filtrations, filtration_hidden, hidden_dim, aggregation_fn, fake, dim1,**kwargs):
@@ -927,7 +941,9 @@ class SimpleTopoGNNModel(LargerGCNModel):
         x = self.embedding(x)
         x = self.layers[0](x, edge_index, data=data)
 
-        x, x_dim1 = self.topo(x, edge_index, data.batch, vertex_slices, edge_slices)
+        #x, x_dim1 = self.topo(x, edge_index, data.batch, vertex_slices, edge_slices)
+        x, x_dim1 = self.topo(x,data)
+
         for layer in self.layers[1:]:
             x = layer(x, edge_index=edge_index)
 

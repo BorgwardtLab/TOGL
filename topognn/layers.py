@@ -217,7 +217,12 @@ class SimpleSetTopoLayer(nn.Module):
         return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
 
 
-    def forward(self, x, edge_index, batch, vertex_slices, edge_slices):
+    def forward(self, x, data):
+
+        edge_index = data.edge_index
+        vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
+        edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
+        batch = data.batch
 
         if self.fake:
             pers0, pers1 = self.compute_fake_persistence(
