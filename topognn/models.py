@@ -839,49 +839,6 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         return x
 
-
-    def training_step(self, batch, batch_idx):
-        y = batch.y
-        # Flatten to make graph classification the same as node classification
-        y = y.view(-1)
-        y_hat = self(batch)
-        y_hat = y_hat.view(-1, y_hat.shape[-1])
-
-        loss = self.loss(y_hat, y)
-
-        self.accuracy(y_hat, y)
-
-        self.log("train_loss", loss, on_step=True, on_epoch=True)
-        self.log("train_acc", self.accuracy, on_step=True, on_epoch=True)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        y = batch.y
-        # Flatten to make graph classification the same as node classification
-        y = y.view(-1)
-        y_hat = self(batch)
-        y_hat = y_hat.view(-1, y_hat.shape[-1])
-
-        loss = self.loss(y_hat, y)
-
-        self.accuracy_val(y_hat, y)
-
-        self.log("val_loss", loss, on_epoch = True)
-
-        self.log("val_acc", self.accuracy_val, on_epoch=True)
-
-    def test_step(self, batch, batch_idx):
-
-        y = batch.y
-        y_hat = self(batch)
-
-        loss = self.loss(y_hat, y)
-        self.log("test_loss", loss, on_epoch=True)
-
-        self.accuracy_test(y_hat, y)
-
-        self.log("test_acc", self.accuracy_test, on_epoch=True)
-
     @ classmethod
     def add_model_specific_args(cls, parent):
         import argparse
