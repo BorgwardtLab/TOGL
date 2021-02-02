@@ -675,6 +675,7 @@ class LargerTopoGNNModel(LargerGCNModel):
                 n_filtrations =  self.num_filtrations,
                 mlp_hidden_dim = self.filtration_hidden,
                 aggregation_fn=aggregation_fn,
+                dim1=self.dim1,
                 dim0_out_dim=dim0_out_dim,
                 dim1_out_dim=dim1_out_dim,
                 residual_and_bn=residual_and_bn,
@@ -702,7 +703,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         # number of extra dimension for each embedding from cycles (dim1)
         if self.dim1:
             if self.deepset:
-                cycles_dim = kwargs["dim1_out_dim"]
+                cycles_dim = dim1_out_dim
             else: #classical coordinate functions.
                 cycles_dim = self.num_filtrations * np.array(list(coord_funs1.values())).sum()
         else:
