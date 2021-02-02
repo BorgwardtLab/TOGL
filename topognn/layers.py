@@ -89,7 +89,7 @@ class DeepSetLayer(nn.Module):
 class DeepSetLayerDim1(nn.Module):
     """Simple equivariant deep set layer."""
 
-    def __init__(self, in_dim, out_dim, aggregation_fn, **kwargs):
+    def __init__(self, in_dim, out_dim, aggregation_fn):
         super().__init__()
         self.Lambda = nn.Linear(in_dim, out_dim, bias=False)
         assert aggregation_fn in ["mean", "max", "sum"]
@@ -158,7 +158,7 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
 
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake, **kwargs):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
@@ -175,12 +175,15 @@ class SimpleSetTopoLayer(nn.Module):
                 nn.Linear(n_filtrations * 2, dim1_out_dim),
                 nn.ReLU(),
                 DeepSetLayerDim1(
-                    in_dim=dim1_out_dim, out_dim=dim1_out_dim, aggregation_fn=aggregation_fn, **kwargs)
+                    in_dim=dim1_out_dim, out_dim=dim1_out_dim, aggregation_fn=aggregation_fn),
+                nn.ReLU()
             ])
 
         self.set_fn0 = nn.ModuleList(
             [
                 nn.Linear(n_filtrations * 2, dim0_out_dim),
+                nn.ReLU(),
+                DeepSetLayer(dim0_out_dim, dim0_out_dim, aggregation_fn),
                 nn.ReLU(),
                 DeepSetLayer(
                     dim0_out_dim, n_features if residual_and_bn else dim0_out_dim, aggregation_fn),
@@ -196,11 +199,6 @@ class SimpleSetTopoLayer(nn.Module):
             )
 
         self.fake = fake
-        # self.set_fn1 = nn.ModuleList([
-        #     DeepSetLayer(n_filtrations*2, mlp_hidden_dim),
-        #     nn.ReLU(),
-        #     DeepSetLayer(mlp_hidden_dim, n_features),
-        # ])
 
     def compute_persistence(self, x, edge_index, vertex_slices, edge_slices, batch):
         """
@@ -229,7 +227,6 @@ class SimpleSetTopoLayer(nn.Module):
         return persistence0, persistence1
 
     def forward(self, x, data):
-
         edge_index = data.edge_index
         vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
@@ -263,8 +260,8 @@ class SimpleSetTopoLayer(nn.Module):
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
         if self.residual_and_bn:
-            x0 = x + self.bn(x0)
+            x = x + self.bn(x0)
         else:
-            x0 = self.out(torch.cat([x, x0], dim=-1))
+            x = self.out(torch.cat([x, x0], dim=-1))
 
-        return x0, x1
+        return x, x1
