@@ -421,6 +421,10 @@ class PairedTUGraphDatasetBase(TUDataset):
         data, slices = self.collate(data)
         return data, slices
 
+    def download(self):
+        """Download data set."""
+        super().download()
+
     @property
     def processed_dir(self):
         """Return name of directory for storing paired graphs."""
