@@ -123,13 +123,15 @@ class DeepSetLayerDim1(nn.Module):
 
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, **kwargs):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, fake, **kwargs):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
             nn.ReLU(),
             nn.Linear(mlp_hidden_dim, n_filtrations),
         )
+
+        self.num_filtrations = n_filtrations
 
         self.dim1_flag = dim1
         if self.dim1_flag:
@@ -148,13 +150,15 @@ class SimpleSetTopoLayer(nn.Module):
             ]
         )
         self.bn = nn.BatchNorm1d(n_features)
+
+        self.fake = fake
         # self.set_fn1 = nn.ModuleList([
         #     DeepSetLayer(n_filtrations*2, mlp_hidden_dim),
         #     nn.ReLU(),
         #     DeepSetLayer(mlp_hidden_dim, n_features),
         # ])
 
-    def compute_persistence(self, x, edge_index, vertex_slices, edge_slices):
+    def compute_persistence(self, x, edge_index, vertex_slices, edge_slices, batch):
         """
         Returns the persistence pairs as a list of tensors with shape [X.shape[0],2].
         The lenght of the list is the number of filtrations.
@@ -176,10 +180,54 @@ class SimpleSetTopoLayer(nn.Module):
 
         return persistence0, persistence1
 
+    def compute_fake_persistence(self,x,edge_index, vertex_slices, edge_slices, batch):
+        
+        filtered_v_ = self.filtrations(x)
+        
+        filtered_e_, _ = torch.max(torch.stack(
+            (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
+
+        # Make fake tuples for dim 0
+        persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
+        
+        # Make fake dim1 with unpaired values
+        unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
+        persistence1_new = torch.zeros(
+                edge_index.shape[1], filtered_v_.shape[1], 2, device=x.device)
+        
+        #edge_slices = torch.Tensor(edge_slices).to(x.device)
+        edge_slices = edge_slices.to(x.device) 
+        bs = edge_slices.shape[0] - 1
+        n_edges = edge_slices[1:] - edge_slices[:-1]
+        random_edges = (
+                edge_slices[0:-1].unsqueeze(-1) +
+                torch.floor(
+                    torch.rand(size=(bs, self.num_filtrations), device=x.device)
+                    * n_edges.float().unsqueeze(-1)
+                )
+            ).long()
+
+        persistence1_new[random_edges, torch.arange(self.num_filtrations).unsqueeze(0), :] = (
+                torch.stack([
+                    unpaired_values,
+                    filtered_e_[
+                        random_edges, torch.arange(self.num_filtrations).unsqueeze(0)]
+                ], -1)
+            )
+        return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
+
+
     def forward(self, x, edge_index, batch, vertex_slices, edge_slices):
-        pers0, pers1 = self.compute_persistence(
-            x, edge_index, vertex_slices, edge_slices
-        )
+
+        if self.fake:
+            pers0, pers1 = self.compute_fake_persistence(
+            x, edge_index, vertex_slices, edge_slices, batch
+            )
+        else:
+            pers0, pers1 = self.compute_persistence(
+            x, edge_index, vertex_slices, edge_slices, batch
+            )
+
 
         x0 = torch.cat(
             [x, pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)], 1)

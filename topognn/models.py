@@ -912,15 +912,17 @@ class SimpleTopoGNNModel(LargerGCNModel):
 
         self.dim1_flag = (dim1 and (not fake))
 
-        if fake:
-            self.topo = FakeSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
-        else:
-            self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn, dim1 = dim1, **kwargs)
+        #if fake:
+        #    self.topo = FakeSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn)
+        #else:
+        
+        self.topo = SimpleSetTopoLayer(hidden_dim, num_filtrations, filtration_hidden, aggregation_fn, dim1 = dim1, fake = fake, **kwargs)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
         vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
+
 
         x = self.embedding(x)
         x = self.layers[0](x, edge_index, data=data)
