@@ -5,16 +5,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import pytorch_lightning as pl
-from torch_scatter import scatter
 
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_pool
 
-from torch_geometric.data import DataLoader, Batch, Data
-
 from topognn import Tasks
 from topognn.cli_utils import str2bool
-from topognn.topo_utils import batch_persistence_routine, persistence_routine, parallel_persistence_routine
-from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer, FakeSetTopoLayer
+from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer, fake_persistence_computation
 from topognn.metrics import WeightedAccuracy
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
@@ -126,34 +122,16 @@ class TopologyLayer(torch.nn.Module):
         filtered_e_, _ = torch.max(torch.stack(
             (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
 
-        if self.fake:
-            # Make fake tuples for dim 0
-            persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
-            # Make fake dim1 with unpaired values
-            unpaired_values = scatter(filtered_v_, batch.batch, dim=0, reduce='max')
-            persistence1_new = torch.zeros(
-                edge_index.shape[1], filtered_v_.shape[1], 2, device=x.device)
-            edge_slices = torch.Tensor(batch.__slices__['edge_index']).to(x.device)
-            bs = edge_slices.shape[0] - 1
-            n_edges = edge_slices[1:] - edge_slices[:-1]
-            random_edges = (
-                edge_slices[0:-1].unsqueeze(-1) +
-                torch.floor(
-                    torch.rand(size=(bs, self.num_filtrations), device=x.device)
-                    * n_edges.float().unsqueeze(-1)
-                )
-            ).long()
-            persistence1_new[random_edges, torch.arange(self.num_filtrations).unsqueeze(0), :] = (
-                torch.stack([
-                    unpaired_values,
-                    filtered_e_[
-                        random_edges, torch.arange(self.num_filtrations).unsqueeze(0)]
-                ], -1)
-            )
-            return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
+        vertex_slices = torch.Tensor(batch.__slices__['x']).long()
+        edge_slices = torch.Tensor(batch.__slices__['edge_index']).long()
 
-        vertex_slices = torch.Tensor(batch.__slices__['x']).cpu().long()
-        edge_slices = torch.Tensor(batch.__slices__['edge_index']).cpu().long()
+        if self.fake:
+            edge_slices = torch.Tensor(batch.__slices__['edge_index']).to(x.device)
+            return fake_persistence_computation(
+                filtered_v_, edge_index, vertex_slices, edge_slices, batch.batch)
+
+        vertex_slices = vertex_slices.cpu()
+        edge_slices = edge_slices.cpu()
 
         filtered_v_ = filtered_v_.cpu().transpose(1, 0).contiguous()
         filtered_e_ = filtered_e_.cpu().transpose(1, 0).contiguous()
@@ -764,7 +742,13 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         self.deepset = deepset
         if self.deepset:
-            self.topo1 = SimpleSetTopoLayer(n_features = hidden_dim,n_filtrations =  self.num_filtrations, mlp_hidden_dim = self.filtration_hidden, fake = fake, **kwargs)
+            self.topo1 = SimpleSetTopoLayer(
+                n_features = hidden_dim,
+                n_filtrations =  self.num_filtrations,
+                mlp_hidden_dim = self.filtration_hidden,
+                residual_and_bn=residual_and_bn,
+                fake = fake,
+                **kwargs)
         else:
             self.topo1 = TopologyLayer(
             hidden_dim, hidden_dim, num_filtrations=self.num_filtrations,
@@ -853,8 +837,8 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--set2set', type=str2bool, default=False)
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)
-        parser.add_argument('--filtration_hidden', type=int, default=15)
-        parser.add_argument('--num_filtrations', type=int, default=2)
+        parser.add_argument('--filtration_hidden', type=int, default=24)
+        parser.add_argument('--num_filtrations', type=int, default=8)
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
         #parser.add_argument('--num_coord_funs1', type=int, default=3)
@@ -862,11 +846,11 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--q_dim_set2set', type=int, default=128, help = "Bottleneck dimension in the set2set transformer")
         parser.add_argument('--early_topo', type=str2bool, default=False, help='Use the topo layer early in the architecture.')
         parser.add_argument('--residual_and_bn', type=str2bool, default=False, help='Use residual and batch norm')
-        parser.add_argument('--share_filtration_parameters', type=str2bool, default=False, help='Share filtration parameters of topo layer')
+        parser.add_argument('--share_filtration_parameters', type=str2bool, default=True, help='Share filtration parameters of topo layer')
         parser.add_argument('--fake', type=str2bool, default=False, help='Fake topological computations.')
         parser.add_argument('--deepset', type=str2bool, default=False, help='Using DeepSet as coordinate function')
-        parser.add_argument('--dim0_out_dim',type=int,default = 16, help = "Inner dim of the set function of the dim0 persistent features")
-        parser.add_argument('--dim1_out_dim',type=int,default = 16, help = "Dimension of the ouput of the dim1 persistent features")
+        parser.add_argument('--dim0_out_dim',type=int,default = 24, help = "Inner dim of the set function of the dim0 persistent features")
+        parser.add_argument('--dim1_out_dim',type=int,default = 24, help = "Dimension of the ouput of the dim1 persistent features")
         parser.add_argument('--aggregation_fn', type=str, default='mean')
         return parser
 

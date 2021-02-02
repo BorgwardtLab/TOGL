@@ -79,12 +79,12 @@ class DeepSetLayer(nn.Module):
 
     def forward(self, x, batch):
         # Apply aggregation function over graph
-
         xm = scatter(x, batch, dim=0, reduce=self.aggregation_fn)
         xm = self.Lambda(xm)
         x = self.Gamma(x)
         x = x - xm[batch, :]
         return x
+
 
 class DeepSetLayerDim1(nn.Module):
     """Simple equivariant deep set layer."""
@@ -95,35 +95,70 @@ class DeepSetLayerDim1(nn.Module):
         assert aggregation_fn in ["mean", "max", "sum"]
         self.aggregation_fn = aggregation_fn
 
-    def forward(self, x, edge_slices, mask = None):
+    def forward(self, x, edge_slices, mask=None):
         '''
         Mask is True where the persistence (x) is observed.
         '''
         # Apply aggregation function over graph
-        
-        #Computing the equivalent of batch over edges.
+
+        # Computing the equivalent of batch over edges.
         edge_diff_slices = (edge_slices[1:]-edge_slices[:-1]).to(x.device)
         n_batch = len(edge_diff_slices)
-        batch_e = torch.repeat_interleave(torch.arange(n_batch, device = x.device),edge_diff_slices)
-        #Only aggregate over edges with non zero persistence pairs.
+        batch_e = torch.repeat_interleave(torch.arange(
+            n_batch, device=x.device), edge_diff_slices)
+        # Only aggregate over edges with non zero persistence pairs.
         if mask is not None:
             batch_e = batch_e[mask]
 
-        xm = scatter(x, batch_e, dim= 0, reduce=self.aggregation_fn, dim_size= n_batch)
-        
+        xm = scatter(x, batch_e, dim=0,
+                     reduce=self.aggregation_fn, dim_size=n_batch)
+
         xm = self.Lambda(xm)
 
-        #xm = scatter(x, batch, dim=0, reduce=self.aggregation_fn)
-        #xm = self.Lambda(xm)
-        #x = self.Gamma(x)
-        #x = x - xm[batch, :]
+        # xm = scatter(x, batch, dim=0, reduce=self.aggregation_fn)
+        # xm = self.Lambda(xm)
+        # x = self.Gamma(x)
+        # x = x - xm[batch, :]
         return xm
 
 
+def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_slices, batch):
+    device = filtered_v_.device
+    num_filtrations = filtered_v_.shape[1]
+    filtered_e_, _ = torch.max(torch.stack(
+        (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
+
+    # Make fake tuples for dim 0
+    persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
+
+    # Make fake dim1 with unpaired values
+    unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
+    persistence1_new = torch.zeros(
+        edge_index.shape[1], filtered_v_.shape[1], 2, device=device)
+
+    edge_slices = edge_slices.to(device)
+    bs = edge_slices.shape[0] - 1
+    n_edges = edge_slices[1:] - edge_slices[:-1]
+    random_edges = (
+        edge_slices[0:-1].unsqueeze(-1) +
+        torch.floor(
+            torch.rand(size=(bs, num_filtrations), device=device)
+            * n_edges.float().unsqueeze(-1)
+        )
+    ).long()
+
+    persistence1_new[random_edges, torch.arange(num_filtrations).unsqueeze(0), :] = (
+        torch.stack([
+            unpaired_values,
+            filtered_e_[
+                    random_edges, torch.arange(num_filtrations).unsqueeze(0)]
+        ], -1)
+    )
+    return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
 
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, fake, **kwargs):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake, **kwargs):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
@@ -132,24 +167,33 @@ class SimpleSetTopoLayer(nn.Module):
         )
 
         self.num_filtrations = n_filtrations
+        self.residual_and_bn = residual_and_bn
 
         self.dim1_flag = dim1
         if self.dim1_flag:
-            self.dim1_fn = DeepSetLayerDim1(in_dim =  2 * n_features + n_filtrations*2,
-                out_dim = dim1_out_dim,
-                aggregation_fn = aggregation_fn,
-                **kwargs)
+            self.set_fn1 = nn.ModuleList([
+                nn.Linear(n_filtrations * 2, dim1_out_dim),
+                nn.ReLU(),
+                DeepSetLayerDim1(
+                    in_dim=dim1_out_dim, out_dim=dim1_out_dim, aggregation_fn=aggregation_fn, **kwargs)
+            ])
 
         self.set_fn0 = nn.ModuleList(
             [
-                DeepSetLayer(
-                    n_features + n_filtrations * 2, dim0_out_dim, aggregation_fn
-                ),
+                nn.Linear(n_filtrations * 2, dim0_out_dim),
                 nn.ReLU(),
-                DeepSetLayer(dim0_out_dim, n_features, aggregation_fn),
+                DeepSetLayer(
+                    dim0_out_dim, n_features if residual_and_bn else dim0_out_dim, aggregation_fn),
+                nn.ReLU()
             ]
         )
-        self.bn = nn.BatchNorm1d(n_features)
+        if residual_and_bn:
+            self.bn = nn.BatchNorm1d(n_features)
+        else:
+            self.out = nn.Sequential(
+                nn.Linear(dim0_out_dim + n_features, n_features),
+                nn.ReLU()
+            )
 
         self.fake = fake
         # self.set_fn1 = nn.ModuleList([
@@ -164,6 +208,10 @@ class SimpleSetTopoLayer(nn.Module):
         The lenght of the list is the number of filtrations.
         """
         filtered_v = self.filtrations(x)
+        if self.fake:
+            return fake_persistence_computation(
+                filtered_v, edge_index, vertex_slices, edge_slices, batch)
+
         filtered_e, _ = torch.max(
             torch.stack((filtered_v[edge_index[0]], filtered_v[edge_index[1]])), axis=0
         )
@@ -180,43 +228,6 @@ class SimpleSetTopoLayer(nn.Module):
 
         return persistence0, persistence1
 
-    def compute_fake_persistence(self,x,edge_index, vertex_slices, edge_slices, batch):
-        
-        filtered_v_ = self.filtrations(x)
-        
-        filtered_e_, _ = torch.max(torch.stack(
-            (filtered_v_[edge_index[0]], filtered_v_[edge_index[1]])), axis=0)
-
-        # Make fake tuples for dim 0
-        persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
-        
-        # Make fake dim1 with unpaired values
-        unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
-        persistence1_new = torch.zeros(
-                edge_index.shape[1], filtered_v_.shape[1], 2, device=x.device)
-        
-        #edge_slices = torch.Tensor(edge_slices).to(x.device)
-        edge_slices = edge_slices.to(x.device) 
-        bs = edge_slices.shape[0] - 1
-        n_edges = edge_slices[1:] - edge_slices[:-1]
-        random_edges = (
-                edge_slices[0:-1].unsqueeze(-1) +
-                torch.floor(
-                    torch.rand(size=(bs, self.num_filtrations), device=x.device)
-                    * n_edges.float().unsqueeze(-1)
-                )
-            ).long()
-
-        persistence1_new[random_edges, torch.arange(self.num_filtrations).unsqueeze(0), :] = (
-                torch.stack([
-                    unpaired_values,
-                    filtered_e_[
-                        random_edges, torch.arange(self.num_filtrations).unsqueeze(0)]
-                ], -1)
-            )
-        return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
-
-
     def forward(self, x, data):
 
         edge_index = data.edge_index
@@ -224,75 +235,36 @@ class SimpleSetTopoLayer(nn.Module):
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
         batch = data.batch
 
-        if self.fake:
-            pers0, pers1 = self.compute_fake_persistence(
+        pers0, pers1 = self.compute_persistence(
             x, edge_index, vertex_slices, edge_slices, batch
-            )
-        else:
-            pers0, pers1 = self.compute_persistence(
-            x, edge_index, vertex_slices, edge_slices, batch
-            )
+        )
 
+        x0 = pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)
 
-        x0 = torch.cat(
-            [x, pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)], 1)
+        for layer in self.set_fn0:
+            if isinstance(layer, DeepSetLayer):
+                x0 = layer(x0, batch)
+            else:
+                x0 = layer(x0)
 
         if self.dim1_flag:
-        # Dim 1 computations.
-            pers1_reshaped = pers1.permute(1,0,2).reshape(pers1.shape[1],-1)
-            pers1_mask = ~((pers1_reshaped==0).all(-1))
-            nodes_idx_dim1 = edge_index[:,pers1_mask]
-            x0_dim1 = torch.cat(
-                [ x[nodes_idx_dim1[0,:],:], x[nodes_idx_dim1[1,:],:], pers1_reshaped[pers1_mask]  ], 1)
-            x_dim1 = self.dim1_fn(x0_dim1, edge_slices, mask = pers1_mask)
+            # Dim 1 computations.
+            pers1_reshaped = pers1.permute(1, 0, 2).reshape(pers1.shape[1], -1)
+            pers1_mask = ~((pers1_reshaped == 0).all(-1))
+            x1 = pers1_reshaped[pers1_mask]
+            for layer in self.set_fn1:
+                if isinstance(layer, DeepSetLayerDim1):
+                    x1 = layer(x1, edge_slices, mask=pers1_mask)
+                else:
+                    x1 = layer(x1)
         else:
-            x_dim1 = None
-        
-        
-        for layer in self.set_fn0:
-            if isinstance(layer, DeepSetLayer):
-                x0 = layer(x0, batch)
-            else:
-                x0 = layer(x0)
+            x1 = None
 
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
+        if self.residual_and_bn:
+            x0 = x + self.bn(x0)
+        else:
+            x0 = self.out(torch.cat([x, x0], dim=-1))
 
-        return x + self.bn(x0), x_dim1
-
-
-class FakeSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn):
-        super().__init__()
-        self.filtrations = nn.Sequential(
-            nn.Linear(n_features, mlp_hidden_dim),
-            nn.ReLU(),
-            nn.Linear(mlp_hidden_dim, n_filtrations),
-        )
-        self.set_fn0 = nn.ModuleList([
-            DeepSetLayer(n_features + n_filtrations,
-                         mlp_hidden_dim, aggregation_fn),
-            nn.ReLU(),
-            DeepSetLayer(mlp_hidden_dim, n_features, aggregation_fn),
-        ])
-        self.bn = nn.BatchNorm1d(n_features)
-        # self.set_fn1 = nn.ModuleList([
-        #     DeepSetLayer(n_filtrations*2, mlp_hidden_dim),
-        #     nn.ReLU(),
-        #     DeepSetLayer(mlp_hidden_dim, n_features),
-        # ])
-
-    def forward(self, x, edge_index, batch, vertex_slices, edge_slices):
-        filtered_v = self.filtrations(x)
-
-        x0 = torch.cat([x, filtered_v], 1)
-        for layer in self.set_fn0:
-            if isinstance(layer, DeepSetLayer):
-                x0 = layer(x0, batch)
-            else:
-                x0 = layer(x0)
-
-        # Collect valid
-        # valid_0 = (pers1 != 0).all(-1)
-
-        return x + self.bn(x0), None
+        return x0, x1
