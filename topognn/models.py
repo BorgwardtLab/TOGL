@@ -526,6 +526,7 @@ class LargerGCNModel(pl.LightningModule):
             nn.ReLU(),
             nn.Linear(hidden_dim // 4, num_classes)
         )
+        self.task = task
 
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
@@ -753,6 +754,9 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         #Aggregating the dim1 topo info
         if self.dim1:
+            if self.task is Tasks.NODE_CLASSIFICATION:
+                # Scatter graph level representation to nodes
+                x_dim1 = x_dim1[data.batch]
             x_pre_class = torch.cat([x, x_dim1], axis=1)
         else:
             x_pre_class = x
