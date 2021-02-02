@@ -56,7 +56,7 @@ def main(args):
         data = topodata.PairedTUGraphDataset(
             args.dataset,
             batch_size=batch_size,
-            disjoint=not args.merged,
+            merged=args.merged,
         )
     else:
         data = topodata.TUGraphDataset(
