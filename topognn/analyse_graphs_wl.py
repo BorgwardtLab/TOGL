@@ -77,9 +77,6 @@ if __name__ == '__main__':
 
             graphs.append(g)
 
-    graphs = graphs[:36]
-    labels = labels[:36]
-
     # The idea is to show that the feature vectors are the same between
     # two distributions of graphs (or require more steps than warranted
     # as the cycle length increases).
