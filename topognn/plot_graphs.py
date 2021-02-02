@@ -107,12 +107,12 @@ if __name__ == '__main__':
             s = '  \\foreach \\v in {'
             for j in range(len(layout.coords)):
                 s += f'{j:02d}'
-                s += ',' if j + 1< len(layout.coords) else ''
+                s += ',' if j + 1 < len(layout.coords) else ''
             s += '}'
 
             print(s)
             print('  {')
-            print(f'    \\filldraw (\\v) circle (1pt);')
+            print('    \\filldraw (\\v) circle (1pt);')
             print('  }')
 
             print('\\end{tikzpicture}')
