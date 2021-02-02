@@ -21,7 +21,7 @@ import numpy as np
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
 
-    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, set2set=False, set_out_dim=32, q_dim_set2set = 128, residual_and_bn=False, share_filtration_parameters=False, fake=False):
+    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, residual_and_bn=False, share_filtration_parameters=False, fake=False):
         """
         num_coord_funs is a dictionary with the numbers of coordinate functions of each type.
         dim1 is a boolean. True if we have to return dim1 persistence.
@@ -49,27 +49,6 @@ class TopologyLayer(torch.nn.Module):
             for key in num_coord_funs
         ])
 
-        self.set2set = set2set
-        if self.set2set:
-            # NB if we want to have a single set transformer for all filtrations, the dim_in should be 2*num_filtrations.
-
-            self.set_transformer = coord_transforms.Set2SetMod(dim_in=2, dim_out=set_out_dim,
-                                                               num_heads=4, num_inds=q_dim_set2set)
-
-            # self.set_transformer = coord_transforms.ISAB(dim_in = 2 ,
-            #                                         dim_out = set_out_dim,
-            #                                         num_heads = 4,
-            #                                         num_inds = 256)
-
-            if self.dim1:
-                self.set_transformer1 = coord_transforms.Set2SetMod(dim_in=2, dim_out=set_out_dim,
-                                                                    num_heads=4, num_inds=q_dim_set2set)
-
-                # coord_transforms.ISAB(dim_in = 2 ,
-                #                                     dim_out = set_out_dim,
-                #                                     num_heads = 4,
-                #                                     num_inds = 256)
-
         if self.dim1:
             assert num_coord_funs1 is not None
             self.coord_fun_modules1 = torch.nn.ModuleList([
@@ -84,29 +63,21 @@ class TopologyLayer(torch.nn.Module):
                     torch.nn.Linear(self.filtration_hidden, num_filtrations))
         else:
             self.filtration_modules = torch.nn.ModuleList([
-
                 torch.nn.Sequential(
                     torch.nn.Linear(self.features_in, self.filtration_hidden),
                     torch.nn.ReLU(),
                     torch.nn.Linear(self.filtration_hidden, 1)) for _ in range(num_filtrations)
             ])
 
-        if self.set2set:
-            if self.residual_and_bn:
-                in_out_dim = set_out_dim*self.num_filtrations
-                features_out = features_in
-            else:
-                in_out_dim = self.features_in + set_out_dim*self.num_filtrations
+        if self.residual_and_bn:
+            in_out_dim = self.num_filtrations * self.total_num_coord_funs
+            features_out = features_in
+            self.bn = nn.BatchNorm1d(features_out)
         else:
-            if self.residual_and_bn:
-                in_out_dim = self.num_filtrations * self.total_num_coord_funs
-                features_out = features_in
-                self.bn = nn.BatchNorm1d(features_out)
-            else:
-                in_out_dim = self.features_in + self.num_filtrations * self.total_num_coord_funs
+            in_out_dim = self.features_in + self.num_filtrations * self.total_num_coord_funs
 
-        self.out = torch.nn.Linear(
-            in_out_dim, features_out)
+        self.out = torch.nn.Linear(in_out_dim, features_out)
+
 
     def compute_persistence(self, x, batch):
         """
@@ -126,7 +97,6 @@ class TopologyLayer(torch.nn.Module):
         edge_slices = torch.Tensor(batch.__slices__['edge_index']).long()
 
         if self.fake:
-            edge_slices = torch.Tensor(batch.__slices__['edge_index']).to(x.device)
             return fake_persistence_computation(
                 filtered_v_, edge_index, vertex_slices, edge_slices, batch.batch)
 
@@ -150,19 +120,11 @@ class TopologyLayer(torch.nn.Module):
         Output : coord_fun mean-aggregated [self.num_coord_fun]
         """
         if dim1:
-            if self.set2set:
-                coord_activation = self.set_transformer1(
-                    persistence, batch, dim1_flag=True)
-            else:
-                coord_activation = torch.cat(
-                    [mod.forward(persistence) for mod in self.coord_fun_modules1], 1)
+            coord_activation = torch.cat(
+                [mod.forward(persistence) for mod in self.coord_fun_modules1], 1)
         else:
-
-            if self.set2set:
-                coord_activation = self.set_transformer(persistence, batch)
-            else:
-                coord_activation = torch.cat(
-                    [mod.forward(persistence) for mod in self.coord_fun_modules], 1)
+            coord_activation = torch.cat(
+                [mod.forward(persistence) for mod in self.coord_fun_modules], 1)
 
         return coord_activation
 
@@ -204,9 +166,6 @@ class TopologyLayer(torch.nn.Module):
 
         if self.residual_and_bn:
             out_activations = self.out(coord_activations)
-            if self.set2set:
-                # Set2set is a linear operation
-                out_activations = F.relu(out_activations)
             out_activations = self.bn(out_activations)
             out_activations = x + out_activations
         else:
@@ -234,7 +193,7 @@ class FiltrationGCNModel(pl.LightningModule):
     GCN Model with a Graph Filtration Readout function.
     """
 
-    def __init__(self, hidden_dim, filtration_hidden, num_node_features, num_classes, task, num_filtrations, num_coord_funs, dim1=False, num_coord_funs1=None, lr=0.001, dropout_p=0.2, set2set=False, set_out_dim=32, **kwargs):
+    def __init__(self, hidden_dim, filtration_hidden, num_node_features, num_classes, task, num_filtrations, num_coord_funs, dim1=False, num_coord_funs1=None, lr=0.001, dropout_p=0.2, **kwargs):
         """
         num_filtrations = number of filtration functions
         num_coord_funs = number of different coordinate function
@@ -258,8 +217,7 @@ class FiltrationGCNModel(pl.LightningModule):
         self.topo1 = TopologyLayer(
             hidden_dim, hidden_dim, num_filtrations=num_filtrations,
             num_coord_funs=coord_funs, filtration_hidden=filtration_hidden,
-            dim1=dim1, num_coord_funs1=coord_funs1, set2set=set2set,
-            set_out_dim=set_out_dim
+            dim1=dim1, num_coord_funs1=coord_funs1
         )
         self.conv3 = GCNConv(hidden_dim, hidden_dim)
 
@@ -276,15 +234,11 @@ class FiltrationGCNModel(pl.LightningModule):
         else:
             raise RuntimeError('Unsupported task.')
 
-        self.set2set = set2set
         self.dim1 = dim1
         # number of extra dimension for each embedding from cycles (dim1)
         if dim1:
-            if self.set2set:
-                cycles_dim = set_out_dim * num_filtrations
-            else:
-                cycles_dim = num_filtrations * \
-                    np.array(list(coord_funs1.values())).sum()
+            cycles_dim = num_filtrations * \
+                np.array(list(coord_funs1.values())).sum()
         else:
             cycles_dim = 0
 
@@ -385,13 +339,12 @@ class FiltrationGCNModel(pl.LightningModule):
         parser.add_argument('--num_coord_funs1', type=int, default=3)
         parser.add_argument('--lr', type=float, default=0.005)
         parser.add_argument('--dropout_p', type=int, default=0.2)
-        parser.add_argument('--set2set', type=str2bool, default=False)
         parser.add_argument('--set_out_dim', type=int, default=32)
         return parser
 
 
 class GCNModel(pl.LightningModule):
-    def __init__(self, hidden_dim, num_node_features, num_classes, task, lr=0.001, dropout_p=0.2, GIN=False, set2set=False, **kwargs):
+    def __init__(self, hidden_dim, num_node_features, num_classes, task, lr=0.001, dropout_p=0.2, GIN=False, **kwargs):
         super().__init__()
         self.save_hyperparameters()
 
@@ -431,12 +384,7 @@ class GCNModel(pl.LightningModule):
             else:
                 raise RuntimeError('Unsupported task.')
 
-        if set2set:
-            self.fake_topo = coord_transforms.Set2SetMod(
-                dim_in=hidden_dim, dim_out=hidden_dim, num_heads=4, num_inds=256)
-
-        else:
-            self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
+        self.fake_topo = torch.nn.Linear(hidden_dim, hidden_dim)
 
         self.classif = torch.nn.Sequential(torch.nn.Linear(hidden_dim, hidden_dim),
                                            torch.nn.ReLU(),
@@ -452,8 +400,6 @@ class GCNModel(pl.LightningModule):
 
         self.dropout_p = dropout_p
 
-        self.set2set = set2set
-
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
@@ -464,10 +410,7 @@ class GCNModel(pl.LightningModule):
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout_p, training=self.training)
 
-        if self.set2set:
-            x = self.fake_topo(x, data)
-        else:
-            x = self.fake_topo(x)
+        x = self.fake_topo(x)
 
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout_p, training=self.training)
@@ -535,7 +478,6 @@ class GCNModel(pl.LightningModule):
         parser.add_argument("--lr", type=float, default=0.005)
         parser.add_argument("--dropout_p", type=float, default=0.1)
         parser.add_argument('--GIN', type=str2bool, default=False)
-        parser.add_argument('--set2set', type=str2bool, default=False)
         return parser
 
     # def validation_epoch_end(self,outputs):
@@ -544,8 +486,8 @@ class GCNModel(pl.LightningModule):
 
 class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
-                 lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
-                 batch_norm=False, residual=False, train_eps=True, **kwargs):
+                 lr=0.001, dropout_p=0.2, GIN=False, batch_norm=False,
+                 residual=False, train_eps=True, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.embedding = torch.nn.Linear(num_node_features, hidden_dim)
@@ -697,7 +639,6 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument("--min_lr", type=float, default=0.00001)
         parser.add_argument("--dropout_p", type=float, default=0.0)
         parser.add_argument('--GIN', type=str2bool, default=False)
-        parser.add_argument('--set2set', type=str2bool, default=False)
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)
         return parser
@@ -705,12 +646,14 @@ class LargerGCNModel(pl.LightningModule):
 
 class LargerTopoGNNModel(LargerGCNModel):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
-                 lr=0.001, dropout_p=0.2, GIN=False, set2set=False,
+                 lr=0.001, dropout_p=0.2, GIN=False,
                  batch_norm=False, residual=False, train_eps=True,
-                 early_topo=False, residual_and_bn=False,
+                 early_topo=False, residual_and_bn=False, aggregation_fn='mean',
+                 dim0_out_dim=32,
+                 dim1_out_dim=32,
                  share_filtration_parameters=False, fake=False, deepset=False, **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
-                 lr=lr, dropout_p=dropout_p, GIN=GIN, set2set=set2set,
+                 lr=lr, dropout_p=dropout_p, GIN=GIN,
                  batch_norm=batch_norm, residual=residual, train_eps=train_eps, **kwargs)
 
         self.save_hyperparameters()
@@ -720,25 +663,10 @@ class LargerTopoGNNModel(LargerGCNModel):
         self.num_filtrations = kwargs["num_filtrations"]
         self.filtration_hidden = kwargs["filtration_hidden"]
         self.num_coord_funs = kwargs["num_coord_funs"]
-        
         self.num_coord_funs1 = self.num_coord_funs #kwargs["num_coord_funs1"]
 
-        self.set2set = set2set
         self.dim1 = kwargs["dim1"]
-        self.set_out_dim = kwargs["set_out_dim"]
 
-        coord_funs = {"Triangle_transform": self.num_coord_funs,
-                      "Gaussian_transform": self.num_coord_funs,
-                      "Line_transform": self.num_coord_funs,
-                      "RationalHat_transform": self.num_coord_funs
-                      }
-
-        coord_funs1 = {"Triangle_transform": self.num_coord_funs1,
-                       "Gaussian_transform": self.num_coord_funs1,
-                       "Line_transform": self.num_coord_funs1,
-                       "RationalHat_transform": self.num_coord_funs1
-                       }
-        
 
         self.deepset = deepset
         if self.deepset:
@@ -746,24 +674,34 @@ class LargerTopoGNNModel(LargerGCNModel):
                 n_features = hidden_dim,
                 n_filtrations =  self.num_filtrations,
                 mlp_hidden_dim = self.filtration_hidden,
+                aggregation_fn=aggregation_fn,
+                dim0_out_dim=dim0_out_dim,
+                dim1_out_dim=dim1_out_dim,
                 residual_and_bn=residual_and_bn,
-                fake = fake,
-                **kwargs)
+                fake = fake)
         else:
+            coord_funs = {"Triangle_transform": self.num_coord_funs,
+                          "Gaussian_transform": self.num_coord_funs,
+                          "Line_transform": self.num_coord_funs,
+                          "RationalHat_transform": self.num_coord_funs
+                          }
+
+            coord_funs1 = {"Triangle_transform": self.num_coord_funs1,
+                           "Gaussian_transform": self.num_coord_funs1,
+                           "Line_transform": self.num_coord_funs1,
+                           "RationalHat_transform": self.num_coord_funs1
+                           }
             self.topo1 = TopologyLayer(
-            hidden_dim, hidden_dim, num_filtrations=self.num_filtrations,
-            num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
-            dim1=self.dim1, num_coord_funs1=coord_funs1, set2set=self.set2set,
-            set_out_dim=self.set_out_dim, q_dim_set2set = kwargs["q_dim_set2set"],
-            residual_and_bn=residual_and_bn,
-            share_filtration_parameters=share_filtration_parameters, fake=fake
-            )
+                hidden_dim, hidden_dim, num_filtrations=self.num_filtrations,
+                num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
+                dim1=self.dim1, num_coord_funs1=coord_funs1,
+                residual_and_bn=residual_and_bn,
+                share_filtration_parameters=share_filtration_parameters, fake=fake
+                )
 
         # number of extra dimension for each embedding from cycles (dim1)
         if self.dim1:
-            if self.set2set:
-                cycles_dim = self.set_out_dim * self.num_filtrations
-            elif self.deepset:
+            if self.deepset:
                 cycles_dim = kwargs["dim1_out_dim"]
             else: #classical coordinate functions.
                 cycles_dim = self.num_filtrations * np.array(list(coord_funs1.values())).sum()
@@ -823,7 +761,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         return x
 
-    @ classmethod
+    @classmethod
     def add_model_specific_args(cls, parent):
         import argparse
         parser = argparse.ArgumentParser(parents=[parent])
@@ -834,7 +772,6 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument("--min_lr", type=float, default=0.00001)
         parser.add_argument("--dropout_p", type=float, default=0.0)
         parser.add_argument('--GIN', type=str2bool, default=False)
-        parser.add_argument('--set2set', type=str2bool, default=False)
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)
         parser.add_argument('--filtration_hidden', type=int, default=24)
@@ -842,15 +779,13 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
         #parser.add_argument('--num_coord_funs1', type=int, default=3)
-        parser.add_argument('--set_out_dim', type=int, default=32)
-        parser.add_argument('--q_dim_set2set', type=int, default=128, help = "Bottleneck dimension in the set2set transformer")
         parser.add_argument('--early_topo', type=str2bool, default=False, help='Use the topo layer early in the architecture.')
-        parser.add_argument('--residual_and_bn', type=str2bool, default=False, help='Use residual and batch norm')
+        parser.add_argument('--residual_and_bn', type=str2bool, default=True, help='Use residual and batch norm')
         parser.add_argument('--share_filtration_parameters', type=str2bool, default=True, help='Share filtration parameters of topo layer')
         parser.add_argument('--fake', type=str2bool, default=False, help='Fake topological computations.')
         parser.add_argument('--deepset', type=str2bool, default=False, help='Using DeepSet as coordinate function')
-        parser.add_argument('--dim0_out_dim',type=int,default = 24, help = "Inner dim of the set function of the dim0 persistent features")
-        parser.add_argument('--dim1_out_dim',type=int,default = 24, help = "Dimension of the ouput of the dim1 persistent features")
+        parser.add_argument('--dim0_out_dim',type=int,default = 32, help = "Inner dim of the set function of the dim0 persistent features")
+        parser.add_argument('--dim1_out_dim',type=int,default = 32, help = "Dimension of the ouput of the dim1 persistent features")
         parser.add_argument('--aggregation_fn', type=str, default='mean')
         return parser
 
@@ -905,7 +840,7 @@ class SimpleTopoGNNModel(LargerGCNModel):
         parser.add_argument('--aggregation_fn', type=str, default='mean')
         parser.add_argument('--fake', type=str2bool, default=False)
         parser.add_argument('--dim1',type=str2bool,default = False)
-        parser.add_argument('--dim0_out_dim',type=int,default = 16, help = "Inner dim of the set function of the dim0 persistent features")
-        parser.add_argument('--dim1_out_dim',type=int,default = 16, help = "Dimension of the ouput of the dim1 persistent features")
+        parser.add_argument('--dim0_out_dim',type=int,default = 32, help = "Inner dim of the set function of the dim0 persistent features")
+        parser.add_argument('--dim1_out_dim',type=int,default = 32, help = "Dimension of the ouput of the dim1 persistent features")
 
         return parser

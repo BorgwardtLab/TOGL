@@ -10,9 +10,10 @@ from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor, Callback
 from pytorch_lightning.utilities import rank_zero_info
 import topognn.data_utils as topo_data
-from topognn.train_model import MODEL_MAP #, DATASET_MAP
+from topognn.train_model import MODEL_MAP  # , DATASET_MAP
 from pytorch_lightning.utilities.seed import seed_everything
 from topognn.cli_utils import str2bool
+
 
 class StopOnMinLR(Callback):
     """Callback to stop training as soon as the min_lr is reached.
@@ -50,10 +51,6 @@ def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
-
-
-    if args.set2set:
-        raise("Aborting set2set runs")
 
     model = model_cls(
         **vars(args),
@@ -135,7 +132,6 @@ if __name__ == '__main__':
     model_cls = MODEL_MAP[partial_args.model]
     #dataset_cls = DATASET_MAP[partial_args.dataset]
     dataset_cls = topo_data.get_dataset_class(**vars(partial_args))
-
 
     parser = model_cls.add_model_specific_args(parser)
     parser = dataset_cls.add_dataset_specific_args(parser)
