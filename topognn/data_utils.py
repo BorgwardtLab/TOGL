@@ -327,7 +327,7 @@ class PairedTUGraphDatasetBase(TUDataset):
 
         root = os.path.join(DATA_DIR,name) 
 
-        super().__init__(name=name, root=root, cleaned = cleaned, **kwargs)
+        super().__init__(name=name, root=root, cleaned=cleaned, **kwargs)
 
     def _pair_graphs(self):
         """Auxiliary function for performing graph pairing.
@@ -353,10 +353,8 @@ class PairedTUGraphDatasetBase(TUDataset):
         # consisting of proper pairings of the respective inputs.
         data = []
 
-        MAX_SIZE = 2000
-
         for i, label in enumerate(y):
-            partners = np.nonzero(y == label)[0]
+            partners = np.arange(len(y))
             partners = partners[i < partners]
 
             for j in partners:
@@ -384,10 +382,18 @@ class PairedTUGraphDatasetBase(TUDataset):
                     1
                 )
 
+                new_label = int(label == y[j])
+
+                # Only graphs whose components stem from the positive
+                # class will be accepted here; put *all* other graphs
+                # into the negative class.
+                if label != 1:
+                    new_label = 0
+
                 # Check whether we are dealing with the positive label,
                 # i.e. the last of the unique labels, when creating the
                 # set of *merged* graphs.
-                if not self.disjoint and label == labels[-1]:
+                if not self.disjoint and new_label == 1:
                     u = torch.randint(0, self[i].num_nodes, (1,))
                     v = torch.randint(0, self[j].num_nodes, (1,)) + offset
 
@@ -395,7 +401,7 @@ class PairedTUGraphDatasetBase(TUDataset):
                     edge_index = torch.cat((edge_index, edge), 1)
 
                 merged['edge_index'] = edge_index
-                merged['y'] = torch.tensor([label], dtype=torch.long)
+                merged['y'] = torch.tensor([new_label], dtype=torch.long)
 
                 for attr_name in dir(self[i]):
 
@@ -414,9 +420,6 @@ class PairedTUGraphDatasetBase(TUDataset):
                         )
 
                 data.append(Data(**merged))
-
-            if len(data)>MAX_SIZE:
-                break
 
         data, slices = self.collate(data)
         return data, slices
@@ -442,7 +445,6 @@ class PairedTUGraphDatasetBase(TUDataset):
 
         self.data, self.slices = self._pair_graphs()
         torch.save((self.data, self.slices), self.processed_paths[0])
-
 
 
 class PairedTUGraphDataset(pl.LightningDataModule):
