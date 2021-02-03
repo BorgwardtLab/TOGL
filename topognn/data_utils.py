@@ -19,19 +19,19 @@ import csv
 
 def dataset_map_dict():
     DATASET_MAP = {
-    'IMDB-BINARY': IMDB_Binary,
-    'PROTEINS': Proteins,
-    'PROTEINS_full': Proteins_full,
-    'ENZYMES': Enzymes,
-    'DD': DD,
-    'MUTAG' : MUTAG,
-    'MNIST': MNIST,
-    'CIFAR10': CIFAR10,
-    'PATTERN': PATTERN,
-    'CLUSTER': CLUSTER,
-    'Necklaces': Necklaces,
-    'Cycles': Cycles,
-    'NoCycles': NoCycles
+        'IMDB-BINARY': IMDB_Binary,
+        'PROTEINS': Proteins,
+        'PROTEINS_full': Proteins_full,
+        'ENZYMES': Enzymes,
+        'DD': DD,
+        'MUTAG': MUTAG,
+        'MNIST': MNIST,
+        'CIFAR10': CIFAR10,
+        'PATTERN': PATTERN,
+        'CLUSTER': CLUSTER,
+        'Necklaces': Necklaces,
+        'Cycles': Cycles,
+        'NoCycles': NoCycles
     }
 
     return DATASET_MAP
@@ -39,28 +39,30 @@ def dataset_map_dict():
 
 def get_dataset_class(**kwargs):
 
-    if kwargs.get("paired",False):
-        dataset_cls = PairedTUGraphDataset#(kwargs["dataset"],batch_size = kwargs["batch_size"], disjoint = not kwargs["merged"] )
+    if kwargs.get("paired", False):
+        # (kwargs["dataset"],batch_size = kwargs["batch_size"], disjoint = not kwargs["merged"] )
+        dataset_cls = PairedTUGraphDataset
     else:
-        
+
         dataset_cls = dataset_map_dict()[kwargs["dataset"]]
     return dataset_cls
 
 
 class SyntheticBaseDataset(InMemoryDataset):
-    def __init__(self, root = DATA_DIR, transform=None, pre_transform=None):
-        super(SyntheticBaseDataset, self).__init__(root, transform, pre_transform)
+    def __init__(self, root=DATA_DIR, transform=None, pre_transform=None):
+        super(SyntheticBaseDataset, self).__init__(
+            root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
     @property
     def raw_file_names(self):
-        return ['graphs.txt','labels.pt']
+        return ['graphs.txt', 'labels.pt']
 
     @property
     def processed_file_names(self):
         return ['synthetic_data.pt']
 
-    #def download(self):
+    # def download(self):
     #    # Download to `self.raw_dir`.
     #    raise("Not Implemented")
 
@@ -68,10 +70,11 @@ class SyntheticBaseDataset(InMemoryDataset):
         # Read data into huge `Data` list.
         with open(f"{self.root}/graphs.txt", "rb") as fp:   # Unpickling
             x_list, edge_list = pickle.load(fp)
-            
+
         labels = torch.load(f"{self.root}/labels.pt")
-        data_list = [Data(x=x_list[i], edge_index=edge_list[i], y = labels[i][None]) for i in range(len(x_list))]
-            
+        data_list = [Data(x=x_list[i], edge_index=edge_list[i],
+                          y=labels[i][None]) for i in range(len(x_list))]
+
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]
 
@@ -103,8 +106,8 @@ class SyntheticDataset(pl.LightningDataModule):
     def prepare_data(self):
 
         dataset = SyntheticBaseDataset(
-            root=os.path.join(DATA_DIR,"SYNTHETIC", self.name),
-            pre_transform = self.pre_transform
+            root=os.path.join(DATA_DIR, "SYNTHETIC", self.name),
+            pre_transform=self.pre_transform
         )
         self.node_attributes = dataset.num_node_features
         self.num_classes = dataset.num_classes
@@ -162,6 +165,7 @@ class SyntheticDataset(pl.LightningDataModule):
         #parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
         return parser
 
+
 def get_label_fromTU(dataset):
     labels = []
     for i in range(len(dataset)):
@@ -173,7 +177,9 @@ class TUGraphDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, fold=0, seed=42, num_workers=2, n_splits=5, **kwargs):
+                 val_fraction=0.1, test_fraction=0.1, fold=0, seed=42,
+                 num_workers=2, n_splits=5, legacy=True, **kwargs):
+
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -182,6 +188,7 @@ class TUGraphDataset(pl.LightningDataModule):
         self.test_fraction = test_fraction
         self.seed = seed
         self.num_workers = num_workers
+        self.legacy = legacy
 
         max_degrees = {"IMDB-BINARY": 540,
                        "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18}
@@ -196,55 +203,65 @@ class TUGraphDataset(pl.LightningDataModule):
         self.n_splits = n_splits
         self.fold = fold
 
-        if name in ["PROTEINS_full","ENZYMES","DD"]:
+        if name in ["PROTEINS_full", "ENZYMES", "DD"]:
             self.benchmark_idx = kwargs["benchmark_idx"]
         else:
             self.benchmark_idx = False
 
     def prepare_data(self):
+        from topognn.tu_datasets import PTG_LegacyTUDataset
 
-        if self.name=="PROTEINS_full" or self.name == "ENZYMES":
+        if self.name == "PROTEINS_full" or self.name == "ENZYMES":
             cleaned = False
         else:
             cleaned = True
 
-        dataset = TUDataset(
-            root=os.path.join(DATA_DIR, self.name),
-            use_node_attr=self.has_node_attributes,
-            cleaned=cleaned,
-            name=self.name,
-            transform=self.transform
-        )
-        self.node_attributes = (
-            dataset.num_node_features if self.has_node_attributes
-            else self.max_degree + 1
-        )
+        if self.legacy:
+            dataset = PTG_LegacyTUDataset(
+                root=os.path.join(DATA_DIR, self.name + '_legacy'),
+                # use_node_attr=self.has_node_attributes,
+                # cleaned=cleaned,
+                name=self.name,
+                transform=self.transform
+            )
+            self.node_attributes = dataset[0].x.shape[1]
+        else:
+            dataset = TUDataset(
+                root=os.path.join(DATA_DIR, self.name),
+                use_node_attr=self.has_node_attributes,
+                cleaned=cleaned,
+                name=self.name,
+                transform=self.transform
+            )
+            self.node_attributes = (
+                dataset.num_node_features if self.has_node_attributes
+                else self.max_degree + 1
+            )
+
         self.num_classes = dataset.num_classes
-        
         if self.benchmark_idx:
             all_idx = {}
             for section in ['train', 'val', 'test']:
-                with open(os.path.join(DATA_DIR,'Benchmark_idx',self.name+"_"+section+'.index'),'r') as f:
+                with open(os.path.join(DATA_DIR, 'Benchmark_idx', self.name+"_"+section+'.index'), 'r') as f:
                     reader = csv.reader(f)
                     all_idx[section] = [list(map(int, idx)) for idx in reader]
-            train_index = all_idx["train"][self.fold] 
+            train_index = all_idx["train"][self.fold]
             val_index = all_idx["val"][self.fold]
             test_index = all_idx["test"][self.fold]
-        
         else:
             n_instances = len(dataset)
 
             skf = StratifiedKFold(n_splits=self.n_splits,
-                              random_state=self.seed, shuffle=True)
+                                  random_state=self.seed, shuffle=True)
 
             skf_iterator = skf.split(
-            [i for i in range(n_instances)], get_label_fromTU(dataset))
+                [i for i in range(n_instances)], get_label_fromTU(dataset))
 
             train_index, test_index = next(
-            itertools.islice(skf_iterator, self.fold, None))
+                itertools.islice(skf_iterator, self.fold, None))
             train_index, val_index = train_test_split(
-            train_index, random_state=self.seed)
-            
+                train_index, random_state=self.seed)
+
             train_index = train_index.tolist()
             val_index = val_index.tolist()
             test_index = test_index.tolist()
@@ -291,14 +308,16 @@ class TUGraphDataset(pl.LightningDataModule):
         parser.add_argument('--fold', type=int, default=0)
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
-        parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
+        parser.add_argument('--legacy', type=str2bool, default=True)
+        parser.add_argument('--benchmark_idx', type=str2bool, default=True,
+                            help="If True, uses the idx from the graph benchmarking paper.")
         return parser
 
 
 class PairedTUGraphDatasetBase(TUDataset):
     """Pair graphs in TU data set."""
 
-    def __init__(self,name, disjoint, **kwargs):
+    def __init__(self, name, disjoint, **kwargs):
         """Create new paired graph data set from named TU data set.
 
         Parameters
@@ -320,12 +339,12 @@ class PairedTUGraphDatasetBase(TUDataset):
         # disjoint union of graphs will be calculated.
         self.disjoint = disjoint
 
-        if name=="PROTEINS_full" or name == "ENZYMES":
+        if name == "PROTEINS_full" or name == "ENZYMES":
             cleaned = False
         else:
             cleaned = True
 
-        root = os.path.join(DATA_DIR,name) 
+        root = os.path.join(DATA_DIR, name)
 
         super().__init__(name=name, root=root, cleaned=cleaned, **kwargs)
 
@@ -547,9 +566,11 @@ class Proteins(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='PROTEINS', **kwargs)
 
+
 class Proteins_full(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='PROTEINS_full', **kwargs)
+
 
 class Enzymes(TUGraphDataset):
     def __init__(self, **kwargs):
@@ -565,16 +586,19 @@ class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
 
+
 class Cycles(SyntheticDataset):
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(name="Cycles", **kwargs)
 
+
 class NoCycles(SyntheticDataset):
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(name="NoCycles", **kwargs)
 
+
 class Necklaces(SyntheticDataset):
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(name="Necklaces", **kwargs)
 
 
