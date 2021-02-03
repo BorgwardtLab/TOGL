@@ -182,7 +182,7 @@ class SimpleSetTopoLayer(nn.Module):
                 nn.Linear(n_filtrations * 2, dim1_out_dim),
                 nn.ReLU(),
                 DeepSetLayerDim1(
-                    in_dim=dim1_out_dim, out_dim=dim1_out_dim, aggregation_fn=aggregation_fn),
+                    in_dim=dim1_out_dim, out_dim=n_features if residual_and_bn and dist_dim1 else dim1_out_dim, aggregation_fn=aggregation_fn),
                 nn.ReLU()
             ])
 
@@ -209,10 +209,17 @@ class SimpleSetTopoLayer(nn.Module):
         if residual_and_bn:
             self.bn = nn.BatchNorm1d(n_features)
         else:
-            self.out = nn.Sequential(
-                nn.Linear(dim0_out_dim + n_features, n_features),
-                nn.ReLU()
-            )
+            if dist_dim1:
+                self.out = nn.Sequential(
+                    nn.Linear(dim0_out_dim + dim1_out_dim +
+                              n_features, n_features),
+                    nn.ReLU()
+                )
+            else:
+                self.out = nn.Sequential(
+                    nn.Linear(dim0_out_dim + n_features, n_features),
+                    nn.ReLU()
+                )
 
         self.fake = fake
 
@@ -244,9 +251,9 @@ class SimpleSetTopoLayer(nn.Module):
 
     def forward(self, x, data):
 
-        #Remove the duplucate edges
+        # Remove the duplucate edges
         data = remove_duplicate_edges(data)
-        
+
         edge_index = data.edge_index
         vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
@@ -279,16 +286,19 @@ class SimpleSetTopoLayer(nn.Module):
 
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
-        if self.dist_dim1 and self.dim1_flag:
-            x0 = x0 + x1[batch]
-            x1 = None
 
         if self.residual_and_bn:
+            if self.dist_dim1 and self.dim1_flag:
+                x0 = x0 + x1[batch]
+                x1 = None
             if self.swap_bn_order:
                 x = x + F.relu(self.bn(x0))
             else:
                 x = x + self.bn(F.relu(x0))
         else:
+            if self.dist_dim1 and self.dim1_flag:
+                x0 = torch.cat([x0, x1[batch]], dim=-1)
+                x1 = None
             x = self.out(torch.cat([x, x0], dim=-1))
 
         return x, x1
