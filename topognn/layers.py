@@ -180,19 +180,12 @@ class SimpleSetTopoLayer(nn.Module):
 
         self.dim1_flag = dim1
         if self.dim1_flag:
-            if deepset_type == 'linear':
-                self.set_fn1 = nn.ModuleList([nn.Linear(
-                    n_filtrations * 2,
-                    n_features if residual_and_bn and dist_dim1 else dim1_out_dim
-                )])
-            else:
-                self.set_fn1 = nn.ModuleList([
-                    nn.Linear(n_filtrations * 2, dim1_out_dim),
-                    nn.ReLU(),
-                    DeepSetLayerDim1(
-                        in_dim=dim1_out_dim, out_dim=n_features if residual_and_bn and dist_dim1 else dim1_out_dim, aggregation_fn=aggregation_fn),
-                    nn.ReLU()
-                ])
+            self.set_fn1 = nn.ModuleList([
+                nn.Linear(n_filtrations * 2, dim1_out_dim),
+                nn.ReLU(),
+                DeepSetLayerDim1(
+                    in_dim=dim1_out_dim, out_dim=n_features if residual_and_bn and dist_dim1 else dim1_out_dim, aggregation_fn=aggregation_fn),
+            ])
 
         if deepset_type == 'linear':
             self.set_fn0 = nn.ModuleList([nn.Linear(
