@@ -21,7 +21,10 @@ def generate_noCycles(N_samples,d):
         else:
             edge_index = torch.stack((torch.arange(Nnodes),(1+torch.arange(Nnodes))%Nnodes))
             x = torch.randn(Nnodes,d)
+
+        edge_index = torch.cat((edge_index,torch.flip(edge_index,dims=(0,))),1)
         
+
         x_list += [x]
         edge_list += [edge_index]
             
@@ -46,6 +49,7 @@ def generate_dummy(N_samples,d):
         else:
             edge_index = torch.tensor([[0,0,1,2],[1,2,3,3]])
 
+        edge_index = torch.cat((edge_index,torch.flip(edge_index,dims=(0,))),1)
         x = torch.randn(Nnodes,d)
 
         x_list += [x]
@@ -90,6 +94,7 @@ def generate_necklaces(N_samples,d):
         
         edge_index = torch.cat((chain_edge_index,small_chain1,small_chain2,connection_with_chain),1)
 
+        edge_index = torch.cat((edge_index,torch.flip(edge_index,dims=(0,))),1)
         x = torch.randn(Nnodes,d)
 
         x_list += [x]
@@ -124,6 +129,7 @@ def generate_cycles(N_samples,d):
             edge_index = torch.stack((torch.arange(Nnodes),(1+torch.arange(Nnodes))%Nnodes))
             x = torch.randn(Nnodes,d)
         
+        edge_index = torch.cat((edge_index,torch.flip(edge_index,dims=(0,))),1)
         x_list += [x]
         edge_list += [edge_index]
             

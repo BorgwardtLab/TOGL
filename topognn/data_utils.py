@@ -214,13 +214,22 @@ def get_degrees_fromTU(name):
     for data in dataset:
         degs += [degree(data.edge_index[0], dtype=torch.long)]
     
-    import ipdb; ipdb.set_trace()
 
     deg = torch.cat(degs, dim=0).to(torch.float)
     mean, std = deg.mean().item(), deg.std().item()
 
     print(f"Mean of degree of {name} = {mean} with std : {std}")
 
+class NormalizedDegree(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, data):
+        deg = degree(data.edge_index[0], dtype=torch.float)
+        deg = (deg - self.mean) / self.std
+        data.x = deg.view(-1, 1)
+        return data
 
 
 class TUGraphDataset(pl.LightningDataModule):
@@ -241,15 +250,22 @@ class TUGraphDataset(pl.LightningDataModule):
         self.legacy = legacy
 
         max_degrees = {"IMDB-BINARY": 540,
-                "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18}
-        self.has_node_attributes = (
-            name not in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K'] and use_node_attributes)
-        if not self.has_node_attributes:
+                "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18, "REDDIT-BINARY": 12200, "REDDIT-MULTI-5K":8000}
+        mean_degrees = {"REDDIT-BINARY":2.31,"REDDIT-MULTI-5K":2.34}
+        std_degrees  = {"REDDIT-BINARY": 20.66,"REDDIT-MULTI-5K":12.50}
+
+        self.has_node_attributes = use_node_attributes
+
+        self.pre_transform = None
+
+        if name in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K']:
             self.max_degree = max_degrees[name]
             if self.max_degree < 1000:
-                self.transform = OneHotDegree(self.max_degree)
+                self.pre_transform = OneHotDegree(self.max_degree)
+                self.transform = None
             else:
                 self.transform = None
+                self.pre_transform = NormalizedDegree(mean_degrees[name],std_degrees[name])
 
         else:
             self.transform = None
@@ -286,12 +302,17 @@ class TUGraphDataset(pl.LightningDataModule):
                 use_node_attr=self.has_node_attributes,
                 cleaned=cleaned,
                 name=self.name,
-                transform=self.transform
+                transform=self.transform,
+                pre_transform = self.pre_transform
             )
-            self.node_attributes = (
-                dataset.num_node_features if self.has_node_attributes
-                else self.max_degree + 1
-            )
+
+            if self.has_node_attributes:
+                self.node_attributes= dataset.num_node_features
+            else:
+                if self.max_degree<1000:
+                    self.node_attributes = self.max_degree+1
+                else:
+                    self.node_attributes = dataset.num_node_features
 
         self.num_classes = dataset.num_classes
 
@@ -311,7 +332,8 @@ class TUGraphDataset(pl.LightningDataModule):
                                   random_state=self.seed, shuffle=True)
 
             skf_iterator = skf.split(
-                [i for i in range(n_instances)], get_label_fromTU(dataset))
+                torch.tensor([i for i in range(n_instances)]), torch.tensor(get_label_fromTU(dataset)))
+
 
             train_index, test_index = next(
                 itertools.islice(skf_iterator, self.fold, None))
