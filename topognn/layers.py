@@ -162,7 +162,7 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
 class SimpleSetTopoLayer(nn.Module):
     def __init__(self, n_features, n_filtrations, mlp_hidden_dim,
                  aggregation_fn, dim0_out_dim, dim1_out_dim, dim1,
-                 residual_and_bn, fake, shallow_deepset=False,
+                 residual_and_bn, fake, deepset_type='full',
                  swap_bn_order=False, dist_dim1=False):
         super().__init__()
         self.filtrations = nn.Sequential(
@@ -171,6 +171,8 @@ class SimpleSetTopoLayer(nn.Module):
             nn.Linear(mlp_hidden_dim, n_filtrations),
         )
 
+        assert deepset_type in ['linear', 'shallow', 'full']
+
         self.num_filtrations = n_filtrations
         self.residual_and_bn = residual_and_bn
         self.swap_bn_order = swap_bn_order
@@ -178,15 +180,26 @@ class SimpleSetTopoLayer(nn.Module):
 
         self.dim1_flag = dim1
         if self.dim1_flag:
-            self.set_fn1 = nn.ModuleList([
-                nn.Linear(n_filtrations * 2, dim1_out_dim),
-                nn.ReLU(),
-                DeepSetLayerDim1(
-                    in_dim=dim1_out_dim, out_dim=n_features if residual_and_bn and dist_dim1 else dim1_out_dim, aggregation_fn=aggregation_fn),
-                nn.ReLU()
-            ])
+            if deepset_type == 'linear':
+                self.set_fn1 = nn.ModuleList([nn.Linear(
+                    n_filtrations * 2,
+                    n_features if residual_and_bn and dist_dim1 else dim1_out_dim
+                )])
+            else:
+                self.set_fn1 = nn.ModuleList([
+                    nn.Linear(n_filtrations * 2, dim1_out_dim),
+                    nn.ReLU(),
+                    DeepSetLayerDim1(
+                        in_dim=dim1_out_dim, out_dim=n_features if residual_and_bn and dist_dim1 else dim1_out_dim, aggregation_fn=aggregation_fn),
+                    nn.ReLU()
+                ])
 
-        if shallow_deepset:
+        if deepset_type == 'linear':
+            self.set_fn0 = nn.ModuleList([nn.Linear(
+                n_filtrations * 2,
+                n_features if residual_and_bn else dim0_out_dim, aggregation_fn)
+            ])
+        elif deepset_type == 'shallow':
             self.set_fn0 = nn.ModuleList(
                 [
                     nn.Linear(n_filtrations * 2, dim0_out_dim),
@@ -220,7 +233,6 @@ class SimpleSetTopoLayer(nn.Module):
                     nn.Linear(dim0_out_dim + n_features, n_features),
                     nn.ReLU()
                 )
-
         self.fake = fake
 
     def compute_persistence(self, x, edge_index, vertex_slices, edge_slices, batch):

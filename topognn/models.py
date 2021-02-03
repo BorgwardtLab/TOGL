@@ -677,7 +677,7 @@ class LargerTopoGNNModel(LargerGCNModel):
                  early_topo=False, residual_and_bn=False, aggregation_fn='mean',
                  dim0_out_dim=32, dim1_out_dim=32,
                  share_filtration_parameters=False, fake=False, deepset=False,
-                 tanh_filtrations=False, shallow_deepset=False,
+                 tanh_filtrations=False, deepset_type='full',
                  swap_bn_order=False,
                  dist_dim1=False,
                  **kwargs):
@@ -696,7 +696,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         self.dim1 = kwargs["dim1"]
         self.tanh_filtrations = tanh_filtrations
-        self.shallow_deepset = shallow_deepset
+        self.deepset_type = deepset_type
 
         self.deepset = deepset
         if self.deepset:
@@ -710,7 +710,7 @@ class LargerTopoGNNModel(LargerGCNModel):
                 dim1_out_dim=dim1_out_dim,
                 residual_and_bn=residual_and_bn,
                 fake = fake,
-                shallow_deepset=shallow_deepset,
+                deepset_type=deepset_type,
                 swap_bn_order=swap_bn_order,
                 dist_dim1=dist_dim1
             )
@@ -818,7 +818,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--filtration_hidden', type=int, default=24)
         parser.add_argument('--num_filtrations', type=int, default=8)
         parser.add_argument('--tanh_filtrations', type=str2bool, default=False)
-        parser.add_argument('--shallow_deepset', type=str2bool, default=False)
+        parser.add_argument('--deepset_type', type=str, choices=['full', 'shallow', 'linear'], default=False)
         parser.add_argument('--swap_bn_order', type=str2bool, default=False)
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
