@@ -160,7 +160,10 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
 
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake, shallow_deepset=False, swap_bn_order=False):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim,
+                 aggregation_fn, dim0_out_dim, dim1_out_dim, dim1,
+                 residual_and_bn, fake, shallow_deepset=False,
+                 swap_bn_order=False, dist_dim1=False):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
@@ -171,6 +174,7 @@ class SimpleSetTopoLayer(nn.Module):
         self.num_filtrations = n_filtrations
         self.residual_and_bn = residual_and_bn
         self.swap_bn_order = swap_bn_order
+        self.dist_dim1 = dist_dim1
 
         self.dim1_flag = dim1
         if self.dim1_flag:
@@ -275,6 +279,10 @@ class SimpleSetTopoLayer(nn.Module):
 
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
+        if self.dist_dim1 and self.dim1_flag:
+            x0 = x0 + x1[batch]
+            x1 = None
+
         if self.residual_and_bn:
             if self.swap_bn_order:
                 x = x + F.relu(self.bn(x0))
