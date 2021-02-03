@@ -22,7 +22,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    df = pd.read_csv(args.INPUT, index_col='file')
+    df = pd.read_csv(
+        args.INPUT,
+        index_col='file',
+        dtype={
+            'n_features': np.int,
+            'total_persistence': np.float,
+            'infinity_norm': np.float
+        }
+    )
 
     X = []
     n_features = 0
