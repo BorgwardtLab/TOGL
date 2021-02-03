@@ -51,7 +51,7 @@ def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
-
+    
     model = model_cls(
         **vars(args),
         num_node_features=dataset.node_attributes,

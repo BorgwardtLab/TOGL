@@ -12,6 +12,7 @@ from topognn import Tasks
 from topognn.cli_utils import str2bool
 from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer, fake_persistence_computation
 from topognn.metrics import WeightedAccuracy
+from topognn.data_utils import remove_duplicate_edges
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 
 import topognn.coord_transforms as coord_transforms
@@ -159,6 +160,9 @@ class TopologyLayer(torch.nn.Module):
         return torch.stack(collapsed_activations)
 
     def forward(self, x, batch):
+        
+        #Remove the duplicate edges.
+        batch = remove_duplicate_edges(batch)
 
         persistences0, persistences1 = self.compute_persistence(x, batch)
         coord_activations = self.compute_coord_activations(
@@ -731,6 +735,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
+
         x = self.embedding(x)
 
         if self.early_topo:
@@ -744,7 +749,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             # Topo layer as the second to last layer
             for layer in self.layers[:-1]:
                 x = layer(x, edge_index=edge_index, data=data)
-            x, x_dim1 = self.topo1(x, data, )
+            x, x_dim1 = self.topo1(x, data )
             x = F.dropout(x, p=self.dropout_p, training=self.training)
             x = self.layers[-1](x,edge_index=edge_index, data = data)
 

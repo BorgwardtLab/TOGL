@@ -6,6 +6,7 @@ from torch_scatter import scatter
 from torch_persistent_homology.persistent_homology_cpu import (
     compute_persistence_homology_batched_mt,
 )
+from topognn.data_utils import remove_duplicate_edges
 
 
 class GCNLayer(nn.Module):
@@ -227,6 +228,10 @@ class SimpleSetTopoLayer(nn.Module):
         return persistence0, persistence1
 
     def forward(self, x, data):
+
+        #Remove the duplucate edges
+        data = remove_duplicate_edges(data)
+        
         edge_index = data.edge_index
         vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()

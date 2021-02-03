@@ -4,7 +4,9 @@ from topognn import DATA_DIR, Tasks
 from torch_geometric.data import DataLoader, Batch, Data
 from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset
 from torch_geometric.transforms import OneHotDegree
+from torch_geometric.utils import degree
 from torch.utils.data import random_split, Subset
+from torch_scatter import scatter
 import torch
 import math
 import pickle
@@ -20,6 +22,8 @@ import csv
 def dataset_map_dict():
     DATASET_MAP = {
     'IMDB-BINARY': IMDB_Binary,
+    'REDDIT-BINARY' : REDDIT_Binary,
+    'REDDIT-5K': REDDIT_5K,
     'PROTEINS': Proteins,
     'PROTEINS_full': Proteins_full,
     'ENZYMES': Enzymes,
@@ -36,6 +40,30 @@ def dataset_map_dict():
 
     return DATASET_MAP
 
+
+
+def remove_duplicate_edges(batch):
+
+        with torch.no_grad():
+            batch = batch.clone()        
+            device = batch.x.device
+            # Computing the equivalent of batch over edges.
+            edge_slices = torch.tensor(batch.__slices__["edge_index"],device= device)
+            edge_diff_slices = (edge_slices[1:]-edge_slices[:-1])
+            n_batch = len(edge_diff_slices)
+            batch_e = torch.repeat_interleave(torch.arange(
+                n_batch, device = device), edge_diff_slices)
+
+            correct_idx = batch.edge_index[0] <= batch.edge_index[1]
+            #batch_e_idx = batch_e[correct_idx]
+            n_edges = scatter(correct_idx.long(), batch_e, reduce = "sum")
+           
+            batch.edge_index = batch.edge_index[:,correct_idx]
+           
+            new_slices = torch.cumsum(torch.cat((torch.zeros(1,device=device, dtype=torch.long),n_edges)),0).tolist()
+
+            batch.__slices__["edge_index"] =  new_slices     
+            return batch
 
 def get_dataset_class(**kwargs):
 
@@ -169,6 +197,26 @@ def get_label_fromTU(dataset):
     return labels
 
 
+def get_degrees_fromTU(name):
+
+    dataset = TUDataset(
+            root=os.path.join(DATA_DIR, name),
+            use_node_attr=True,
+            cleaned=True,
+            name = name)
+    degs = []
+    for data in dataset:
+        degs += [degree(data.edge_index[0], dtype=torch.long)]
+    
+    import ipdb; ipdb.set_trace()
+
+    deg = torch.cat(degs, dim=0).to(torch.float)
+    mean, std = deg.mean().item(), deg.std().item()
+
+    print(f"Mean of degree of {name} = {mean} with std : {std}")
+
+
+
 class TUGraphDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
 
@@ -184,12 +232,16 @@ class TUGraphDataset(pl.LightningDataModule):
         self.num_workers = num_workers
 
         max_degrees = {"IMDB-BINARY": 540,
-                       "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18}
+                "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18}
         self.has_node_attributes = (
-            name not in ['IMDB-BINARY'] and use_node_attributes)
+            name not in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K'] and use_node_attributes)
         if not self.has_node_attributes:
             self.max_degree = max_degrees[name]
-            self.transform = OneHotDegree(self.max_degree)
+            if self.max_degree < 1000:
+                self.transform = OneHotDegree(self.max_degree)
+            else:
+                self.transform = None
+
         else:
             self.transform = None
 
@@ -215,11 +267,15 @@ class TUGraphDataset(pl.LightningDataModule):
             name=self.name,
             transform=self.transform
         )
+
+
+        #TODO  : change this too.
         self.node_attributes = (
             dataset.num_node_features if self.has_node_attributes
             else self.max_degree + 1
         )
         self.num_classes = dataset.num_classes
+
         
         if self.benchmark_idx:
             all_idx = {}
@@ -541,6 +597,14 @@ class PairedTUGraphDataset(pl.LightningDataModule):
 class IMDB_Binary(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='IMDB-BINARY', **kwargs)
+
+class REDDIT_Binary(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='REDDIT-BINARY', **kwargs)
+
+class REDDIT_5K(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='REDDIT-MULTI-5K', **kwargs)
 
 
 class Proteins(TUGraphDataset):
