@@ -19,7 +19,6 @@ topognn/Experiments/*
 topognn/TestProject/*
 topognn/launch.sh
 topognn/sandbox*
-TopoGNN/*
 topo_gnn/*
 topognn/*.pt
 topognn/lightning_logs/*

@@ -22,7 +22,11 @@ import numpy as np
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
 
-    def __init__(self, features_in, features_out, num_filtrations, num_coord_funs, filtration_hidden, num_coord_funs1=None, dim1=False, residual_and_bn=False, share_filtration_parameters=False, fake=False):
+    def __init__(self, features_in, features_out, num_filtrations,
+                 num_coord_funs, filtration_hidden, num_coord_funs1=None,
+                 dim1=False, residual_and_bn=False,
+                 share_filtration_parameters=False, fake=False,
+                 tanh_filtrations=False, swap_bn_order=False):
         """
         num_coord_funs is a dictionary with the numbers of coordinate functions of each type.
         dim1 is a boolean. True if we have to return dim1 persistence.
@@ -41,6 +45,7 @@ class TopologyLayer(torch.nn.Module):
         self.residual_and_bn = residual_and_bn
         self.share_filtration_parameters = share_filtration_parameters
         self.fake = fake
+        self.swap_bn_order = swap_bn_order
 
         self.total_num_coord_funs = np.array(
             list(num_coord_funs.values())).sum()
@@ -57,17 +62,22 @@ class TopologyLayer(torch.nn.Module):
                 for key in num_coord_funs1
             ])
 
+        final_filtration_activation = nn.Tanh() if tanh_filtrations else nn.Identity()
         if self.share_filtration_parameters:
             self.filtration_modules = torch.nn.Sequential(
-                    torch.nn.Linear(self.features_in, self.filtration_hidden),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(self.filtration_hidden, num_filtrations))
+                torch.nn.Linear(self.features_in, self.filtration_hidden),
+                torch.nn.ReLU(),
+                torch.nn.Linear(self.filtration_hidden, num_filtrations),
+                final_filtration_activation
+            )
         else:
             self.filtration_modules = torch.nn.ModuleList([
                 torch.nn.Sequential(
                     torch.nn.Linear(self.features_in, self.filtration_hidden),
                     torch.nn.ReLU(),
-                    torch.nn.Linear(self.filtration_hidden, 1)) for _ in range(num_filtrations)
+                    torch.nn.Linear(self.filtration_hidden, 1),
+                    final_filtration_activation
+                ) for _ in range(num_filtrations)
             ])
 
         if self.residual_and_bn:
@@ -169,9 +179,14 @@ class TopologyLayer(torch.nn.Module):
             persistences0, batch)
 
         if self.residual_and_bn:
-            out_activations = self.out(coord_activations)
-            out_activations = self.bn(out_activations)
-            out_activations = x + out_activations
+            if self.swap_bn_order:
+                out_activations = self.out(coord_activations)
+                out_activations = self.bn(out_activations)
+                out_activations = x + F.relu(out_activations)
+            else:
+                out_activations = self.out(coord_activations)
+                out_activations = self.bn(out_activations)
+                out_activations = x + out_activations
         else:
             concat_activations = torch.cat((x, coord_activations), 1)
             out_activations = self.out(concat_activations)
@@ -530,6 +545,7 @@ class LargerGCNModel(pl.LightningModule):
             nn.ReLU(),
             nn.Linear(hidden_dim // 4, num_classes)
         )
+        self.task = task
 
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
@@ -653,9 +669,11 @@ class LargerTopoGNNModel(LargerGCNModel):
                  lr=0.001, dropout_p=0.2, GIN=False,
                  batch_norm=False, residual=False, train_eps=True,
                  early_topo=False, residual_and_bn=False, aggregation_fn='mean',
-                 dim0_out_dim=32,
-                 dim1_out_dim=32,
-                 share_filtration_parameters=False, fake=False, deepset=False, **kwargs):
+                 dim0_out_dim=32, dim1_out_dim=32,
+                 share_filtration_parameters=False, fake=False, deepset=False,
+                 tanh_filtrations=False, shallow_deepset=False,
+                 swap_bn_order=True,
+                 **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
                  lr=lr, dropout_p=dropout_p, GIN=GIN,
                  batch_norm=batch_norm, residual=residual, train_eps=train_eps, **kwargs)
@@ -670,7 +688,8 @@ class LargerTopoGNNModel(LargerGCNModel):
         self.num_coord_funs1 = self.num_coord_funs #kwargs["num_coord_funs1"]
 
         self.dim1 = kwargs["dim1"]
-
+        self.tanh_filtrations = tanh_filtrations
+        self.shallow_deepset = shallow_deepset
 
         self.deepset = deepset
         if self.deepset:
@@ -683,7 +702,10 @@ class LargerTopoGNNModel(LargerGCNModel):
                 dim0_out_dim=dim0_out_dim,
                 dim1_out_dim=dim1_out_dim,
                 residual_and_bn=residual_and_bn,
-                fake = fake)
+                fake = fake,
+                shallow_deepset=shallow_deepset,
+                swap_bn_order=swap_bn_order
+            )
         else:
             coord_funs = {"Triangle_transform": self.num_coord_funs,
                           "Gaussian_transform": self.num_coord_funs,
@@ -700,8 +722,9 @@ class LargerTopoGNNModel(LargerGCNModel):
                 hidden_dim, hidden_dim, num_filtrations=self.num_filtrations,
                 num_coord_funs=coord_funs, filtration_hidden=self.filtration_hidden,
                 dim1=self.dim1, num_coord_funs1=coord_funs1,
-                residual_and_bn=residual_and_bn,
-                share_filtration_parameters=share_filtration_parameters, fake=fake
+                residual_and_bn=residual_and_bn, swap_bn_order=swap_bn_order,
+                share_filtration_parameters=share_filtration_parameters, fake=fake,
+                tanh_filtrations=tanh_filtrations
                 )
 
         # number of extra dimension for each embedding from cycles (dim1)
@@ -758,6 +781,9 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         #Aggregating the dim1 topo info
         if self.dim1:
+            if self.task is Tasks.NODE_CLASSIFICATION:
+                # Scatter graph level representation to nodes
+                x_dim1 = x_dim1[data.batch]
             x_pre_class = torch.cat([x, x_dim1], axis=1)
         else:
             x_pre_class = x
@@ -782,6 +808,9 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--residual', type=str2bool, default=True)
         parser.add_argument('--filtration_hidden', type=int, default=24)
         parser.add_argument('--num_filtrations', type=int, default=8)
+        parser.add_argument('--tanh_filtrations', type=str2bool, default=False)
+        parser.add_argument('--shallow_deepset', type=str2bool, default=False)
+        parser.add_argument('--swap_bn_order', type=str2bool, default=False)
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
         #parser.add_argument('--num_coord_funs1', type=int, default=3)

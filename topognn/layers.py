@@ -1,6 +1,7 @@
 """Implementation of layers following Benchmarking GNNs paper."""
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GINConv
 from torch_scatter import scatter
 from torch_persistent_homology.persistent_homology_cpu import (
@@ -159,7 +160,7 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
 
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake, shallow_deepset=False, swap_bn_order=False):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
@@ -169,6 +170,7 @@ class SimpleSetTopoLayer(nn.Module):
 
         self.num_filtrations = n_filtrations
         self.residual_and_bn = residual_and_bn
+        self.swap_bn_order = swap_bn_order
 
         self.dim1_flag = dim1
         if self.dim1_flag:
@@ -180,17 +182,26 @@ class SimpleSetTopoLayer(nn.Module):
                 nn.ReLU()
             ])
 
-        self.set_fn0 = nn.ModuleList(
-            [
-                nn.Linear(n_filtrations * 2, dim0_out_dim),
-                nn.ReLU(),
-                DeepSetLayer(dim0_out_dim, dim0_out_dim, aggregation_fn),
-                nn.ReLU(),
-                DeepSetLayer(
-                    dim0_out_dim, n_features if residual_and_bn else dim0_out_dim, aggregation_fn),
-                nn.ReLU()
-            ]
-        )
+        if shallow_deepset:
+            self.set_fn0 = nn.ModuleList(
+                [
+                    nn.Linear(n_filtrations * 2, dim0_out_dim),
+                    nn.ReLU(),
+                    DeepSetLayer(
+                        dim0_out_dim, n_features if residual_and_bn else dim0_out_dim, aggregation_fn),
+                ]
+            )
+        else:
+            self.set_fn0 = nn.ModuleList(
+                [
+                    nn.Linear(n_filtrations * 2, dim0_out_dim),
+                    nn.ReLU(),
+                    DeepSetLayer(dim0_out_dim, dim0_out_dim, aggregation_fn),
+                    nn.ReLU(),
+                    DeepSetLayer(
+                        dim0_out_dim, n_features if residual_and_bn else dim0_out_dim, aggregation_fn),
+                ]
+            )
         if residual_and_bn:
             self.bn = nn.BatchNorm1d(n_features)
         else:
@@ -265,7 +276,10 @@ class SimpleSetTopoLayer(nn.Module):
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
         if self.residual_and_bn:
-            x = x + self.bn(x0)
+            if self.swap_bn_order:
+                x = x + F.relu(self.bn(x0))
+            else:
+                x = x + self.bn(F.relu(x0))
         else:
             x = self.out(torch.cat([x, x0], dim=-1))
 
