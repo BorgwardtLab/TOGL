@@ -192,6 +192,7 @@ class SyntheticDataset(pl.LightningDataModule):
         #parser.add_argument('--fold', type=int, default=0)
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--min_cycle',type=int,default = 3)
         #parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
         return parser
 
@@ -674,8 +675,9 @@ class MUTAG(TUGraphDataset):
 
 
 class Cycles(SyntheticDataset):
-    def __init__(self, **kwargs):
-        super().__init__(name="Cycles", **kwargs)
+    def __init__(self, min_cycle, **kwargs):
+        name = "Cycles" + f"_{min_cycle}"
+        super().__init__(name=name, **kwargs)
 
 
 class NoCycles(SyntheticDataset):
