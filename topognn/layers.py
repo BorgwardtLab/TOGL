@@ -133,13 +133,14 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
     # Make fake tuples for dim 0
     persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
 
+    edge_slices = edge_slices.to(device)
+    bs = edge_slices.shape[0] - 1
     # Make fake dim1 with unpaired values
-    unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
+    # unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
+    unpaired_values = torch.zeros((bs, num_filtrations), device=device)
     persistence1_new = torch.zeros(
         edge_index.shape[1], filtered_v_.shape[1], 2, device=device)
 
-    edge_slices = edge_slices.to(device)
-    bs = edge_slices.shape[0] - 1
     n_edges = edge_slices[1:] - edge_slices[:-1]
     random_edges = (
         edge_slices[0:-1].unsqueeze(-1) +
@@ -160,7 +161,10 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
 
 
 class SimpleSetTopoLayer(nn.Module):
-    def __init__(self, n_features, n_filtrations, mlp_hidden_dim, aggregation_fn, dim0_out_dim, dim1_out_dim, dim1, residual_and_bn, fake, shallow_deepset=False, swap_bn_order=False):
+    def __init__(self, n_features, n_filtrations, mlp_hidden_dim,
+                 aggregation_fn, dim0_out_dim, dim1_out_dim, dim1,
+                 residual_and_bn, fake, deepset_type='full',
+                 swap_bn_order=False, dist_dim1=False):
         super().__init__()
         self.filtrations = nn.Sequential(
             nn.Linear(n_features, mlp_hidden_dim),
@@ -168,9 +172,12 @@ class SimpleSetTopoLayer(nn.Module):
             nn.Linear(mlp_hidden_dim, n_filtrations),
         )
 
+        assert deepset_type in ['linear', 'shallow', 'full']
+
         self.num_filtrations = n_filtrations
         self.residual_and_bn = residual_and_bn
         self.swap_bn_order = swap_bn_order
+        self.dist_dim1 = dist_dim1
 
         self.dim1_flag = dim1
         if self.dim1_flag:
@@ -178,11 +185,15 @@ class SimpleSetTopoLayer(nn.Module):
                 nn.Linear(n_filtrations * 2, dim1_out_dim),
                 nn.ReLU(),
                 DeepSetLayerDim1(
-                    in_dim=dim1_out_dim, out_dim=dim1_out_dim, aggregation_fn=aggregation_fn),
-                nn.ReLU()
+                    in_dim=dim1_out_dim, out_dim=n_features if residual_and_bn and dist_dim1 else dim1_out_dim, aggregation_fn=aggregation_fn),
             ])
 
-        if shallow_deepset:
+        if deepset_type == 'linear':
+            self.set_fn0 = nn.ModuleList([nn.Linear(
+                n_filtrations * 2,
+                n_features if residual_and_bn else dim0_out_dim, aggregation_fn)
+            ])
+        elif deepset_type == 'shallow':
             self.set_fn0 = nn.ModuleList(
                 [
                     nn.Linear(n_filtrations * 2, dim0_out_dim),
@@ -205,11 +216,17 @@ class SimpleSetTopoLayer(nn.Module):
         if residual_and_bn:
             self.bn = nn.BatchNorm1d(n_features)
         else:
-            self.out = nn.Sequential(
-                nn.Linear(dim0_out_dim + n_features, n_features),
-                nn.ReLU()
-            )
-
+            if dist_dim1:
+                self.out = nn.Sequential(
+                    nn.Linear(dim0_out_dim + dim1_out_dim +
+                              n_features, n_features),
+                    nn.ReLU()
+                )
+            else:
+                self.out = nn.Sequential(
+                    nn.Linear(dim0_out_dim + n_features, n_features),
+                    nn.ReLU()
+                )
         self.fake = fake
 
     def compute_persistence(self, x, edge_index, vertex_slices, edge_slices, batch):
@@ -240,9 +257,9 @@ class SimpleSetTopoLayer(nn.Module):
 
     def forward(self, x, data):
 
-        #Remove the duplucate edges
+        # Remove the duplucate edges
         data = remove_duplicate_edges(data)
-        
+
         edge_index = data.edge_index
         vertex_slices = torch.Tensor(data.__slices__['x']).cpu().long()
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
@@ -275,12 +292,19 @@ class SimpleSetTopoLayer(nn.Module):
 
         # Collect valid
         # valid_0 = (pers1 != 0).all(-1)
+
         if self.residual_and_bn:
+            if self.dist_dim1 and self.dim1_flag:
+                x0 = x0 + x1[batch]
+                x1 = None
             if self.swap_bn_order:
                 x = x + F.relu(self.bn(x0))
             else:
                 x = x + self.bn(F.relu(x0))
         else:
+            if self.dist_dim1 and self.dim1_flag:
+                x0 = torch.cat([x0, x1[batch]], dim=-1)
+                x1 = None
             x = self.out(torch.cat([x, x0], dim=-1))
 
         return x, x1
