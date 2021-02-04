@@ -18,6 +18,8 @@ from torch_persistent_homology.persistent_homology_cpu import compute_persistenc
 import topognn.coord_transforms as coord_transforms
 import numpy as np
 
+import wandb
+
 
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
@@ -495,6 +497,9 @@ class GCNModel(pl.LightningModule):
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)
 
+
+
+
     @classmethod
     def add_model_specific_args(cls, parent):
         import argparse
@@ -653,6 +658,16 @@ class LargerGCNModel(pl.LightningModule):
         self.accuracy_test(y_hat, y)
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)
+        return {"y":y, "y_hat":y_hat}
+
+    def test_epoch_end(self,outputs):
+
+        y = torch.cat([output["y"] for output in outputs])
+        y_hat = torch.cat([output["y_hat"] for output in outputs])
+
+        y_hat_max = torch.argmax(y_hat,1)
+        if self.logger is not None:
+            self.logger.experiment.log({"conf_mat" : wandb.plot.confusion_matrix(preds=y_hat_max.cpu().numpy(), y_true = y.cpu().numpy())})
 
     @ classmethod
     def add_model_specific_args(cls, parent):
