@@ -641,7 +641,7 @@ class PairedTUGraphDataset(pl.LightningDataModule):
     def add_dataset_specific_args(cls, parent):
         import argparse
         parser = argparse.ArgumentParser(parents=[parent], add_help=False)
-        parser.add_argument('--use_node_attributes', type=bool, default=True)
+        parser.add_argument('--use_node_attributes', type=str2bool, default=True)
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
         return parser
@@ -707,7 +707,7 @@ def add_pos_to_node_features(instance: Data):
 
 
 class GNNBenchmark(pl.LightningDataModule):
-    def __init__(self, name, batch_size, num_workers=4, **kwargs):
+    def __init__(self, name, batch_size, use_node_attributes, num_workers=4, **kwargs):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -716,7 +716,10 @@ class GNNBenchmark(pl.LightningDataModule):
         if name in ['MNIST', 'CIFAR10']:
             self.task = Tasks.GRAPH_CLASSIFICATION
             self.num_classes = 10
-            self.transform = add_pos_to_node_features
+            if use_node_attributes:
+                self.transform = add_pos_to_node_features
+            else:
+                self.transform = None
         elif name == 'PATTERN':
             self.task = Tasks.NODE_CLASSIFICATION
             self.num_classes = 2
@@ -774,6 +777,7 @@ class GNNBenchmark(pl.LightningDataModule):
         import argparse
         parser = argparse.ArgumentParser(parents=[parent], add_help=False)
         parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--use_node_attributes', type=str2bool, default=True)
         return parser
 
 
