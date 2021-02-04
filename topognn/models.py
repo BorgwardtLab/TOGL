@@ -3,6 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import os
 
 import pytorch_lightning as pl
 
@@ -98,7 +99,7 @@ class TopologyLayer(torch.nn.Module):
         self.out = torch.nn.Linear(in_out_dim, features_out)
 
 
-    def compute_persistence(self, x, batch):
+    def compute_persistence(self, x, batch, return_filtration = False):
         """
         Returns the persistence pairs as a list of tensors with shape [X.shape[0],2].
         The lenght of the list is the number of filtrations.
@@ -131,7 +132,12 @@ class TopologyLayer(torch.nn.Module):
             vertex_slices, edge_slices)
         persistence0_new = persistence0_new.to(x.device)
         persistence1_new = persistence1_new.to(x.device)
-        return persistence0_new, persistence1_new
+
+        if return_filtration:
+            return persistence0_new, persistence1_new, filtered_v_
+        else:
+            return persistence0_new, persistence1_new, None
+
 
     def compute_coord_fun(self, persistence, batch, dim1=False):
         """
@@ -177,11 +183,12 @@ class TopologyLayer(torch.nn.Module):
 
         return torch.stack(collapsed_activations)
 
-    def forward(self, x, batch):
+    def forward(self, x, batch, return_filtration = False):
         #Remove the duplicate edges.
         batch = remove_duplicate_edges(batch)
 
-        persistences0, persistences1 = self.compute_persistence(x, batch)
+        persistences0, persistences1, filtration = self.compute_persistence(x, batch, return_filtration)
+        
         coord_activations = self.compute_coord_activations(
             persistences0, batch)
         if self.dim1:
@@ -211,8 +218,7 @@ class TopologyLayer(torch.nn.Module):
             out_activations = self.out(concat_activations)
             out_activations = F.relu(out_activations)
 
-
-        return out_activations, graph_activations1
+        return out_activations, graph_activations1, filtration
 
 
 class FiltrationGCNModel(pl.LightningModule):
@@ -517,10 +523,11 @@ class GCNModel(pl.LightningModule):
 class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, batch_norm=False,
-                 residual=False, train_eps=True, **kwargs):
+                 residual=False, train_eps=True, save_filtration = False, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.embedding = torch.nn.Linear(num_node_features, hidden_dim)
+        self.save_filtration = save_filtration
 
         if GIN:
             def build_gnn_layer():
@@ -650,7 +657,13 @@ class LargerGCNModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
 
         y = batch.y
-        y_hat = self(batch)
+       
+
+        if hasattr(self,"topo1") and self.save_filtration:
+            y_hat, filtration = self(batch,return_filtration = True)
+        else:
+            y_hat = self(batch)
+            filtration = None
 
         loss = self.loss(y_hat, y)
         self.log("test_loss", loss, on_epoch=True)
@@ -658,12 +671,22 @@ class LargerGCNModel(pl.LightningModule):
         self.accuracy_test(y_hat, y)
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)
-        return {"y":y, "y_hat":y_hat}
+
+
+        return {"y":y, "y_hat":y_hat, "filtration":filtration}
+
 
     def test_epoch_end(self,outputs):
 
         y = torch.cat([output["y"] for output in outputs])
         y_hat = torch.cat([output["y_hat"] for output in outputs])
+       
+        
+        if hasattr(self,"topo1") and self.save_filtration:
+            import ipdb; ipdb.set_trace()
+            filtration = torch.nn.utils.rnn.pad_sequence([output["filtration"].T for output in outputs], batch_first = True)
+            if self.logger is not None:
+                torch.save(filtration,os.path.join(wandb.run.dir,"filtration.pt"))
 
         y_hat_max = torch.argmax(y_hat,1)
         if self.logger is not None:
@@ -683,6 +706,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--train_eps', type=str2bool, default=True)
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)
+        parser.add_argument('--save_filtration', type=str2bool, default=False)
         return parser
 
 
@@ -781,7 +805,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         return [optimizer], [scheduler]
 
-    def forward(self, data):
+    def forward(self, data, return_filtration=False):
         x, edge_index = data.x, data.edge_index
 
         x = self.embedding(x)
@@ -789,7 +813,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         if self.early_topo:
             # Topo layer as the second layer
             x = self.layers[0](x, edge_index=edge_index, data=data)
-            x, x_dim1 = self.topo1(x, data)
+            x, x_dim1, filtration = self.topo1(x, data, return_filtration)
             x = F.dropout(x, p=self.dropout_p, training=self.training)
             for layer in self.layers[1:]:
                 x = layer(x, edge_index=edge_index, data=data)
@@ -797,7 +821,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             # Topo layer as the second to last layer
             for layer in self.layers[:-1]:
                 x = layer(x, edge_index=edge_index, data=data)
-            x, x_dim1 = self.topo1(x, data )
+            x, x_dim1, filtration = self.topo1(x, data, return_filtration)
             x = F.dropout(x, p=self.dropout_p, training=self.training)
             x = self.layers[-1](x,edge_index=edge_index, data = data)
 
@@ -815,8 +839,11 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         #Final classification
         x = self.classif(x_pre_class)
-
-        return x
+        
+        if return_filtration:
+            return x, filtration
+        else:
+            return x
 
     @classmethod
     def add_model_specific_args(cls, parent):

@@ -157,7 +157,7 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
                     random_edges, torch.arange(num_filtrations).unsqueeze(0)]
         ], -1)
     )
-    return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2)
+    return persistence0_new.permute(1, 0, 2), persistence1_new.permute(1, 0, 2), None
 
 
 class SimpleSetTopoLayer(nn.Module):
@@ -229,7 +229,7 @@ class SimpleSetTopoLayer(nn.Module):
                 )
         self.fake = fake
 
-    def compute_persistence(self, x, edge_index, vertex_slices, edge_slices, batch):
+    def compute_persistence(self, x, edge_index, vertex_slices, edge_slices, batch, return_filtration = False):
         """
         Returns the persistence pairs as a list of tensors with shape [X.shape[0],2].
         The lenght of the list is the number of filtrations.
@@ -253,9 +253,14 @@ class SimpleSetTopoLayer(nn.Module):
         persistence0 = persistence0_new.to(x.device)
         persistence1 = persistence1_new.to(x.device)
 
-        return persistence0, persistence1
 
-    def forward(self, x, data):
+        if return_filtration:
+            return persistence0, persistence1, filtered_v
+        else:
+            return persistence0, persistence1, None
+
+
+    def forward(self, x, data, return_filtration):
 
         # Remove the duplucate edges
         data = remove_duplicate_edges(data)
@@ -265,8 +270,8 @@ class SimpleSetTopoLayer(nn.Module):
         edge_slices = torch.Tensor(data.__slices__['edge_index']).cpu().long()
         batch = data.batch
 
-        pers0, pers1 = self.compute_persistence(
-            x, edge_index, vertex_slices, edge_slices, batch
+        pers0, pers1, filtration = self.compute_persistence(
+            x, edge_index, vertex_slices, edge_slices, batch, return_filtration
         )
 
         x0 = pers0.permute(1, 0, 2).reshape(pers0.shape[1], -1)
@@ -307,4 +312,4 @@ class SimpleSetTopoLayer(nn.Module):
                 x1 = None
             x = self.out(torch.cat([x, x0], dim=-1))
 
-        return x, x1
+        return x, x1, filtration
