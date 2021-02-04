@@ -232,6 +232,12 @@ class NormalizedDegree(object):
         data.x = deg.view(-1, 1)
         return data
 
+class RandomAttributes(object):
+    def __init__(self,d):
+        self.d = d
+    def __call__(self,data):
+        data.x = torch.randn((data.x.shape[0],self.d))
+        return data
 
 class TUGraphDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
@@ -259,17 +265,22 @@ class TUGraphDataset(pl.LightningDataModule):
 
         self.pre_transform = None
 
-        if name in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K']:
-            self.max_degree = max_degrees[name]
-            if self.max_degree < 1000:
-                self.pre_transform = OneHotDegree(self.max_degree)
-                self.transform = None
+        if not use_node_attributes:
+            self.transform = RandomAttributes(d=3)
+            #self.transform = None
+        else:
+
+            if name in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K']:
+                self.max_degree = max_degrees[name]
+                if self.max_degree < 1000:
+                    self.pre_transform = OneHotDegree(self.max_degree)
+                    self.transform = None
+                else:
+                    self.transform = None
+                    self.pre_transform = NormalizedDegree(mean_degrees[name],std_degrees[name])
+
             else:
                 self.transform = None
-                self.pre_transform = NormalizedDegree(mean_degrees[name],std_degrees[name])
-
-        else:
-            self.transform = None
 
         self.n_splits = n_splits
         self.fold = fold
@@ -383,7 +394,7 @@ class TUGraphDataset(pl.LightningDataModule):
     def add_dataset_specific_args(cls, parent):
         import argparse
         parser = argparse.ArgumentParser(parents=[parent], add_help=False)
-        parser.add_argument('--use_node_attributes', type=bool, default=True)
+        parser.add_argument('--use_node_attributes', type=str2bool, default=True)
         parser.add_argument('--fold', type=int, default=0)
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
