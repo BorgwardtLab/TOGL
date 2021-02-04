@@ -133,13 +133,14 @@ def fake_persistence_computation(filtered_v_, edge_index, vertex_slices, edge_sl
     # Make fake tuples for dim 0
     persistence0_new = filtered_v_.unsqueeze(-1).expand(-1, -1, 2)
 
+    edge_slices = edge_slices.to(device)
+    bs = edge_slices.shape[0] - 1
     # Make fake dim1 with unpaired values
-    unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
+    # unpaired_values = scatter(filtered_v_, batch, dim=0, reduce='max')
+    unpaired_values = torch.zeros((bs, num_filtrations), device=device)
     persistence1_new = torch.zeros(
         edge_index.shape[1], filtered_v_.shape[1], 2, device=device)
 
-    edge_slices = edge_slices.to(device)
-    bs = edge_slices.shape[0] - 1
     n_edges = edge_slices[1:] - edge_slices[:-1]
     random_edges = (
         edge_slices[0:-1].unsqueeze(-1) +
