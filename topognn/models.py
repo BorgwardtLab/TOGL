@@ -665,6 +665,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument("--min_lr", type=float, default=0.00001)
         parser.add_argument("--dropout_p", type=float, default=0.0)
         parser.add_argument('--GIN', type=str2bool, default=False)
+        parser.add_argument('--train_eps', type=str2bool, default=True)
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)
         return parser
@@ -804,21 +805,11 @@ class LargerTopoGNNModel(LargerGCNModel):
 
     @classmethod
     def add_model_specific_args(cls, parent):
-        import argparse
-        parser = argparse.ArgumentParser(parents=[parent])
-        parser.add_argument("--hidden_dim", type=int, default=146)
-        parser.add_argument("--depth", type=int, default=4)
-        parser.add_argument("--lr", type=float, default=0.001)
-        parser.add_argument("--lr_patience", type=int, default=10)
-        parser.add_argument("--min_lr", type=float, default=0.00001)
-        parser.add_argument("--dropout_p", type=float, default=0.0)
-        parser.add_argument('--GIN', type=str2bool, default=False)
-        parser.add_argument('--batch_norm', type=str2bool, default=True)
-        parser.add_argument('--residual', type=str2bool, default=True)
+        parser = super().add_model_specific_args(parent)
         parser.add_argument('--filtration_hidden', type=int, default=24)
         parser.add_argument('--num_filtrations', type=int, default=8)
         parser.add_argument('--tanh_filtrations', type=str2bool, default=False)
-        parser.add_argument('--deepset_type', type=str, choices=['full', 'shallow', 'linear'], default=False)
+        parser.add_argument('--deepset_type', type=str, choices=['full', 'shallow', 'linear'], default='full')
         parser.add_argument('--swap_bn_order', type=str2bool, default=False)
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
