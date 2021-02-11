@@ -88,12 +88,25 @@ def pers_to_set(input_tensor):
 def filter_persistence(input_tensor):
     return input_tensor[input_tensor[:,0]!=input_tensor[:,1]]
 
+def remove_duplicate_edges(batch):
+    flipped_idx = batch.edge_index[0] > batch.edge_index[1]
+    batch.edge_index[:,flipped_idx] = torch.flip(batch.edge_index[:,flipped_idx],dims=(0,))
+    batch.edge_index = torch.unique(batch.edge_index,dim=1)
+
+def remove_duplicate_edges_bis(batch):
+    correct_idx = batch.edge_index[0] <= batch.edge_index[1]
+    batch.edge_index = batch.edge_index[:,correct_idx]
+
+
+
 if __name__ =="__main__":
 
     #Test 0 :
     print("Test 0 (from the Graph Filtration paper) ")
-    edge_index = np.array([[0,0,2,3,4],[2,3,3,4,1]])
-    filtered_v = np.array([1.,1.,2.,3.,4.])
+    edge_index = np.array([[0,1,3,2,3],[3,2,2,4,4]])
+    #edge_index = np.concatenate((edge_index,edge_index[[1,0],:]),axis=1)
+
+    filtered_v = np.array([1.,2.,3.,4.,5.])
     dim0, dim1 = compute_persistence_giotto(edge_index, filtered_v)
    
     data = Data()    
@@ -112,6 +125,8 @@ if __name__ =="__main__":
     assert (dim0_torch == dim0_torch_new).all()
     assert (dim1_torch == dim1_torch_new).all()
 
+    import ipdb; ipdb.set_trace()
+         
 
     #Test 0 bis :
     print("Test 0bis (arbitrary graph) ")

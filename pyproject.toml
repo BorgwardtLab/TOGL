@@ -33,7 +33,7 @@ python-igraph = "^0.8.3"
 networkx = "^2.5"
 scikit-learn = "^0.24.1"
 pandas = "^1.2.1"
-dgl = "0.4.2"
+dgl = "*"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.4"

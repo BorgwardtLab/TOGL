@@ -2,7 +2,8 @@
 """Train a model using the same routine as used in the GNN Benchmarks dataset."""
 import argparse
 import sys
-
+import os
+import pickle
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
@@ -51,6 +52,7 @@ def main(model_cls, dataset_cls, args):
     # Instantiate objects according to parameters
     dataset = dataset_cls(**vars(args))
     dataset.prepare_data()
+
     
     model = model_cls(
         **vars(args),
@@ -88,6 +90,9 @@ def main(model_cls, dataset_cls, args):
     )
     trainer.fit(model, datamodule=dataset)
     test_results = trainer.test(test_dataloaders=dataset.test_dataloader())[0]
+
+
+
 
     # Just for interest see if loading the state with lowest val loss actually
     # gives better generalization performance.

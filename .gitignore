@@ -23,6 +23,7 @@ topo_gnn/*
 topognn/*.pt
 topognn/lightning_logs/*
 topognn/data/*
+! topognn/data/SYNTHETIC/*
 topognn/topo_gnn/*
 topognn/TopoGNN/*
 topognn/topo_gnn_sandbox/*
