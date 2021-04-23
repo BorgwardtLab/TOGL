@@ -1,22 +1,32 @@
+"""Utility functions for data sets."""
+
+import csv
+import itertools
+import math
 import os
+import pickle
+import torch
+
+import networkx as nx
+import numpy as np
 import pytorch_lightning as pl
+
 from topognn import DATA_DIR, Tasks
-from torch_geometric.data import DataLoader, Batch, Data
+from topognn.cli_utils import str2bool
+
+from torch_geometric.data import Data
+from torch_geometric.data import DataLoader
+from torch_geometric.data import InMemoryDataset
 from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset
 from torch_geometric.transforms import OneHotDegree
 from torch_geometric.utils import degree
-from torch.utils.data import random_split, Subset
-from torch_scatter import scatter
-import torch
-import math
-import pickle
-import numpy as np
-from torch_geometric.data import InMemoryDataset
+from torch_geometric.utils.convert import from_networkx
 
-from topognn.cli_utils import str2bool
-import itertools
+from torch_scatter import scatter
+
+from torch.utils.data import random_split, Subset
+
 from sklearn.model_selection import StratifiedKFold, train_test_split
-import csv
 
 
 def dataset_map_dict():
@@ -243,6 +253,7 @@ class SyntheticDataset(pl.LightningDataModule):
             pre_transform=self.pre_transform,
             **self.kwargs
         )
+
         self.node_attributes = dataset.num_node_features
         self.num_classes = dataset.num_classes
         n_instances = len(dataset)
