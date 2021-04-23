@@ -1,13 +1,11 @@
 """Clique planting data set for additional experiments."""
 
-import pytorch_lightning as pl
-
+import os
 import torch
 
 import numpy as np
 import networkx as nx
 
-from torch_geometric.data import DataLoader
 from torch_geometric.data import InMemoryDataset
 from torch_geometric.utils.convert import from_networkx
 
@@ -17,6 +15,7 @@ class CliquePlanting(InMemoryDataset):
 
     def __init__(
         self,
+        root,
         n_graphs=1000,
         n_vertices=500,
         k=20,
@@ -25,6 +24,9 @@ class CliquePlanting(InMemoryDataset):
 
         Parameters
         ----------
+        root : str
+            Root directory for storing graphs.
+
         n_graphs : int
             How many graphs to create.
 
@@ -35,42 +37,42 @@ class CliquePlanting(InMemoryDataset):
             Size of clique. Must be subtly 'compatible' with n, but the
             class will warn if problematic values are being chosen.
         """
-        super().__init__()
         self.n_graphs = n_graphs
         self.n_vertices = n_vertices
         self.k = k
 
-    def prepare_data(self):
+        super().__init__(root)
+
+    @property
+    def raw_file_names(self):
+        """No raw file names are required."""
+        return []
+
+    @property
+    def processed_dir(self):
+        """Directory to store data in."""
+        return os.path.join(
+            self.root,
+            # Following the other nomenclature
+            'CLIQUE_PLANTING',
+            'processed'
+        )
+
+    @property
+    def processed_file_names(self):
+        """No raw file names are required."""
+        return ['data.pt']
+
+    def process(self):
         """Create data set and store it in memory for subsequent processing."""
         graphs = [self._make_graph() for i in range(self.n_graphs)]
         labels = [y for _, y in graphs]
 
         data, slices = self.collate([from_networkx(g) for g, _ in graphs])
         data.y = torch.tensor(labels, dtype=torch.long)
-        print(data)
-        print(data.y)
 
-        raise 'heck'
-
-        n = len(data)
-
-        # Simple splitting; in real-world data sets, this should be made
-        # more complex.
-        n_train = math.floor(
-            (1 - self.val_fraction) * (1 - self.test_fraction) * n
-        )
-        n_val = math.ceil((self.val_fraction) * (1 - self.test_fraction) * n)
-        n_test = n - n_train - n_val
-
-        from torch.utils.data import random_split
-
-        # This already splits the data set; we could also go for
-        # a `Subset` here.
-        self.train, self.val, self.test = random_split(
-            data,
-            [n_train, n_val, n_test],
-            generator=torch.Generator().manual_seed(self.seed)
-        )
+        torch.save((data, slices), self.processed_paths[0])
+        return data, slices
 
     def _make_graph(self):
         """Create graph potentially containing a planted clique."""
@@ -101,7 +103,4 @@ class CliquePlanting(InMemoryDataset):
 
 if __name__ == '__main__':
 
-    data = CliquePlanting(n_graphs=10)
-    data.prepare_data()
-
-    print(next(data.train_dataloader()))
+    data = CliquePlanting(root='data', n_graphs=10)
