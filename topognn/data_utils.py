@@ -140,8 +140,11 @@ class CliquePlantingDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self):
-        """No raw file names are required."""
-        return ['data.pt']
+        """Return file names for identification of stored data."""
+        N = self.n_graphs
+        n = self.n_vertices
+        k = self.k
+        return [f'data_{N}_{n}_{k}.pt']
 
     def process(self):
         """Create data set and store it in memory for subsequent processing."""
