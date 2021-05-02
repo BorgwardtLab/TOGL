@@ -4,9 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GINConv
 from torch_scatter import scatter
-from torch_persistent_homology.persistent_homology_cpu import (
-    compute_persistence_homology_batched_mt,
-)
+from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 from topognn.data_utils import remove_duplicate_edges
 
 
