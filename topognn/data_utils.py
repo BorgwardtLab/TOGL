@@ -1,47 +1,55 @@
+"""Utility functions for data sets."""
+
+import csv
+import itertools
+import math
 import os
+import pickle
+import torch
+
+import networkx as nx
+import numpy as np
 import pytorch_lightning as pl
+
 from topognn import DATA_DIR, Tasks
-from torch_geometric.data import DataLoader, Batch, Data
+from topognn.cli_utils import str2bool
+
+from torch_geometric.data import Data
+from torch_geometric.data import DataLoader
+from torch_geometric.data import InMemoryDataset
 from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset
 from torch_geometric.transforms import OneHotDegree
 from torch_geometric.utils import degree
-from torch.utils.data import random_split, Subset
-from torch_scatter import scatter
-import torch
-import math
-import pickle
-import numpy as np
-from torch_geometric.data import InMemoryDataset
+from torch_geometric.utils.convert import from_networkx
 
-from topognn.cli_utils import str2bool
-import itertools
+from torch_scatter import scatter
+
+from torch.utils.data import random_split, Subset
+
 from sklearn.model_selection import StratifiedKFold, train_test_split
-import csv
 
 
 def dataset_map_dict():
     DATASET_MAP = {
-
-    'IMDB-BINARY': IMDB_Binary,
-    'REDDIT-BINARY' : REDDIT_Binary,
-    'REDDIT-5K': REDDIT_5K,
-    'PROTEINS': Proteins,
-    'PROTEINS_full': Proteins_full,
-    'ENZYMES': Enzymes,
-    'DD': DD,
-    'MUTAG' : MUTAG,
-    'MNIST': MNIST,
-    'CIFAR10': CIFAR10,
-    'PATTERN': PATTERN,
-    'CLUSTER': CLUSTER,
-    'Necklaces': Necklaces,
-    'Cycles': Cycles,
-    'NoCycles': NoCycles
-
+        'IMDB-BINARY': IMDB_Binary,
+        'REDDIT-BINARY': REDDIT_Binary,
+        'REDDIT-5K': REDDIT_5K,
+        'PROTEINS': Proteins,
+        'PROTEINS_full': Proteins_full,
+        'ENZYMES': Enzymes,
+        'DD': DD,
+        'MUTAG': MUTAG,
+        'MNIST': MNIST,
+        'CIFAR10': CIFAR10,
+        'PATTERN': PATTERN,
+        'CLUSTER': CLUSTER,
+        'Necklaces': Necklaces,
+        'Cycles': Cycles,
+        'NoCycles': NoCycles,
+        'CliquePlanting': CliquePlanting,
     }
 
     return DATASET_MAP
-
 
 
 def remove_duplicate_edges(batch):
@@ -78,6 +86,105 @@ def get_dataset_class(**kwargs):
     return dataset_cls
 
 
+class CliquePlantingDataset(InMemoryDataset):
+    """Clique planting data set."""
+
+    def __init__(
+        self,
+        root,
+        n_graphs=500,
+        n_vertices=300,
+        k=17,
+        pre_transform=None,
+        transform=None,
+    ):
+        """Initialise new variant of clique planting data set.
+
+        Parameters
+        ----------
+        root : str
+            Root directory for storing graphs.
+
+        n_graphs : int
+            How many graphs to create.
+
+        n_vertices : int
+            Size of graph for planting a clique.
+
+        k : int
+            Size of clique. Must be subtly 'compatible' with n, but the
+            class will warn if problematic values are being chosen.
+        """
+        self.n_graphs = n_graphs
+        self.n_vertices = n_vertices
+        self.k = k
+
+        super().__init__(root)
+
+        self.data, self.slices = torch.load(self.processed_paths[0])
+
+    @property
+    def raw_file_names(self):
+        """No raw file names are required."""
+        return []
+
+    @property
+    def processed_dir(self):
+        """Directory to store data in."""
+        # Following the other classes, we are relying on the client to
+        # provide a proper path.
+        return os.path.join(
+            self.root,
+            'processed'
+        )
+
+    @property
+    def processed_file_names(self):
+        """Return file names for identification of stored data."""
+        N = self.n_graphs
+        n = self.n_vertices
+        k = self.k
+        return [f'data_{N}_{n}_{k}.pt']
+
+    def process(self):
+        """Create data set and store it in memory for subsequent processing."""
+        graphs = [self._make_graph() for i in range(self.n_graphs)]
+        labels = [y for _, y in graphs]
+
+        data_list = [from_networkx(g) for g, _ in graphs]
+        for data, label in zip(data_list, labels):
+            data.y = label
+
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
+
+    def _make_graph(self):
+        """Create graph potentially containing a planted clique."""
+        G = nx.erdos_renyi_graph(self.n_vertices, p=0.50)
+        y = 0
+
+        if np.random.choice([True, False]):
+            G = self._plant_clique(G, self.k)
+            y = 1
+
+        return G, y
+
+    def _plant_clique(self, G, k):
+        """Plant $k$-clique in a given graph G.
+
+        This function chooses a random subset of the vertices of the graph and
+        turns them into fully-connected subgraph.
+        """
+        n = G.number_of_nodes()
+        vertices = np.random.choice(np.arange(n), k, replace=False)
+
+        for index, u in enumerate(vertices):
+            for v in vertices[index+1:]:
+                G.add_edge(u, v)
+
+        return G
+
+
 class SyntheticBaseDataset(InMemoryDataset):
     def __init__(self, root=DATA_DIR, transform=None, pre_transform=None):
         super(SyntheticBaseDataset, self).__init__(
@@ -91,10 +198,6 @@ class SyntheticBaseDataset(InMemoryDataset):
     @property
     def processed_file_names(self):
         return ['synthetic_data.pt']
-
-    # def download(self):
-    #    # Download to `self.raw_dir`.
-    #    raise("Not Implemented")
 
     def process(self):
         # Read data into huge `Data` list.
@@ -118,8 +221,19 @@ class SyntheticBaseDataset(InMemoryDataset):
 class SyntheticDataset(pl.LightningDataModule):
     task = Tasks.GRAPH_CLASSIFICATION
 
-    def __init__(self, name, batch_size, use_node_attributes=True,
-                 val_fraction=0.1, test_fraction=0.1, seed=42, num_workers=4, add_node_degree=False, **kwargs):
+    def __init__(
+        self,
+        name,
+        batch_size,
+        use_node_attributes=True,
+        val_fraction=0.1,
+        test_fraction=0.1,
+        seed=42,
+        num_workers=4,
+        add_node_degree=False,
+        dataset_class=SyntheticBaseDataset,
+        **kwargs
+    ):
         super().__init__()
         self.name = name
         self.batch_size = batch_size
@@ -127,6 +241,8 @@ class SyntheticDataset(pl.LightningDataModule):
         self.test_fraction = test_fraction
         self.seed = seed
         self.num_workers = num_workers
+        self.dataset_class = dataset_class
+        self.kwargs = kwargs
 
         if add_node_degree:
             self.pre_transform = OneHotDegree(max_degrees[name])
@@ -134,11 +250,13 @@ class SyntheticDataset(pl.LightningDataModule):
             self.pre_transform = None
 
     def prepare_data(self):
-
-        dataset = SyntheticBaseDataset(
-            root=os.path.join(DATA_DIR, "SYNTHETIC", self.name),
-            pre_transform=self.pre_transform
+        """Load or create data set according to the provided parameters."""
+        dataset = self.dataset_class(
+            root=os.path.join(DATA_DIR, 'SYNTHETIC', self.name),
+            pre_transform=self.pre_transform,
+            **self.kwargs
         )
+
         self.node_attributes = dataset.num_node_features
         self.num_classes = dataset.num_classes
         n_instances = len(dataset)
@@ -659,47 +777,47 @@ class REDDIT_5K(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='REDDIT-MULTI-5K', **kwargs)
 
-
 class Proteins(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='PROTEINS', **kwargs)
-
 
 class Proteins_full(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='PROTEINS_full', **kwargs)
 
-
 class Enzymes(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='ENZYMES', **kwargs)
-
 
 class DD(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='DD', **kwargs)
 
-
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
-
 
 class Cycles(SyntheticDataset):
     def __init__(self, min_cycle, **kwargs):
         name = "Cycles" + f"_{min_cycle}"
         super().__init__(name=name, **kwargs)
 
-
 class NoCycles(SyntheticDataset):
     def __init__(self, **kwargs):
         super().__init__(name="NoCycles", **kwargs)
-
 
 class Necklaces(SyntheticDataset):
     def __init__(self, **kwargs):
         super().__init__(name="Necklaces", **kwargs)
 
+class CliquePlanting(SyntheticDataset):
+    def __init__(self, **kwargs):
+        super().__init__(
+            name='CliquePlanting',
+            use_node_attributes=False,
+            dataset_class=CliquePlantingDataset,
+            **kwargs
+        )
 
 def add_pos_to_node_features(instance: Data):
     instance.x = torch.cat([instance.x, instance.pos], axis=-1)
