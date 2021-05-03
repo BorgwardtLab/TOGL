@@ -3,7 +3,6 @@ import torch
 from typing import Any, Callable, Optional
 from pytorch_lightning.metrics import Metric
 from pytorch_lightning.metrics.functional import confusion_matrix
-from pytorch_lightning.metrics.utils import _input_format_classification
 
 
 class WeightedAccuracy(Metric):
@@ -40,6 +39,7 @@ class WeightedAccuracy(Metric):
             target: Ground truth values
         """
         assert preds.shape[1] == self.n_classes
+
         preds, target = _input_format_classification(
             preds, target, self.threshold)
         assert preds.shape == target.shape
@@ -53,3 +53,33 @@ class WeightedAccuracy(Metric):
         Computes accuracy over state.
         """
         return (self.correct.float() / self.total.float()).sum() / self.n_classes
+
+
+def _input_format_classification(
+        preds: torch.Tensor,
+        target: torch.Tensor,
+        threshold: float = 0.5
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """ Convert preds and target tensors into label tensors
+    Args:
+        preds: either tensor with labels, tensor with probabilities/logits or
+            multilabel tensor
+        target: tensor with ground true labels
+        threshold: float used for thresholding multilabel input
+    Returns:
+        preds: tensor with labels
+        target: tensor with labels
+    """
+    if not (len(preds.shape) == len(target.shape) or len(preds.shape) == len(target.shape) + 1):
+        raise ValueError(
+            "preds and target must have same number of dimensions, or one additional dimension for preds"
+        )
+
+    if len(preds.shape) == len(target.shape) + 1:
+        # multi class probabilites
+        preds = torch.argmax(preds, dim=1)
+
+    if len(preds.shape) == len(target.shape) and preds.dtype == torch.float:
+        # binary or multilabel probablities
+        preds = (preds >= threshold).long()
+    return preds, target

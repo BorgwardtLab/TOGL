@@ -564,7 +564,6 @@ class LargerGCNModel(pl.LightningModule):
             nn.Linear(hidden_dim // 4, num_classes)
         )
         self.task = task
-
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
             self.accuracy_val = pl.metrics.Accuracy()
@@ -633,7 +632,7 @@ class LargerGCNModel(pl.LightningModule):
 
         loss = self.loss(y_hat, y)
 
-        self.accuracy(y_hat, y)
+        self.accuracy(torch.nn.functional.softmax(y_hat,-1), y)
 
         self.log("train_loss", loss, on_step=True, on_epoch=True)
         self.log("train_acc", self.accuracy, on_step=True, on_epoch=True)
@@ -648,7 +647,7 @@ class LargerGCNModel(pl.LightningModule):
 
         loss = self.loss(y_hat, y)
 
-        self.accuracy_val(y_hat, y)
+        self.accuracy_val(torch.nn.functional.softmax(y_hat,-1), y)
 
         self.log("val_loss", loss, on_epoch = True)
 
@@ -668,7 +667,7 @@ class LargerGCNModel(pl.LightningModule):
         loss = self.loss(y_hat, y)
         self.log("test_loss", loss, on_epoch=True)
 
-        self.accuracy_test(y_hat, y)
+        self.accuracy_test(torch.nn.functional.softmax(y_hat,-1), y)
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)
 

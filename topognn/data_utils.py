@@ -95,8 +95,10 @@ class CliquePlantingDataset(InMemoryDataset):
         n_graphs=500,
         n_vertices=300,
         k=17,
+        random_d = 3,
         pre_transform=None,
         transform=None,
+        **kwargs
     ):
         """Initialise new variant of clique planting data set.
 
@@ -118,6 +120,7 @@ class CliquePlantingDataset(InMemoryDataset):
         self.n_graphs = n_graphs
         self.n_vertices = n_vertices
         self.k = k
+        self.random_d = random_d
 
         super().__init__(root)
 
@@ -154,6 +157,7 @@ class CliquePlantingDataset(InMemoryDataset):
         data_list = [from_networkx(g) for g, _ in graphs]
         for data, label in zip(data_list, labels):
             data.y = label
+            data.x = torch.randn(data.num_nodes,self.random_d)
 
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
@@ -162,7 +166,8 @@ class CliquePlantingDataset(InMemoryDataset):
         """Create graph potentially containing a planted clique."""
         G = nx.erdos_renyi_graph(self.n_vertices, p=0.50)
         y = 0
-
+        #nx.classes.function.set_node_attributes(G,dict(G.degree),name="degree")
+        
         if np.random.choice([True, False]):
             G = self._plant_clique(G, self.k)
             y = 1
@@ -186,7 +191,7 @@ class CliquePlantingDataset(InMemoryDataset):
 
 
 class SyntheticBaseDataset(InMemoryDataset):
-    def __init__(self, root=DATA_DIR, transform=None, pre_transform=None):
+    def __init__(self, root=DATA_DIR, transform=None, pre_transform=None, **kwargs):
         super(SyntheticBaseDataset, self).__init__(
             root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
@@ -812,9 +817,9 @@ class Necklaces(SyntheticDataset):
 
 class CliquePlanting(SyntheticDataset):
     def __init__(self, **kwargs):
+        
         super().__init__(
-            name='CliquePlanting',
-            use_node_attributes=False,
+            name="CliquePlanting",
             dataset_class=CliquePlantingDataset,
             **kwargs
         )
