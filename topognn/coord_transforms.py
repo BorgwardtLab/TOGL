@@ -99,7 +99,7 @@ class RationalHat_transform(nn.Module):
 
     """
 
-    def __init__(self, output_dim):
+    def __init__(self, output_dim, input_dim = 1):
         """
         output dim is the number of lines in the Line point transformation
         """
@@ -108,13 +108,13 @@ class RationalHat_transform(nn.Module):
         self.output_dim = output_dim
 
         self.c_param = torch.nn.Parameter(
-            torch.randn(2, output_dim)*0.1, requires_grad=True)
+            torch.randn(input_dim, output_dim)*0.1, requires_grad=True)
         self.r_param = torch.nn.Parameter(
             torch.randn(1, output_dim)*0.1, requires_grad=True)
 
     def forward(self, x):
         """
-        x is of shape [N,2]
+        x is of shape [N,input_dim]
         output is of shape [N,output_dim]
         """
 

@@ -59,7 +59,7 @@ def _input_format_classification(
         preds: torch.Tensor,
         target: torch.Tensor,
         threshold: float = 0.5
-) -> Tuple[torch.Tensor, torch.Tensor]:
+        ):
     """ Convert preds and target tensors into label tensors
     Args:
         preds: either tensor with labels, tensor with probabilities/logits or
