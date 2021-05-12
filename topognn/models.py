@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_pool
 
 from topognn import Tasks
-from topognn.cli_utils import str2bool
+from topognn.cli_utils import str2bool, int_or_none
 from topognn.layers import GCNLayer, GINLayer, SimpleSetTopoLayer, fake_persistence_computation
 from topognn.metrics import WeightedAccuracy
 from topognn.data_utils import remove_duplicate_edges
@@ -713,12 +713,12 @@ class LargerTopoGNNModel(LargerGCNModel):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False,
                  batch_norm=False, residual=False, train_eps=True,
-                 early_topo=False, residual_and_bn=False, aggregation_fn='mean',
+                 residual_and_bn=False, aggregation_fn='mean',
                  dim0_out_dim=32, dim1_out_dim=32,
                  share_filtration_parameters=False, fake=False, deepset=False,
                  tanh_filtrations=False, deepset_type='full',
                  swap_bn_order=False,
-                 dist_dim1=False,
+                 dist_dim1=False, togl_position=1,
                  **kwargs):
         super().__init__(hidden_dim = hidden_dim, depth = depth, num_node_features = num_node_features, num_classes = num_classes, task = task,
                  lr=lr, dropout_p=dropout_p, GIN=GIN,
@@ -726,7 +726,6 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         self.save_hyperparameters()
 
-        self.early_topo = early_topo
         self.residual_and_bn = residual_and_bn
         self.num_filtrations = kwargs["num_filtrations"]
         self.filtration_hidden = kwargs["filtration_hidden"]
@@ -736,6 +735,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         self.dim1 = kwargs["dim1"]
         self.tanh_filtrations = tanh_filtrations
         self.deepset_type = deepset_type
+        self.togl_position = depth if togl_position is None else togl_position
 
         self.deepset = deepset
         if self.deepset:
@@ -809,20 +809,12 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         x = self.embedding(x)
 
-        if self.early_topo:
-            # Topo layer as the second layer
-            x = self.layers[0](x, edge_index=edge_index, data=data)
-            x, x_dim1, filtration = self.topo1(x, data, return_filtration)
-            x = F.dropout(x, p=self.dropout_p, training=self.training)
-            for layer in self.layers[1:]:
-                x = layer(x, edge_index=edge_index, data=data)
-        else:
-            # Topo layer as the second to last layer
-            for layer in self.layers[:-1]:
-                x = layer(x, edge_index=edge_index, data=data)
-            x, x_dim1, filtration = self.topo1(x, data, return_filtration)
-            x = F.dropout(x, p=self.dropout_p, training=self.training)
-            x = self.layers[-1](x,edge_index=edge_index, data = data)
+        for layer in self.layers[:self.togl_position]:
+            x = layer(x, edge_index=edge_index, data=data)
+        x, x_dim1, filtration = self.topo1(x, data, return_filtration)
+        x = F.dropout(x, p=self.dropout_p, training=self.training)
+        for layer in self.layers[self.togl_position:]:
+            x = layer(x, edge_index=edge_index, data=data)
 
         # Pooling
         x = self.pooling_fun(x, data.batch)
@@ -838,7 +830,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         #Final classification
         x = self.classif(x_pre_class)
-        
+
         if return_filtration:
             return x, filtration
         else:
@@ -855,7 +847,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--dim1', type=str2bool, default=False)
         parser.add_argument('--num_coord_funs', type=int, default=3)
         #parser.add_argument('--num_coord_funs1', type=int, default=3)
-        parser.add_argument('--early_topo', type=str2bool, default=False, help='Use the topo layer early in the architecture.')
+        parser.add_argument('--togl_position', type=int_or_none, default=1, help='Position of the TOGL layer, None means last.')
         parser.add_argument('--residual_and_bn', type=str2bool, default=True, help='Use residual and batch norm')
         parser.add_argument('--share_filtration_parameters', type=str2bool, default=True, help='Share filtration parameters of topo layer')
         parser.add_argument('--fake', type=str2bool, default=False, help='Fake topological computations.')
@@ -865,8 +857,6 @@ class LargerTopoGNNModel(LargerGCNModel):
         parser.add_argument('--dist_dim1', type=str2bool, default=False)
         parser.add_argument('--aggregation_fn', type=str, default='mean')
         return parser
-
-
 
 
 class SimpleTopoGNNModel(LargerGCNModel):

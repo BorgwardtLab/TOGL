@@ -10,3 +10,13 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def int_or_none(input: str):
+    try:
+        return int(input)
+    except Exception as e:
+        if input.lower() == 'none':
+            return None
+        else:
+            argparse.ArgumentTypeError(f'"{input}" is neither None nor of integer type.')
