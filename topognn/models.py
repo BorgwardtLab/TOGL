@@ -523,7 +523,8 @@ class GCNModel(pl.LightningModule):
 class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, batch_norm=False,
-                 residual=False, train_eps=True, save_filtration = False, **kwargs):
+                 residual=False, train_eps=True, save_filtration = False,
+                 add_mlp=False, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.embedding = torch.nn.Linear(num_node_features, hidden_dim)
@@ -539,8 +540,15 @@ class LargerGCNModel(pl.LightningModule):
                     hidden_dim, hidden_dim, F.relu, dropout_p, batch_norm)
             graph_pooling_operation = global_mean_pool
 
-        self.layers = nn.ModuleList([
-            build_gnn_layer() for _ in range(depth)])
+        layers = [build_gnn_layer() for _ in range(depth)]
+
+        if add_mlp:
+            mlp_layer = nn.Sequential(
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU()
+            )
+            layers.insert(1, mlp_layer)
+        self.layers = nn.ModuleList(layers)
 
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.pooling_fun = graph_pooling_operation
@@ -654,9 +662,7 @@ class LargerGCNModel(pl.LightningModule):
         self.log("val_acc", self.accuracy_val, on_epoch=True)
 
     def test_step(self, batch, batch_idx):
-
         y = batch.y
-       
 
         if hasattr(self,"topo1") and self.save_filtration:
             y_hat, filtration = self(batch,return_filtration = True)
@@ -679,10 +685,8 @@ class LargerGCNModel(pl.LightningModule):
 
         y = torch.cat([output["y"] for output in outputs])
         y_hat = torch.cat([output["y_hat"] for output in outputs])
-       
-        
+
         if hasattr(self,"topo1") and self.save_filtration:
-            import ipdb; ipdb.set_trace()
             filtration = torch.nn.utils.rnn.pad_sequence([output["filtration"].T for output in outputs], batch_first = True)
             if self.logger is not None:
                 torch.save(filtration,os.path.join(wandb.run.dir,"filtration.pt"))
@@ -706,6 +710,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)
         parser.add_argument('--save_filtration', type=str2bool, default=False)
+        parser.add_argument('--add_mlp', type=str2bool, default=False)
         return parser
 
 
