@@ -518,7 +518,14 @@ class GCNModel(pl.LightningModule):
 
     # def validation_epoch_end(self,outputs):
     #    self.log("val_acc_epoch", self.accuracy_val.compute())
+class PointWiseMLP(nn.Module):
+    def __init__(self, hidden_dim):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.mlp = nn.Sequential(nn.Linear(hidden_dim, hidden_dim), nn.ReLU())
 
+    def forward(self,x, **kwargs):
+        return self.mlp(x)
 
 class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
@@ -543,11 +550,9 @@ class LargerGCNModel(pl.LightningModule):
         layers = [build_gnn_layer() for _ in range(depth)]
 
         if add_mlp:
-            mlp_layer = nn.Sequential(
-                nn.Linear(hidden_dim, hidden_dim),
-                nn.ReLU()
-            )
+            mlp_layer = PointWiseMLP(hidden_dim)
             layers.insert(1, mlp_layer)
+        
         self.layers = nn.ModuleList(layers)
 
         if task is Tasks.GRAPH_CLASSIFICATION:
