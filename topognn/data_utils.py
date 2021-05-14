@@ -940,10 +940,9 @@ class CLUSTER(GNNBenchmark):
         super().__init__('CLUSTER', **kwargs)
 
 class PlanetoidDataset(pl.LightningDataModule):
-    def __init__(self, name, batch_size, use_node_attributes, num_workers=4, **kwargs):
+    def __init__(self, name, use_node_attributes, num_workers=4, **kwargs):
         super().__init__()
         self.name = name
-        self.batch_size = batch_size
         self.num_workers = num_workers
         self.root = os.path.join(DATA_DIR, self.name)
 
@@ -953,32 +952,41 @@ class PlanetoidDataset(pl.LightningDataModule):
             self.random_transform = lambda x : x
         else:
             self.random_transform = RandomAttributes(d=3)
-        
+
     def prepare_data(self):
         # Just download the data
         dummy_data = Planetoid(
                 self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform]))
-        self.node_attributes = dummy_data.x.shape[1] 
+        self.num_classes = int(torch.max(dummy_data[0].y) + 1)
+        self.node_attributes = dummy_data[0].x.shape[1]
         return
 
     def train_dataloader(self):
         return DataLoader(
-                Planetoid(
-                    self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform])),
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers,
-            drop_last=True,
+            Planetoid(
+                    self.root,
+                    self.name,
+                    split='public',
+                    transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform])
+            ),
+            batch_size=1,
+            shuffle=False,
+            num_workers=0,
+            drop_last=False,
             pin_memory=True
         )
 
     def val_dataloader(self):
         return DataLoader(
             Planetoid(
-                self.root, self.name, split='public',  transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_val_transform])),
-            batch_size=self.batch_size,
+                self.root,
+                self.name,
+                split='public',
+                transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_val_transform])
+            ),
+            batch_size=1,
             shuffle=False,
-            num_workers=self.num_workers,
+            num_workers=0,
             drop_last=False,
             pin_memory=True
         )
@@ -986,32 +994,35 @@ class PlanetoidDataset(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             Planetoid(
-                self.root, self.name, split='public',transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])),
-            batch_size=self.batch_size,
+                self.root,
+                self.name,
+                split='public',
+                transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])
+            ),
+            batch_size=1,
             shuffle=False,
-            num_workers=self.num_workers,
+            num_workers=0,
             drop_last=False,
             pin_memory=True
         )
 
     @staticmethod
     def keep_train_transform(data):
-        data.y[~data.train_mask.bool()] = -100 
+        data.y[~data.train_mask] = -100
         return data
 
     def keep_val_transform(data):
-        data.y[~data.val_mask.bool()] = -100 
+        data.y[~data.val_mask] = -100
         return data
 
     def keep_test_transform(data):
-        data.y[~data.test_mask.bool()] = -100 
+        data.y[~data.test_mask] = -100
         return data
 
     @classmethod
     def add_dataset_specific_args(cls, parent):
         import argparse
         parser = argparse.ArgumentParser(parents=[parent], add_help=False)
-        parser.add_argument('--batch_size', type=int, default=32)
         parser.add_argument('--use_node_attributes', type=str2bool, default=True)
         return parser
 

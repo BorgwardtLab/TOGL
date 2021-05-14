@@ -650,8 +650,9 @@ class LargerGCNModel(pl.LightningModule):
         y_hat = y_hat.view(-1, y_hat.shape[-1])
 
         loss = self.loss(y_hat, y)
+        mask = y != -100
 
-        self.accuracy(torch.nn.functional.softmax(y_hat,-1), y)
+        self.accuracy(torch.nn.functional.softmax(y_hat,-1)[mask], y[mask])
 
         self.log("train_loss", loss, on_step=True, on_epoch=True)
         self.log("train_acc", self.accuracy, on_step=True, on_epoch=True)
@@ -665,8 +666,9 @@ class LargerGCNModel(pl.LightningModule):
         y_hat = y_hat.view(-1, y_hat.shape[-1])
 
         loss = self.loss(y_hat, y)
+        mask = y != -100
 
-        self.accuracy_val(torch.nn.functional.softmax(y_hat,-1), y)
+        self.accuracy_val(torch.nn.functional.softmax(y_hat,-1)[mask], y[mask])
 
         self.log("val_loss", loss, on_epoch = True)
 
@@ -683,8 +685,9 @@ class LargerGCNModel(pl.LightningModule):
 
         loss = self.loss(y_hat, y)
         self.log("test_loss", loss, on_epoch=True)
+        mask = y != -100
 
-        self.accuracy_test(torch.nn.functional.softmax(y_hat,-1), y)
+        self.accuracy_test(torch.nn.functional.softmax(y_hat,-1)[mask], y[mask])
 
         self.log("test_acc", self.accuracy_test, on_epoch=True)
 
