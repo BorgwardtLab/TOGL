@@ -256,7 +256,7 @@ class FiltrationGCNModel(pl.LightningModule):
 
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.pooling_fun = global_mean_pool
-        elif task is Tasks.NODE_CLASSIFICATION:
+        elif task in [Tasks.NODE_CLASSIFICATION, Tasks.NODE_CLASSIFICATION_WEIGHTED]:
             if dim1:
                 raise NotImplementedError(
                     "We don't yet support cycles for node classification.")
@@ -396,7 +396,7 @@ class GCNModel(pl.LightningModule):
 
             if task is Tasks.GRAPH_CLASSIFICATION:
                 self.pooling_fun = global_add_pool
-            elif task is Tasks.NODE_CLASSIFICATION:
+            elif task in [Tasks.NODE_CLASSIFICATION, Tasks.NODE_CLASSIFICATION_WEIGHTED]:
                 def fake_pool(x, batch):
                     return x
                 self.pooling_fun = fake_pool
@@ -410,7 +410,7 @@ class GCNModel(pl.LightningModule):
 
             if task is Tasks.GRAPH_CLASSIFICATION:
                 self.pooling_fun = global_mean_pool
-            elif task is Tasks.NODE_CLASSIFICATION:
+            elif task in [Tasks.NODE_CLASSIFICATION, Tasks.NODE_CLASSIFICATION_WEIGHTED]:
                 def fake_pool(x, batch):
                     return x
                 self.pooling_fun = fake_pool
@@ -423,7 +423,7 @@ class GCNModel(pl.LightningModule):
                                            torch.nn.ReLU(),
                                            torch.nn.Linear(hidden_dim, num_classes))
 
-        self.loss = torch.nn.CrossEntropyLoss()
+        self.loss = torch.nn.CrossEntropyLoss(ignore_index=-100)
 
         self.accuracy = pl.metrics.Accuracy()
         self.accuracy_val = pl.metrics.Accuracy()
@@ -557,7 +557,7 @@ class LargerGCNModel(pl.LightningModule):
 
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.pooling_fun = graph_pooling_operation
-        elif task is Tasks.NODE_CLASSIFICATION:
+        elif task in [Tasks.NODE_CLASSIFICATION, Tasks.NODE_CLASSIFICATION_WEIGHTED]:
             def fake_pool(x, batch):
                 return x
             self.pooling_fun = fake_pool
@@ -582,7 +582,7 @@ class LargerGCNModel(pl.LightningModule):
             self.accuracy_val = pl.metrics.Accuracy()
             self.accuracy_test = pl.metrics.Accuracy()
             self.loss = torch.nn.CrossEntropyLoss()
-        elif task is Tasks.NODE_CLASSIFICATION:
+        elif task is Tasks.NODE_CLASSIFICATION_WEIGHTED:
             self.accuracy = WeightedAccuracy(num_classes)
             self.accuracy_val = WeightedAccuracy(num_classes)
             self.accuracy_test = WeightedAccuracy(num_classes)
@@ -603,6 +603,12 @@ class LargerGCNModel(pl.LightningModule):
                 return F.cross_entropy(pred, label, weight)
 
             self.loss = weighted_loss
+        elif task is Tasks.NODE_CLASSIFICATION:
+            self.accuracy = pl.metrics.Accuracy()
+            self.accuracy_val = pl.metrics.Accuracy()
+            self.accuracy_test = pl.metrics.Accuracy()
+            # Ignore -100 index as we use it for masking
+            self.loss = torch.nn.CrossEntropyLoss(ignore_index=-100)
 
         self.lr = lr
 
@@ -831,7 +837,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         #Aggregating the dim1 topo info if dist_dim1 == False
         if x_dim1 is not None:
-            if self.task is Tasks.NODE_CLASSIFICATION:
+            if self.task in [Tasks.NODE_CLASSIFICATION, Tasks.NODE_CLASSIFICATION_WEIGHTED]:
                 # Scatter graph level representation to nodes
                 x_dim1 = x_dim1[data.batch]
             x_pre_class = torch.cat([x, x_dim1], axis=1)
