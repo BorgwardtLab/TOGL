@@ -8,6 +8,7 @@ class Tasks(Enum):
 
     GRAPH_CLASSIFICATION = auto()
     NODE_CLASSIFICATION = auto()
+    NODE_CLASSIFICATION_WEIGHTED = auto()
 #from . import topo_utils
 #from . import coord_transforms
 #from . import data_utils
