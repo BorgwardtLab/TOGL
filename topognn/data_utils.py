@@ -50,7 +50,8 @@ def dataset_map_dict():
         'CliquePlanting': CliquePlanting,
         'DBLP': DBLP,
         'Cora': Cora,
-        'CiteSeer' : CiteSeer
+        'CiteSeer' : CiteSeer,
+        'PubMed': PubMed
     }
 
     return DATASET_MAP
@@ -853,28 +854,37 @@ class GNNBenchmark(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.root = os.path.join(DATA_DIR, self.name)
+
+        self.transforms_list = []
+        
         if name in ['MNIST', 'CIFAR10']:
             self.task = Tasks.GRAPH_CLASSIFICATION
             self.num_classes = 10
             if use_node_attributes:
-                self.transform = add_pos_to_node_features
-            else:
-                self.transform = None
+                self.transforms_list.append(add_pos_to_node_features)
         elif name == 'PATTERN':
             self.task = Tasks.NODE_CLASSIFICATION_WEIGHTED
             self.num_classes = 2
-            self.transform = None
+            if use_node_attributes is False:
+                self.transforms_list.append(RandomAttributes(d=3))
         elif name == 'CLUSTER':
             self.task = Tasks.NODE_CLASSIFICATION_WEIGHTED
             self.num_classes = 6
-            self.transform = None
+            if use_node_attributes is False:
+                self.transforms_list.append(RandomAttributes(d=3))
         else:
             raise RuntimeError('Unsupported dataset')
+
+        if len(self.transforms_list)>0:
+            self.transform  = transforms.Compose(self.transforms_list)
+        else:
+            self.transform = None
 
     def prepare_data(self):
         # Just download the data
         train = GNNBenchmarkDataset(
             self.root, self.name, split='train', transform=self.transform)
+
         self.node_attributes = train[0].x.shape[-1]
         GNNBenchmarkDataset(self.root, self.name, split='val')
         GNNBenchmarkDataset(self.root, self.name, split='test')
@@ -1035,3 +1045,7 @@ class Cora(PlanetoidDataset):
 class CiteSeer(PlanetoidDataset):
     def __init__(self, **kwargs):
         super().__init__(name='CiteSeer', split = "public", **kwargs)
+
+class PubMed(PlanetoidDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='PubMed', split = "public", **kwargs)
