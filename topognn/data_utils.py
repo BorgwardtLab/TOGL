@@ -50,6 +50,7 @@ def dataset_map_dict():
         'CliquePlanting': CliquePlanting,
         'DBLP': DBLP,
         'Cora': Cora,
+        'CiteSeer' : CiteSeer
     }
 
     return DATASET_MAP
@@ -940,10 +941,9 @@ class CLUSTER(GNNBenchmark):
         super().__init__('CLUSTER', **kwargs)
 
 class PlanetoidDataset(pl.LightningDataModule):
-    def __init__(self, name, batch_size, use_node_attributes, num_workers=4, **kwargs):
+    def __init__(self, name, use_node_attributes, num_workers=4, **kwargs):
         super().__init__()
         self.name = name
-        self.batch_size = batch_size
         self.num_workers = num_workers
         self.root = os.path.join(DATA_DIR, self.name)
 
@@ -958,14 +958,13 @@ class PlanetoidDataset(pl.LightningDataModule):
         # Just download the data
         dummy_data = Planetoid(
                 self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform]))
-        self.node_attributes = dummy_data.x.shape[1] 
+        self.node_attributes = dummy_data[0].x.shape[1] 
         return
 
     def train_dataloader(self):
         return DataLoader(
                 Planetoid(
                     self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform])),
-            batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
             drop_last=True,
@@ -976,7 +975,6 @@ class PlanetoidDataset(pl.LightningDataModule):
         return DataLoader(
             Planetoid(
                 self.root, self.name, split='public',  transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_val_transform])),
-            batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
             drop_last=False,
@@ -987,7 +985,6 @@ class PlanetoidDataset(pl.LightningDataModule):
         return DataLoader(
             Planetoid(
                 self.root, self.name, split='public',transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])),
-            batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
             drop_last=False,
@@ -1011,7 +1008,6 @@ class PlanetoidDataset(pl.LightningDataModule):
     def add_dataset_specific_args(cls, parent):
         import argparse
         parser = argparse.ArgumentParser(parents=[parent], add_help=False)
-        parser.add_argument('--batch_size', type=int, default=32)
         parser.add_argument('--use_node_attributes', type=str2bool, default=True)
         return parser
 
@@ -1019,3 +1015,7 @@ class PlanetoidDataset(pl.LightningDataModule):
 class Cora(PlanetoidDataset):
     def __init__(self, **kwargs):
         super().__init__(name='Cora', split = "public", **kwargs)
+
+class CiteSeer(PlanetoidDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='CiteSeer', split = "public", **kwargs)
