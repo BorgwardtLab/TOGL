@@ -17,7 +17,7 @@ from topognn.cli_utils import str2bool
 from torch_geometric.data import Data
 from torch_geometric.data import DataLoader
 from torch_geometric.data import InMemoryDataset
-from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset
+from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset, Planetoid
 from torch_geometric.transforms import OneHotDegree
 from torch_geometric.utils import degree
 from torch_geometric.utils.convert import from_networkx
@@ -47,6 +47,8 @@ def dataset_map_dict():
         'Cycles': Cycles,
         'NoCycles': NoCycles,
         'CliquePlanting': CliquePlanting,
+        'DBLP': DBLP,
+        'Cora': Cora,
     }
 
     return DATASET_MAP
@@ -92,10 +94,11 @@ class CliquePlantingDataset(InMemoryDataset):
     def __init__(
         self,
         root,
-        n_graphs=500,
-        n_vertices=300,
-        k=17,
+        n_graphs=1000,
+        n_vertices=100,
+        k_clique=17,
         random_d = 3,
+        p_ER_graph = 0.5,
         pre_transform=None,
         transform=None,
         **kwargs
@@ -119,8 +122,9 @@ class CliquePlantingDataset(InMemoryDataset):
         """
         self.n_graphs = n_graphs
         self.n_vertices = n_vertices
-        self.k = k
+        self.k = k_clique
         self.random_d = random_d
+        self.p = p_ER_graph
 
         super().__init__(root)
 
@@ -164,7 +168,7 @@ class CliquePlantingDataset(InMemoryDataset):
 
     def _make_graph(self):
         """Create graph potentially containing a planted clique."""
-        G = nx.erdos_renyi_graph(self.n_vertices, p=0.50)
+        G = nx.erdos_renyi_graph(self.n_vertices, p=self.p)
         y = 0
         #nx.classes.function.set_node_attributes(G,dict(G.degree),name="degree")
         
@@ -316,6 +320,8 @@ class SyntheticDataset(pl.LightningDataModule):
         parser.add_argument('--seed', type=int, default=42)
         parser.add_argument('--batch_size', type=int, default=32)
         parser.add_argument('--min_cycle',type=int,default = 3)
+        parser.add_argument('--k_clique',type=int, default = 17)
+        parser.add_argument('--p_ER_graph',type=float, default = 0.5, help = "Probability of an edge in the ER graph (only for CliquePlanting)")
         #parser.add_argument('--benchmark_idx',type=str2bool,default=True,help = "If True, uses the idx from the graph benchmarking paper.")
         return parser
 
@@ -363,7 +369,7 @@ class RandomAttributes(object):
         return data
 
 class TUGraphDataset(pl.LightningDataModule):
-    task = Tasks.GRAPH_CLASSIFICATION
+    #task = Tasks.GRAPH_CLASSIFICATION
 
     def __init__(self, name, batch_size, use_node_attributes=True,
                  val_fraction=0.1, test_fraction=0.1, fold=0, seed=42,
@@ -379,6 +385,11 @@ class TUGraphDataset(pl.LightningDataModule):
         self.num_workers = num_workers
         self.legacy = legacy
 
+        if name == "DBLP_v1":
+            self.task = Tasks.NODE_CLASSIFICATION_WEIGHTED
+        else:
+            self.task = Tasks.GRAPH_CLASSIFICATION
+
         max_degrees = {"IMDB-BINARY": 540,
                 "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18, "REDDIT-BINARY": 12200, "REDDIT-MULTI-5K":8000}
         mean_degrees = {"REDDIT-BINARY":2.31,"REDDIT-MULTI-5K":2.34}
@@ -392,7 +403,6 @@ class TUGraphDataset(pl.LightningDataModule):
             self.transform = RandomAttributes(d=3)
             #self.transform = None
         else:
-
             if name in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K']:
                 self.max_degree = max_degrees[name]
                 if self.max_degree < 1000:
@@ -798,9 +808,14 @@ class DD(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='DD', **kwargs)
 
+
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
+
+class DBLP(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='DBLP_v1', **kwargs)
 
 class Cycles(SyntheticDataset):
     def __init__(self, min_cycle, **kwargs):
@@ -844,11 +859,11 @@ class GNNBenchmark(pl.LightningDataModule):
             else:
                 self.transform = None
         elif name == 'PATTERN':
-            self.task = Tasks.NODE_CLASSIFICATION
+            self.task = Tasks.NODE_CLASSIFICATION_WEIGHTED
             self.num_classes = 2
             self.transform = None
         elif name == 'CLUSTER':
-            self.task = Tasks.NODE_CLASSIFICATION
+            self.task = Tasks.NODE_CLASSIFICATION_WEIGHTED
             self.num_classes = 6
             self.transform = None
         else:
@@ -922,3 +937,82 @@ class PATTERN(GNNBenchmark):
 class CLUSTER(GNNBenchmark):
     def __init__(self, **kwargs):
         super().__init__('CLUSTER', **kwargs)
+
+class PlanetoidDataset(pl.LightningDataModule):
+    def __init__(self, name, batch_size, use_node_attributes, num_workers=4, **kwargs):
+        super().__init__()
+        self.name = name
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.root = os.path.join(DATA_DIR, self.name)
+
+        self.task = Tasks.NODE_CLASSIFICATION
+    
+    def prepare_data(self):
+        # Just download the data
+        dummy_data = Planetoid(
+                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform)
+        import ipdb; ipdb.set_trace()
+        self.node_attributes = dummy_data.x.shape[1] 
+        return
+
+    def random_features(self,)
+
+    def train_dataloader(self):
+        return DataLoader(
+            Planetoid(
+                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform),
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            Planetoid(
+                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform),
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            Planetoid(
+                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform),
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    @staticmethod
+    def keep_train_transform(data):
+        data.y[~data.train_mask.bool()] = -100 
+        return data
+
+    def keep_val_transform(data):
+        data.y[~data.val_mask.bool()] = -100 
+        return data
+
+    def keep_test_transform(data):
+        data.y[~data.test_mask.bool()] = -100 
+        return data
+
+    @classmethod
+    def add_dataset_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser.add_argument('--batch_size', type=int, default=32)
+        parser.add_argument('--use_node_attributes', type=str2bool, default=True)
+        return parser
+
+
+class Cora(PlanetoidDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='Cora', split = "public", **kwargs)
