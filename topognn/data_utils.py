@@ -953,30 +953,41 @@ class PlanetoidDataset(pl.LightningDataModule):
             self.random_transform = lambda x : x
         else:
             self.random_transform = RandomAttributes(d=3)
-        
+
     def prepare_data(self):
         # Just download the data
         dummy_data = Planetoid(
                 self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform]))
-        self.node_attributes = dummy_data[0].x.shape[1] 
+        self.num_classes = int(torch.max(dummy_data[0].y) + 1)
+        self.node_attributes = dummy_data[0].x.shape[1]
         return
 
     def train_dataloader(self):
         return DataLoader(
-                Planetoid(
-                    self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform])),
-            shuffle=True,
-            num_workers=self.num_workers,
-            drop_last=True,
+            Planetoid(
+                    self.root,
+                    self.name,
+                    split='public',
+                    transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform])
+            ),
+            batch_size=1,
+            shuffle=False,
+            num_workers=0,
+            drop_last=False,
             pin_memory=True
         )
 
     def val_dataloader(self):
         return DataLoader(
             Planetoid(
-                self.root, self.name, split='public',  transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_val_transform])),
+                self.root,
+                self.name,
+                split='public',
+                transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_val_transform])
+            ),
+            batch_size=1,
             shuffle=False,
-            num_workers=self.num_workers,
+            num_workers=0,
             drop_last=False,
             pin_memory=True
         )
@@ -984,24 +995,29 @@ class PlanetoidDataset(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             Planetoid(
-                self.root, self.name, split='public',transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])),
+                self.root,
+                self.name,
+                split='public',
+                transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])
+            ),
+            batch_size=1,
             shuffle=False,
-            num_workers=self.num_workers,
+            num_workers=0,
             drop_last=False,
             pin_memory=True
         )
 
     @staticmethod
     def keep_train_transform(data):
-        data.y[~data.train_mask.bool()] = -100 
+        data.y[~data.train_mask] = -100
         return data
 
     def keep_val_transform(data):
-        data.y[~data.val_mask.bool()] = -100 
+        data.y[~data.val_mask] = -100
         return data
 
     def keep_test_transform(data):
-        data.y[~data.test_mask.bool()] = -100 
+        data.y[~data.test_mask] = -100
         return data
 
     @classmethod
