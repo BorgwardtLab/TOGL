@@ -21,6 +21,7 @@ from torch_geometric.datasets import TUDataset, GNNBenchmarkDataset, Planetoid
 from torch_geometric.transforms import OneHotDegree
 from torch_geometric.utils import degree
 from torch_geometric.utils.convert import from_networkx
+from torch_geometric import transforms
 
 from torch_scatter import scatter
 
@@ -947,21 +948,23 @@ class PlanetoidDataset(pl.LightningDataModule):
         self.root = os.path.join(DATA_DIR, self.name)
 
         self.task = Tasks.NODE_CLASSIFICATION
-    
+
+        if use_node_attributes:
+            self.random_transform = lambda x : x
+        else:
+            self.random_transform = RandomAttributes(d=3)
+        
     def prepare_data(self):
         # Just download the data
         dummy_data = Planetoid(
-                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform)
-        import ipdb; ipdb.set_trace()
+                self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform]))
         self.node_attributes = dummy_data.x.shape[1] 
         return
 
-    def random_features(self,)
-
     def train_dataloader(self):
         return DataLoader(
-            Planetoid(
-                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform),
+                Planetoid(
+                    self.root, self.name, split='public', transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_train_transform])),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -972,7 +975,7 @@ class PlanetoidDataset(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             Planetoid(
-                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform),
+                self.root, self.name, split='public',  transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_val_transform])),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
@@ -983,7 +986,7 @@ class PlanetoidDataset(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             Planetoid(
-                self.root, self.name, split='public', transform=PlanetoidDataset.keep_train_transform),
+                self.root, self.name, split='public',transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
