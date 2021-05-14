@@ -1008,7 +1008,7 @@ class PlanetoidDataset(pl.LightningDataModule):
                 self.root,
                 self.name,
                 split='public',
-                transform=torch_geometric.transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])
+                transform=transforms.Compose([self.random_transform, PlanetoidDataset.keep_test_transform])
             ),
             batch_size=1,
             shuffle=False,
