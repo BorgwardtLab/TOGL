@@ -531,7 +531,7 @@ class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, batch_norm=False,
                  residual=False, train_eps=True, save_filtration = False,
-                 add_mlp=False, **kwargs):
+                 add_mlp=False, weight_decay = 0., **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.embedding = torch.nn.Linear(num_node_features, hidden_dim)
@@ -618,9 +618,11 @@ class LargerGCNModel(pl.LightningModule):
 
         self.dropout_p = dropout_p
 
+        self.weight_decay = weight_decay
+
     def configure_optimizers(self):
         """Reduce learning rate if val_loss doesnt improve."""
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay = self.weight_decay)
         scheduler =  {'scheduler':torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='min', factor=0.5, patience=self.lr_patience),
 
@@ -725,6 +727,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--residual', type=str2bool, default=True)
         parser.add_argument('--save_filtration', type=str2bool, default=False)
         parser.add_argument('--add_mlp', type=str2bool, default=False)
+        parser.add_argument('--weight_decay', type=float, default=0.)
         return parser
 
 
@@ -814,7 +817,7 @@ class LargerTopoGNNModel(LargerGCNModel):
 
     def configure_optimizers(self):
         """Reduce learning rate if val_loss doesnt improve."""
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay =  self.weight_decay)
         scheduler =  {'scheduler':torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='min', factor=0.5, patience=self.lr_patience),
             "monitor":"val_loss",
