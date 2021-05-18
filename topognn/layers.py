@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GINConv
+from torch_geometric.nn import GCNConv, GINConv, GATConv
 from torch_scatter import scatter
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 from topognn.data_utils import remove_duplicate_edges
@@ -66,6 +66,38 @@ class GINLayer(nn.Module):
             h = h + x
         return self.dropout(h)
 
+
+class GATLayer(nn.Module):
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        activation,
+        dropout,
+        batch_norm,
+        num_heads,
+        residual=True,
+        train_eps=False,
+        **kwargs
+    ):
+        super().__init__()
+
+
+        self.activation = activation
+        self.residual = residual
+        self.dropout = nn.Dropout(dropout)
+        self.batchnorm = nn.BatchNorm1d(
+            out_features * num_heads) if batch_norm else nn.Identity()
+        
+        self.conv = GATConv(in_features, out_features, heads = num_heads, dropout = dropout)
+
+    def forward(self, x, edge_index, **kwargs):
+        h = self.conv(x, edge_index)
+        h = self.batchnorm(h)
+        h = self.activation(h)
+        if self.residual:
+            h = h + x
+        return self.dropout(h)
 
 class DeepSetLayer(nn.Module):
     """Simple equivariant deep set layer."""
