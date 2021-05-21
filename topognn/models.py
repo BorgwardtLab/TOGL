@@ -529,7 +529,7 @@ class PointWiseMLP(nn.Module):
 
 class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
-                 lr=0.001, dropout_p=0.2, GIN=False, GAT = False, batch_norm=False,
+                 lr=0.001, dropout_p=0.2, GIN=False, GAT = False, GatedGCN = False, batch_norm=False,
                  residual=False, train_eps=True, save_filtration = False,
                  add_mlp=False, weight_decay = 0., **kwargs):
         super().__init__()
@@ -548,7 +548,12 @@ class LargerGCNModel(pl.LightningModule):
             def build_gnn_layer():
                 return GATLayer( in_features = hidden_dim * num_heads, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, num_heads = num_heads, **kwargs)
             graph_pooling_operation = global_mean_pool
-            
+        
+        elif GatedGCN:
+            def build_gnn_layer():
+                return GatedGCNLayer( in_features = hidden_dim , out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
+            graph_pooling_operation = global_mean_pool
+
         else:
             def build_gnn_layer():
                 return GCNLayer(
@@ -735,6 +740,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument("--dropout_p", type=float, default=0.0)
         parser.add_argument('--GIN', type=str2bool, default=False)
         parser.add_argument('--GAT', type=str2bool, default=False)
+        parser.add_argument('--GatedGCN', type=str2bool, default=False)
         parser.add_argument('--train_eps', type=str2bool, default=True)
         parser.add_argument('--batch_norm', type=str2bool, default=True)
         parser.add_argument('--residual', type=str2bool, default=True)

@@ -33,12 +33,14 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 def dataset_map_dict():
     DATASET_MAP = {
         'IMDB-BINARY': IMDB_Binary,
+        'IMDB-MULTI': IMDB_Multi,
         'REDDIT-BINARY': REDDIT_Binary,
         'REDDIT-5K': REDDIT_5K,
         'PROTEINS': Proteins,
         'PROTEINS_full': Proteins_full,
         'ENZYMES': Enzymes,
         'DD': DD,
+        'NCI1' : NCI,
         'MUTAG': MUTAG,
         'MNIST': MNIST,
         'CIFAR10': CIFAR10,
@@ -394,7 +396,7 @@ class TUGraphDataset(pl.LightningDataModule):
             self.task = Tasks.GRAPH_CLASSIFICATION
 
         max_degrees = {"IMDB-BINARY": 540,
-                "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18, "REDDIT-BINARY": 12200, "REDDIT-MULTI-5K":8000}
+                "COLLAB": 2000, 'PROTEINS': 50, 'ENZYMES': 18, "REDDIT-BINARY": 12200, "REDDIT-MULTI-5K":8000, "IMDB-MULTI":352}
         mean_degrees = {"REDDIT-BINARY":2.31,"REDDIT-MULTI-5K":2.34}
         std_degrees  = {"REDDIT-BINARY": 20.66,"REDDIT-MULTI-5K":12.50}
 
@@ -406,7 +408,7 @@ class TUGraphDataset(pl.LightningDataModule):
             self.transform = RandomAttributes(d=3)
             #self.transform = None
         else:
-            if name in ['IMDB-BINARY','REDDIT-BINARY','REDDIT-MULTI-5K']:
+            if name in ['IMDB-BINARY','IMDB-MULTI','REDDIT-BINARY','REDDIT-MULTI-5K']:
                 self.max_degree = max_degrees[name]
                 if self.max_degree < 1000:
                     self.pre_transform = OneHotDegree(self.max_degree)
@@ -787,6 +789,10 @@ class IMDB_Binary(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='IMDB-BINARY', **kwargs)
 
+class IMDB_Multi(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='IMDB-MULTI', **kwargs)
+
 class REDDIT_Binary(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='REDDIT-BINARY', **kwargs)
@@ -815,6 +821,10 @@ class DD(TUGraphDataset):
 class MUTAG(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='MUTAG', **kwargs)
+
+class NCI(TUGraphDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='NCI1', **kwargs)
 
 class DBLP(TUGraphDataset):
     def __init__(self, **kwargs):
