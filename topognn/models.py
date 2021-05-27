@@ -531,7 +531,7 @@ class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, GAT = False, GatedGCN = False, batch_norm=False,
                  residual=False, train_eps=True, save_filtration = False,
-                 add_mlp=False, weight_decay = 0., **kwargs):
+                 add_mlp=False, weight_decay = 0., dropout_input_p=0., **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.save_filtration = save_filtration
@@ -548,7 +548,7 @@ class LargerGCNModel(pl.LightningModule):
             def build_gnn_layer():
                 return GATLayer( in_features = hidden_dim * num_heads, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, num_heads = num_heads, **kwargs)
             graph_pooling_operation = global_mean_pool
-        
+
         elif GatedGCN:
             def build_gnn_layer():
                 return GatedGCNLayer( in_features = hidden_dim , out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
@@ -560,15 +560,20 @@ class LargerGCNModel(pl.LightningModule):
                     hidden_dim, hidden_dim, F.relu, dropout_p, batch_norm)
             graph_pooling_operation = global_mean_pool
 
-        
-        self.embedding = torch.nn.Linear(num_node_features, hidden_dim * num_heads)
-        
+        if dropout_input_p != 0.:
+            self.embedding = torch.nn.Sequential(
+                torch.nn.Dropout(dropout_input_p),
+                torch.nn.Linear(num_node_features, hidden_dim * num_heads)
+            )
+        else:
+            self.embedding = torch.nn.Linear(num_node_features, hidden_dim * num_heads)
+
         layers = [build_gnn_layer() for _ in range(depth)]
 
         if add_mlp:
             mlp_layer = PointWiseMLP(hidden_dim)
             layers.insert(1, mlp_layer)
-        
+
         self.layers = nn.ModuleList(layers)
 
         if task is Tasks.GRAPH_CLASSIFICATION:
@@ -747,6 +752,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--save_filtration', type=str2bool, default=False)
         parser.add_argument('--add_mlp', type=str2bool, default=False)
         parser.add_argument('--weight_decay', type=float, default=0.)
+        parser.add_argument('--dropout_input_p', type=float, default=0.)
         return parser
 
 
