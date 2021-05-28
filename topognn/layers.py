@@ -8,6 +8,34 @@ from torch_scatter import scatter
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
 from topognn.data_utils import remove_duplicate_edges
 
+class EdgeDropout(nn.Module):
+    def __init__(self, dropout_p):
+        super().__init__()
+        self.dropout_p = dropout_p
+
+    def forward(self, batch):
+        if self.training:
+            batch = remove_duplicate_edges(batch)
+            edge_index, edge_slices = batch.edge_index, batch.__slices__['edge_index']
+            keep_edge = torch.rand(edge_index.shape[1], device=edge_index.device) > self.dropout_p
+            # print(torch.where(torch.all(edge_index[None] == torch.stack([edge_index[1], edge_index[0]], dim=0)[:, None]) ))
+            indices = torch.where(keep_edge)[0]
+            new_edge_index = edge_index[:, indices]
+            # add reverse edges
+            new_edge_index = torch.stack(
+                [new_edge_index, new_edge_index.flip(0)], dim=1).view(new_edge_index.shape[0], 2*new_edge_index.shape[1])
+
+            # recompute edge slices
+            edges_until_index = torch.cat([torch.zeros(1, device=edge_index.device, dtype=torch.long), torch.cumsum(keep_edge.repeat_interleave(2), dim=0)], dim=0)
+            new_edge_slices = edges_until_index[2*torch.tensor(edge_slices[:-1])]
+            new_edge_slices = torch.cat(
+                [new_edge_slices, edges_until_index[-1][None]],
+                dim=0).long()
+            batch = batch.clone()
+            batch.edge_index = new_edge_index
+            batch.__slices__['edge_index'] = new_edge_slices.tolist()
+        return batch
+
 
 class GCNLayer(nn.Module):
     def __init__(

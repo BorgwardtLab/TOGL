@@ -65,7 +65,7 @@ def remove_duplicate_edges(batch):
             batch = batch.clone()        
             device = batch.x.device
             # Computing the equivalent of batch over edges.
-            edge_slices = torch.tensor(batch.__slices__["edge_index"],device= device)
+            edge_slices = torch.tensor(batch.__slices__["edge_index"], device=device)
             edge_diff_slices = (edge_slices[1:]-edge_slices[:-1])
             n_batch = len(edge_diff_slices)
             batch_e = torch.repeat_interleave(torch.arange(

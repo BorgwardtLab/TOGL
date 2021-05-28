@@ -50,7 +50,7 @@ def main(model_cls, dataset_cls, args):
 
     GPU_AVAILABLE = torch.cuda.is_available() and torch.cuda.device_count() > 0
     trainer = pl.Trainer(
-        gpus=-1 if GPU_AVAILABLE else None,
+        gpus=[0] if GPU_AVAILABLE else None,
         logger=wandb_logger,
         log_every_n_steps=5,
         max_epochs=args.max_epochs,

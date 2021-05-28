@@ -8,10 +8,11 @@ import os
 import pytorch_lightning as pl
 
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_pool
+from torch_geometric.data import Data
 
 from topognn import Tasks
 from topognn.cli_utils import str2bool, int_or_none
-from topognn.layers import GCNLayer, GINLayer, GATLayer, SimpleSetTopoLayer, fake_persistence_computation
+from topognn.layers import GCNLayer, GINLayer, GATLayer, SimpleSetTopoLayer, fake_persistence_computation, EdgeDropout
 from topognn.metrics import WeightedAccuracy
 from topognn.data_utils import remove_duplicate_edges
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
@@ -532,6 +533,7 @@ class LargerGCNModel(pl.LightningModule):
                  lr=0.001, dropout_p=0.2, GIN=False, GAT = False, GatedGCN = False, batch_norm=False,
                  residual=False, train_eps=True, save_filtration = False,
                  add_mlp=False, weight_decay = 0., dropout_input_p=0.,
+                 dropout_edges_p=0.,
                  **kwargs):
         super().__init__()
         self.save_hyperparameters()
@@ -541,7 +543,7 @@ class LargerGCNModel(pl.LightningModule):
 
         if GIN:
             def build_gnn_layer():
-                return GINLayer( in_features = hidden_dim, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
+                return GINLayer(in_features = hidden_dim, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
             graph_pooling_operation = global_add_pool
 
         elif GAT:
@@ -647,6 +649,7 @@ class LargerGCNModel(pl.LightningModule):
         self.min_lr = kwargs["min_lr"]
 
         self.dropout_p = dropout_p
+        self.edge_dropout = EdgeDropout(dropout_edges_p)
 
         self.weight_decay = weight_decay
 
@@ -663,6 +666,8 @@ class LargerGCNModel(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def forward(self, data):
+        # Do edge dropout
+        data = self.edge_dropout(data)
 
         x, edge_index = data.x, data.edge_index
         x = self.embedding(x)
@@ -762,6 +767,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--add_mlp', type=str2bool, default=False)
         parser.add_argument('--weight_decay', type=float, default=0.)
         parser.add_argument('--dropout_input_p', type=float, default=0.)
+        parser.add_argument('--dropout_edges_p', type=float, default=0.)
         return parser
 
 
@@ -862,6 +868,8 @@ class LargerTopoGNNModel(LargerGCNModel):
         return [optimizer], [scheduler]
 
     def forward(self, data, return_filtration=False):
+        # Do edge dropout
+        data = self.edge_dropout(data)
         x, edge_index = data.x, data.edge_index
 
         x = self.embedding(x)
