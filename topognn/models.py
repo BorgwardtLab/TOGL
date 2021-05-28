@@ -531,7 +531,8 @@ class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, GAT = False, GatedGCN = False, batch_norm=False,
                  residual=False, train_eps=True, save_filtration = False,
-                 add_mlp=False, weight_decay = 0., dropout_input_p=0., **kwargs):
+                 add_mlp=False, weight_decay = 0., dropout_input_p=0.,
+                 **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.save_filtration = save_filtration
@@ -555,20 +556,27 @@ class LargerGCNModel(pl.LightningModule):
             graph_pooling_operation = global_mean_pool
 
         else:
-            def build_gnn_layer():
+            def build_gnn_layer(is_first=False, is_last=False):
                 return GCNLayer(
-                    hidden_dim, hidden_dim, F.relu, dropout_p, batch_norm)
+                    num_node_features if is_first else hidden_dim,
+                    num_classes if is_last else hidden_dim,
+                    nn.Identity() if is_last else F.relu,
+                    0. if is_last else dropout_p,
+                    batch_norm, residual)
             graph_pooling_operation = global_mean_pool
 
         if dropout_input_p != 0.:
             self.embedding = torch.nn.Sequential(
                 torch.nn.Dropout(dropout_input_p),
-                torch.nn.Linear(num_node_features, hidden_dim * num_heads)
+                # torch.nn.Linear(num_node_features, hidden_dim * num_heads)
             )
         else:
             self.embedding = torch.nn.Linear(num_node_features, hidden_dim * num_heads)
 
-        layers = [build_gnn_layer() for _ in range(depth)]
+        layers = [
+            build_gnn_layer(is_first=i == 0, is_last=i == (depth-1))
+            for i in range(depth)
+        ]
 
         if add_mlp:
             mlp_layer = PointWiseMLP(hidden_dim)
@@ -590,13 +598,14 @@ class LargerGCNModel(pl.LightningModule):
         else:
             dim_before_class = hidden_dim * num_heads
 
-        self.classif = torch.nn.Sequential(
-            nn.Linear(dim_before_class, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 2, hidden_dim // 4),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 4, num_classes)
-        )
+        self.classif = nn.Identity()
+        # torch.nn.Sequential(
+        #    nn.Linear(dim_before_class, num_classes),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 2, hidden_dim // 4),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 4, num_classes)
+        # )
         self.task = task
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
@@ -831,13 +840,14 @@ class LargerTopoGNNModel(LargerGCNModel):
         else:
             cycles_dim = 0
 
-        self.classif = torch.nn.Sequential(
-            nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 2, hidden_dim // 4),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 4, num_classes)
-        )
+        self.classif = torch.nn.Identity()
+        # torch.nn.Sequential(
+        #     nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 2, hidden_dim // 4),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 4, num_classes)
+        # )
 
 
     def configure_optimizers(self):

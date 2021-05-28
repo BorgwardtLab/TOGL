@@ -19,7 +19,7 @@ class GCNLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.batchnorm = nn.BatchNorm1d(
             out_features) if batch_norm else nn.Identity()
-        self.conv = GCNConv(in_features, out_features, add_self_loops=False)
+        self.conv = GCNConv(in_features, out_features, add_self_loops=True)
 
     def forward(self, x, edge_index, **kwargs):
         h = self.conv(x, edge_index)

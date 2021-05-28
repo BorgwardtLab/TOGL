@@ -92,8 +92,6 @@ def main(model_cls, dataset_cls, args):
     test_results = trainer.test(test_dataloaders=dataset.test_dataloader())[0]
 
 
-
-
     # Just for interest see if loading the state with lowest val loss actually
     # gives better generalization performance.
     checkpoint_path = checkpoint_cb.best_model_path
