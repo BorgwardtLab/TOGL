@@ -455,7 +455,7 @@ class TUGraphDataset(pl.LightningDataModule):
                 transform=self.transform,
                 pre_transform = self.pre_transform
             )
-
+            
             if self.has_node_attributes:
                 self.node_attributes= dataset.num_node_features
             else:

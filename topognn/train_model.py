@@ -101,7 +101,7 @@ def main(model_cls, dataset_cls, args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--model', type=str, choices=MODEL_MAP.keys())
-    parser.add_argument('--dataset', type=str, choices=DATASET_MAP.keys())
+    parser.add_argument('--dataset', type=str)
     parser.add_argument('--max_epochs', type=int, default=1000)
     parser.add_argument('--dummy_var', type=int, default=0)
     parser.add_argument("--paired", type = str2bool, default=False)
