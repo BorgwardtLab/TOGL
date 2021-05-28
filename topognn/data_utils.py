@@ -370,7 +370,11 @@ class RandomAttributes(object):
     def __init__(self,d):
         self.d = d
     def __call__(self,data):
-        data.x = torch.randn((data.x.shape[0],self.d))
+        if self.d == -1:
+            data.x = torch.randn((data.x.shape[0],data.x.shape[1]))
+        else:
+            data.x = torch.randn((data.x.shape[0],self.d))
+        
         return data
 
 class TUGraphDataset(pl.LightningDataModule):
@@ -972,7 +976,7 @@ class PlanetoidDataset(pl.LightningDataModule):
         if use_node_attributes:
             self.random_transform = lambda x : x
         else:
-            self.random_transform = RandomAttributes(d=3)
+            self.random_transform = RandomAttributes(d=-1)
 
     def prepare_data(self):
         # Just download the data
