@@ -3,13 +3,22 @@
 import argparse
 import pickle
 import torch
-import sys
 
 import igraph as ig
 import numpy as np
 
 from pyper.persistent_homology.graphs import calculate_persistence_diagrams
 from pyper.persistent_homology.graphs import extend_filtration_to_edges
+from pyper.vectorisation import featurise_distances
+from pyper.vectorisation import featurise_pairwise_distances
+
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import StratifiedKFold
+
+from sklearn.svm import SVC
 
 
 def build_graph_from_edge_list(edge_list):
@@ -58,4 +67,54 @@ if __name__ == '__main__':
             x_list, edge_lists = pickle.load(f)
 
             for edge_list in edge_lists:
-                g = build_graph_from_edge_list(edge_list)
+                graphs.append(build_graph_from_edge_list(edge_list))
+
+    persistence_diagrams = [
+        calculate_persistence_diagrams(
+            graph,
+            vertex_attribute='attribute',
+            edge_attribute='attribute',
+        ) for graph in graphs
+    ]
+
+    X0 = []
+    X1 = []
+
+    for (D0, D1) in persistence_diagrams:
+        x0 = featurise_pairwise_distances(D0)
+        x1 = featurise_pairwise_distances(D1)
+
+        # Simple padding...this one might bite us at some point.
+        x0 += [0] * (300 - len(x0))
+        x1 += [0] * (300 - len(x1))
+
+        X0.append(x0)
+        X1.append(x1)
+
+    X0 = np.asarray(X0)
+    X1 = np.asarray(X1)
+
+    X = np.hstack((X0, X1))
+
+    scores = []
+
+    for i in range(10):
+        cv = StratifiedKFold(n_splits=3, shuffle=True)
+
+        # Could also be done in a stratified fashion...
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+        param_grid = {
+            'C': 10. ** np.arange(-3, 4),  # 10^{-3}..10^{3}
+            'gamma': ['auto'],
+        }
+
+        svm = SVC(kernel='rbf')
+        clf = GridSearchCV(svm, param_grid, scoring='accuracy')
+        clf.fit(X, labels)
+
+        scores.append(np.mean(cross_val_score(clf, X, labels, cv=cv)))
+        print(f'Iteration {i}: {100 * scores[-1]:.2f}')
+
+    print(f'{100 * np.mean(scores):.2f} +- {100 * np.std(scores):.2f}')
