@@ -74,6 +74,7 @@ if __name__ == '__main__':
             graph,
             vertex_attribute='attribute',
             edge_attribute='attribute',
+            unpaired=100,
         ) for graph in graphs
     ]
 
@@ -81,19 +82,18 @@ if __name__ == '__main__':
     X1 = []
 
     for (D0, D1) in persistence_diagrams:
-        x0 = featurise_pairwise_distances(D0)
-        x1 = featurise_pairwise_distances(D1)
+        x0 = featurise_distances(D0)
+        x1 = featurise_distances(D1)
 
         # Simple padding...this one might bite us at some point.
-        x0 += [0] * (300 - len(x0))
-        x1 += [0] * (300 - len(x1))
+        x0 += [0] * (50 - len(x0))
+        x1 += [0] * (50 - len(x1))
 
         X0.append(x0)
         X1.append(x1)
 
     X0 = np.asarray(X0)
     X1 = np.asarray(X1)
-
     X = np.hstack((X0, X1))
 
     scores = []
