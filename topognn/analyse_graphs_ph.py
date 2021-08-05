@@ -30,9 +30,12 @@ def build_graph_from_edge_list(edge_list):
         g.add_edge(u, v)
 
     if args.random:
-        g.vs['attribute'] = np.random.uniform(size=len(g.degree()))
+        g.vs['attribute'] = np.random.normal(size=len(g.degree()))
     else:
         g.vs['attribute'] = g.degree()
+
+    if args.perturb:
+        g.vs['attribute'] += np.random.normal(size=len(g.degree()))
 
     g = extend_filtration_to_edges(
         g,
@@ -57,6 +60,12 @@ if __name__ == '__main__':
         '-r', '--random',
         action='store_true',
         help='If set, uses random node features instead of degrees.'
+    )
+
+    parser.add_argument(
+        '-p', '--perturb',
+        action='store_true',
+        help='If set, perturbs filtration values.'
     )
 
     args = parser.parse_args()
