@@ -31,6 +31,9 @@ def build_graph_from_edge_list(edge_list):
 
     g.vs['attribute'] = g.degree()
 
+    if args.random:
+        g.vs['attribute'] += np.random.uniform(size=len(g.degree()))
+
     g = extend_filtration_to_edges(
         g,
         vertex_attribute='attribute',
@@ -48,6 +51,13 @@ if __name__ == '__main__':
         '-l', '--labels',
         type=str,
         help='Path to labels'
+    )
+
+    # TODO: might want to try out fully random features as well...
+    parser.add_argument(
+        '-r', '--random',
+        action='store_true',
+        help='If set, perturns node features.'
     )
 
     args = parser.parse_args()
