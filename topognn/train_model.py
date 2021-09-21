@@ -12,6 +12,8 @@ from pytorch_lightning.callbacks.model_checkpoint import ModelCheckpoint
 import topognn.models as models
 import topognn.data_utils as datasets
 
+from topognn.cli_utils import str2bool 
+
 MODEL_MAP = {
     'TopoGNN': models.FiltrationGCNModel,
     'GCN': models.GCNModel,
@@ -114,7 +116,7 @@ if __name__ == '__main__':
         sys.exit(1)
     model_cls = MODEL_MAP[partial_args.model]
     #dataset_cls = DATASET_MAP[partial_args.dataset]
-    dataset_cls = topo_data.get_dataset_class(partial_args)
+    dataset_cls = datasets.get_dataset_class(**vars(partial_args))
 
     parser = model_cls.add_model_specific_args(parser)
     parser = dataset_cls.add_dataset_specific_args(parser)

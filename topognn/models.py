@@ -8,10 +8,11 @@ import os
 import pytorch_lightning as pl
 
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, global_add_pool
+from torch_geometric.data import Data
 
 from topognn import Tasks
 from topognn.cli_utils import str2bool, int_or_none
-from topognn.layers import GCNLayer, GINLayer, GATLayer, SimpleSetTopoLayer, fake_persistence_computation
+from topognn.layers import GCNLayer, GINLayer, GATLayer, SimpleSetTopoLayer, fake_persistence_computation#, EdgeDropout
 from topognn.metrics import WeightedAccuracy
 from topognn.data_utils import remove_duplicate_edges
 from torch_persistent_homology.persistent_homology_cpu import compute_persistence_homology_batched_mt
@@ -531,7 +532,9 @@ class LargerGCNModel(pl.LightningModule):
     def __init__(self, hidden_dim, depth, num_node_features, num_classes, task,
                  lr=0.001, dropout_p=0.2, GIN=False, GAT = False, GatedGCN = False, batch_norm=False,
                  residual=False, train_eps=True, save_filtration = False,
-                 add_mlp=False, weight_decay = 0., dropout_input_p=0., **kwargs):
+                 add_mlp=False, weight_decay = 0., dropout_input_p=0.,
+                 dropout_edges_p=0.,
+                 **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.save_filtration = save_filtration
@@ -539,36 +542,45 @@ class LargerGCNModel(pl.LightningModule):
         num_heads = 1
 
         if GIN:
-            def build_gnn_layer():
-                return GINLayer( in_features = hidden_dim, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
+            def build_gnn_layer(is_first = False, is_last = False):
+                return GINLayer(in_features = hidden_dim, out_features = hidden_dim, train_eps=train_eps, activation = nn.Identity() if is_last else F.relu, batch_norm = batch_norm, dropout = 0. if is_last else dropout_p, **kwargs)
             graph_pooling_operation = global_add_pool
 
         elif GAT:
             num_heads = 8
-            def build_gnn_layer():
-                return GATLayer( in_features = hidden_dim * num_heads, out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, num_heads = num_heads, **kwargs)
+            def build_gnn_layer(is_first = False, is_last = False):
+                return GATLayer( in_features = hidden_dim * num_heads, out_features = hidden_dim, train_eps=train_eps, activation = nn.Identity() if is_last else F.relu, batch_norm = batch_norm, dropout = 0. if is_last else dropout_p, num_heads = num_heads, **kwargs)
             graph_pooling_operation = global_mean_pool
 
         elif GatedGCN:
-            def build_gnn_layer():
-                return GatedGCNLayer( in_features = hidden_dim , out_features = hidden_dim, train_eps=train_eps, activation = F.relu, batch_norm = batch_norm, dropout = dropout_p, **kwargs)
+            def build_gnn_layer(is_first = False, is_last = False):
+                return GatedGCNLayer( in_features = hidden_dim , out_features = hidden_dim, train_eps=train_eps, activation = nn.Identity() if is_last else F.relu, batch_norm = batch_norm, dropout = 0. if is_last else dropout_p, **kwargs)
             graph_pooling_operation = global_mean_pool
 
         else:
-            def build_gnn_layer():
+            def build_gnn_layer(is_first=False, is_last=False):
                 return GCNLayer(
-                    hidden_dim, hidden_dim, F.relu, dropout_p, batch_norm)
+                    hidden_dim,
+                    #num_node_features if is_first else hidden_dim,
+                    hidden_dim,
+                    #num_classes if is_last else hidden_dim,
+                    nn.Identity() if is_last else F.relu,
+                    0. if is_last else dropout_p,
+                    batch_norm, residual)
             graph_pooling_operation = global_mean_pool
 
         if dropout_input_p != 0.:
             self.embedding = torch.nn.Sequential(
                 torch.nn.Dropout(dropout_input_p),
-                torch.nn.Linear(num_node_features, hidden_dim * num_heads)
+                # torch.nn.Linear(num_node_features, hidden_dim * num_heads)
             )
         else:
             self.embedding = torch.nn.Linear(num_node_features, hidden_dim * num_heads)
 
-        layers = [build_gnn_layer() for _ in range(depth)]
+        layers = [
+            build_gnn_layer(is_first=i == 0, is_last=i == (depth-1))
+            for i in range(depth)
+        ]
 
         if add_mlp:
             mlp_layer = PointWiseMLP(hidden_dim)
@@ -590,13 +602,14 @@ class LargerGCNModel(pl.LightningModule):
         else:
             dim_before_class = hidden_dim * num_heads
 
-        self.classif = torch.nn.Sequential(
-            nn.Linear(dim_before_class, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 2, hidden_dim // 4),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 4, num_classes)
-        )
+        self.classif = nn.Identity()
+        # torch.nn.Sequential(
+        #    nn.Linear(dim_before_class, num_classes),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 2, hidden_dim // 4),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 4, num_classes)
+        # )
         self.task = task
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
@@ -638,6 +651,7 @@ class LargerGCNModel(pl.LightningModule):
         self.min_lr = kwargs["min_lr"]
 
         self.dropout_p = dropout_p
+        #self.edge_dropout = EdgeDropout(dropout_edges_p)
 
         self.weight_decay = weight_decay
 
@@ -654,6 +668,8 @@ class LargerGCNModel(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def forward(self, data):
+        # Do edge dropout
+        #data = self.edge_dropout(data)
 
         x, edge_index = data.x, data.edge_index
         x = self.embedding(x)
@@ -753,6 +769,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--add_mlp', type=str2bool, default=False)
         parser.add_argument('--weight_decay', type=float, default=0.)
         parser.add_argument('--dropout_input_p', type=float, default=0.)
+        parser.add_argument('--dropout_edges_p', type=float, default=0.)
         return parser
 
 
@@ -831,13 +848,14 @@ class LargerTopoGNNModel(LargerGCNModel):
         else:
             cycles_dim = 0
 
-        self.classif = torch.nn.Sequential(
-            nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 2, hidden_dim // 4),
-            nn.ReLU(),
-            nn.Linear(hidden_dim // 4, num_classes)
-        )
+        self.classif = torch.nn.Identity()
+        # torch.nn.Sequential(
+        #     nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 2, hidden_dim // 4),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_dim // 4, num_classes)
+        # )
 
 
     def configure_optimizers(self):
@@ -852,6 +870,8 @@ class LargerTopoGNNModel(LargerGCNModel):
         return [optimizer], [scheduler]
 
     def forward(self, data, return_filtration=False):
+        # Do edge dropout
+        #data = self.edge_dropout(data)
         x, edge_index = data.x, data.edge_index
 
         x = self.embedding(x)
