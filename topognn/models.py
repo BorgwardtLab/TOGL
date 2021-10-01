@@ -603,13 +603,14 @@ class LargerGCNModel(pl.LightningModule):
             dim_before_class = hidden_dim * num_heads
 
         self.classif = nn.Identity()
-        # torch.nn.Sequential(
-        #    nn.Linear(dim_before_class, num_classes),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_dim // 2, hidden_dim // 4),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_dim // 4, num_classes)
-        # )
+        self.classif =  torch.nn.Sequential(
+            nn.Linear(dim_before_class, num_classes),
+             nn.ReLU(),
+             nn.Linear(hidden_dim // 2, hidden_dim // 4),
+             nn.ReLU(),
+             nn.Linear(hidden_dim // 4, num_classes)
+         )
+        
         self.task = task
         if task is Tasks.GRAPH_CLASSIFICATION:
             self.accuracy = pl.metrics.Accuracy()
@@ -849,13 +850,13 @@ class LargerTopoGNNModel(LargerGCNModel):
             cycles_dim = 0
 
         self.classif = torch.nn.Identity()
-        # torch.nn.Sequential(
-        #     nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_dim // 2, hidden_dim // 4),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_dim // 4, num_classes)
-        # )
+        self.classif = torch.nn.Sequential(
+             nn.Linear(hidden_dim + cycles_dim, hidden_dim // 2),
+             nn.ReLU(),
+             nn.Linear(hidden_dim // 2, hidden_dim // 4),
+             nn.ReLU(),
+             nn.Linear(hidden_dim // 4, num_classes)
+         )
 
 
     def configure_optimizers(self):
@@ -885,7 +886,6 @@ class LargerTopoGNNModel(LargerGCNModel):
 
         # Pooling
         x = self.pooling_fun(x, data.batch)
-
         #Aggregating the dim1 topo info if dist_dim1 == False
         if x_dim1 is not None:
             if self.task in [Tasks.NODE_CLASSIFICATION, Tasks.NODE_CLASSIFICATION_WEIGHTED]:
@@ -894,7 +894,7 @@ class LargerTopoGNNModel(LargerGCNModel):
             x_pre_class = torch.cat([x, x_dim1], axis=1)
         else:
             x_pre_class = x
-
+        
         #Final classification
         x = self.classif(x_pre_class)
 
