@@ -547,7 +547,7 @@ class LargerGCNModel(pl.LightningModule):
             graph_pooling_operation = global_add_pool
 
         elif GAT:
-            num_heads = 8
+            num_heads = kwargs["num_heads_gnn"]
             def build_gnn_layer(is_first = False, is_last = False):
                 return GATLayer( in_features = hidden_dim * num_heads, out_features = hidden_dim, train_eps=train_eps, activation = nn.Identity() if is_last else F.relu, batch_norm = batch_norm, dropout = 0. if is_last else dropout_p, num_heads = num_heads, **kwargs)
             graph_pooling_operation = global_mean_pool
@@ -771,6 +771,7 @@ class LargerGCNModel(pl.LightningModule):
         parser.add_argument('--weight_decay', type=float, default=0.)
         parser.add_argument('--dropout_input_p', type=float, default=0.)
         parser.add_argument('--dropout_edges_p', type=float, default=0.)
+        parser.add_argument('--num_heads_gnn', type=int, default=1)
         return parser
 
 
@@ -803,6 +804,10 @@ class LargerTopoGNNModel(LargerGCNModel):
         self.togl_position = depth if togl_position is None else togl_position
 
         self.deepset = deepset
+
+        if kwargs.get("GAT",False):
+            hidden_dim = hidden_dim * kwargs["num_heads_gnn"]
+
         if self.deepset:
             self.topo1 = SimpleSetTopoLayer(
                 n_features = hidden_dim,
@@ -876,7 +881,7 @@ class LargerTopoGNNModel(LargerGCNModel):
         x, edge_index = data.x, data.edge_index
 
         x = self.embedding(x)
-
+        
         for layer in self.layers[:self.togl_position]:
             x = layer(x, edge_index=edge_index, data=data)
         x, x_dim1, filtration = self.topo1(x, data, return_filtration)
