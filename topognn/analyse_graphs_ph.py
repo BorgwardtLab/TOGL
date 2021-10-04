@@ -129,7 +129,7 @@ if __name__ == '__main__':
         }
 
         svm = SVC(kernel='rbf')
-        clf = GridSearchCV(svm, param_grid, scoring='accuracy')
+        clf = GridSearchCV(svm, param_grid, scoring='accuracy', cv=3)
         clf.fit(X, labels)
 
         scores.append(np.mean(cross_val_score(clf, X, labels, cv=cv)))
