@@ -549,7 +549,7 @@ class LargerGCNModel(pl.LightningModule):
         elif GAT:
             num_heads = kwargs["num_heads_gnn"]
             def build_gnn_layer(is_first = False, is_last = False):
-                return GATLayer( in_features = hidden_dim * num_heads, out_features = hidden_dim, train_eps=train_eps, activation = nn.Identity() if is_last else F.relu, batch_norm = batch_norm, dropout = 0. if is_last else dropout_p, num_heads = num_heads, **kwargs)
+                return GATLayer( in_features = hidden_dim * num_heads, out_features = (hidden_dim * num_heads) if is_last else hidden_dim, train_eps=train_eps, activation = nn.Identity() if is_last else F.relu, batch_norm = batch_norm, dropout = 0. if is_last else dropout_p, num_heads = 1 if is_last else num_heads, **kwargs)
             graph_pooling_operation = global_mean_pool
 
         elif GatedGCN:
@@ -596,7 +596,7 @@ class LargerGCNModel(pl.LightningModule):
             self.pooling_fun = fake_pool
         else:
             raise RuntimeError('Unsupported task.')
-
+        
         if (kwargs.get("dim1",False) and ("dim1_out_dim" in kwargs.keys()) and ( not kwargs.get("fake",False))):
             dim_before_class = hidden_dim + kwargs["dim1_out_dim"] #SimpleTopoGNN with dim1
         else:
@@ -604,7 +604,7 @@ class LargerGCNModel(pl.LightningModule):
 
         self.classif = nn.Identity()
         self.classif =  torch.nn.Sequential(
-            nn.Linear(dim_before_class, num_classes),
+            nn.Linear(dim_before_class, hidden_dim // 2),
              nn.ReLU(),
              nn.Linear(hidden_dim // 2, hidden_dim // 4),
              nn.ReLU(),
@@ -677,7 +677,7 @@ class LargerGCNModel(pl.LightningModule):
 
         for layer in self.layers:
             x = layer(x, edge_index=edge_index, data=data)
-
+        
         x = self.pooling_fun(x, data.batch)
         x = self.classif(x)
 
