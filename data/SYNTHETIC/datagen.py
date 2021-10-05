@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 import argparse
 from tadasets.dimension import embed
+import os
+import pathlib
 
 def generate_noCycles(Nsamples,d, **kwargs):
     """
@@ -213,6 +215,8 @@ def generate_cycles(Nsamples,d, min_cycle = 3,**kwargs):
         x_list += [x]
         edge_list += [edge_index]
             
+
+    os.makedirs(f"./Cycles_{min_cycle}/", exist_ok=True)
             
     with open(f"./Cycles_{min_cycle}/graphs.txt", "wb") as fp:
         pickle.dump([x_list, edge_list], fp)
