@@ -126,14 +126,15 @@ poetry run topognn/train_model.py --model TopoGNN --dataset DD --batch_size 20 -
 poetry run topognn/train_model.py --model GCN --dataset DD --batch_size 20 --lr 0.0007
 ```
 
-Additional calls are also possible; stay tuned for more details or check
-out available models in `models.py`.
+Additional calls are also possible; check out available models in `models.py`.
 
 ### Synthetic datasets
+
 The synthetic datasets used to train our models are provided in the folder
 `data/SYNTHETIC`. If these are not compatible with your architecture (which
 could happen as they are saved in a binary file format), you can regenerate the
 synthetic datasets using calls to the script `data/SYNTHETIC/datagen.py`:
+
 ```bash
 cd data/SYNTHETIC
 poetry run python datagen.py --dataset Cycle --min_cycle 3
@@ -141,5 +142,6 @@ poetry run python datagen.py --dataset Necklaces
 ```
 
 ## Results used for plots
+
 The results and data used to plot our figures can be found in the folder
 `plots_data` and code to generate plots can be found in the `notebooks` folder.
