@@ -29,6 +29,8 @@ from torch.utils.data import random_split, Subset
 
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
+from ogb.graphproppred import PygGraphPropPredDataset
+
 
 def dataset_map_dict():
     DATASET_MAP = {
@@ -53,7 +55,8 @@ def dataset_map_dict():
         'DBLP': DBLP,
         'Cora': Cora,
         'CiteSeer' : CiteSeer,
-        'PubMed': PubMed
+        'PubMed': PubMed,
+        'MOLHIV': MOLHIV
     }
 
     return DATASET_MAP
@@ -372,6 +375,78 @@ class RandomAttributes(object):
     def __call__(self,data):
         data.x = torch.randn((data.x.shape[0],self.d))
         return data
+
+class OGBDataset(pl.LightningDataModule):
+    def __init__(self, name, batch_size, use_node_attributes=True,
+                 fold=0, seed=42,
+                 num_workers=2, **kwargs):
+        super().__init__()
+        self.name = name
+        self.batch_size = batch_size
+        self.use_node_attributes = use_node_attributes
+        self.fold = fold
+        self.num_workers = num_workers
+
+    def prepare_data(self):
+
+        if not self.use_node_attributes:
+            self.transform = RandomAttributes(d=3)
+            self.node_attributes = 3
+        else:
+            self.transform = None
+
+        dataset = PygGraphPropPredDataset(name = self.name, root = os.path.join(DATA_DIR, self.name), transform = self.transform)
+        if self.use_node_attributes:
+            self.node_attributes = dataset.data.x.shape[1]
+        
+        self.num_classes = int(dataset.meta_info["num classes"])
+        self.task = Tasks.GRAPH_CLASSIFICATION
+        split_idx = dataset.get_idx_split()
+        self.train = dataset[split_idx["train"]]
+        self.val = dataset[split_idx["valid"]]
+        self.test = dataset[split_idx["test"]]
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test,
+            batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=False,
+            pin_memory=True
+        )
+
+    @classmethod
+    def add_dataset_specific_args(cls, parent):
+        import argparse
+        parser = argparse.ArgumentParser(parents=[parent], add_help=False)
+        parser.add_argument('--use_node_attributes', type=str2bool, default=True)
+        parser.add_argument('--seed', type=int, default=42)
+        parser.add_argument('--batch_size', type=int, default=32)
+        return parser
+
+
+
 
 class TUGraphDataset(pl.LightningDataModule):
     #task = Tasks.GRAPH_CLASSIFICATION
@@ -829,6 +904,10 @@ class NCI(TUGraphDataset):
 class DBLP(TUGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(name='DBLP_v1', **kwargs)
+
+class MOLHIV(OGBDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name='ogbg-molhiv', **kwargs)
 
 class Cycles(SyntheticDataset):
     def __init__(self, min_cycle, **kwargs):

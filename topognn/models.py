@@ -22,6 +22,7 @@ import numpy as np
 
 import wandb
 
+from sklearn.metrics import roc_auc_score
 
 class TopologyLayer(torch.nn.Module):
     """Topological Aggregation Layer."""
@@ -616,6 +617,7 @@ class LargerGCNModel(pl.LightningModule):
             self.accuracy = pl.metrics.Accuracy()
             self.accuracy_val = pl.metrics.Accuracy()
             self.accuracy_test = pl.metrics.Accuracy()
+            self.aucroc_val = pl.metrics.AUROC(num_classes = 2)
             self.loss = torch.nn.CrossEntropyLoss()
         elif task is Tasks.NODE_CLASSIFICATION_WEIGHTED:
             self.accuracy = WeightedAccuracy(num_classes)
@@ -710,13 +712,25 @@ class LargerGCNModel(pl.LightningModule):
         mask = y != -100
 
         self.accuracy_val(torch.nn.functional.softmax(y_hat,-1)[mask], y[mask])
+        #self.aucroc_val(torch.nn.functional.softmax(y_hat,-1)[mask], y[mask])
 
         self.log("val_loss", loss, on_epoch = True)
 
         self.log("val_acc", self.accuracy_val, on_epoch=True)
+        #self.log("val_roc_auc", self.aucroc_val, on_epoch=True)
+
+        return {"y":y[mask],"y_hat":torch.nn.functional.softmax(y_hat,-1)[mask]}
+
+    def validation_epoch_end(self,data):
+        y = torch.cat([b["y"] for b in data])
+        y_pred = torch.cat([b["y_hat"] for b in data])
+        
+        self.log("roc_auc_val",roc_auc_score(y.cpu(),y_pred[:,1].cpu()))
+
 
     def test_step(self, batch, batch_idx):
         y = batch.y
+        y = y.view(-1)
 
         if hasattr(self,"topo1") and self.save_filtration:
             y_hat, filtration = self(batch,return_filtration = True)
@@ -733,13 +747,15 @@ class LargerGCNModel(pl.LightningModule):
         self.log("test_acc", self.accuracy_test, on_epoch=True)
 
 
-        return {"y":y, "y_hat":y_hat, "filtration":filtration}
+        return {"y":y[mask], "y_hat":y_hat[mask], "filtration":filtration}
 
 
     def test_epoch_end(self,outputs):
 
         y = torch.cat([output["y"] for output in outputs])
         y_hat = torch.cat([output["y_hat"] for output in outputs])
+        
+        self.log("roc_auc_test",roc_auc_score(y.cpu(),torch.nn.functional.softmax(y_pred,-1)[:,1].cpu()))
 
         if hasattr(self,"topo1") and self.save_filtration:
             filtration = torch.nn.utils.rnn.pad_sequence([output["filtration"].T for output in outputs], batch_first = True)
