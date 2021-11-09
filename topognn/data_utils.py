@@ -398,7 +398,8 @@ class OGBDataset(pl.LightningDataModule):
         dataset = PygGraphPropPredDataset(name = self.name, root = os.path.join(DATA_DIR, self.name), transform = self.transform)
         if self.use_node_attributes:
             self.node_attributes = dataset.data.x.shape[1]
-        
+            dataset.data.x = dataset.data.x.float()
+
         self.num_classes = int(dataset.meta_info["num classes"])
         self.task = Tasks.GRAPH_CLASSIFICATION
         split_idx = dataset.get_idx_split()
