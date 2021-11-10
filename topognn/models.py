@@ -755,7 +755,7 @@ class LargerGCNModel(pl.LightningModule):
         y = torch.cat([output["y"] for output in outputs])
         y_hat = torch.cat([output["y_hat"] for output in outputs])
         
-        self.log("roc_auc_test",roc_auc_score(y.cpu(),torch.nn.functional.softmax(y_pred,-1)[:,1].cpu()))
+        self.log("roc_auc_test",roc_auc_score(y.cpu(),torch.nn.functional.softmax(y_hat,-1)[:,1].cpu()))
 
         if hasattr(self,"topo1") and self.save_filtration:
             filtration = torch.nn.utils.rnn.pad_sequence([output["filtration"].T for output in outputs], batch_first = True)
