@@ -3,6 +3,7 @@ from torch_geometric.data import Data
 import numpy as np
 import pickle
 import argparse
+from tadasets.dimension import embed
 
 def generate_noCycles(Nsamples,d, **kwargs):
     """
@@ -105,6 +106,85 @@ def generate_necklaces(Nsamples,d, **kwargs):
         pickle.dump([x_list, edge_list], fp)
     torch.save(torch.tensor(labels),"./Necklaces/labels.pt")
 
+def fully_connected_edges(N):
+    return torch.LongTensor(np.stack((np.repeat(np.arange(N),N),np.tile(np.arange(N),N))))
+
+def torus(n=100, c=2, a=1, noise=None, ambient=None):
+    """
+    Sample `n` data points on a torus.
+    Parameters
+    -----------
+    n : int
+        Number of data points in shape.
+    c : float
+        Distance from center to center of tube.
+    a : float
+        Radius of tube.
+    ambient : int, default=None
+        Embed the torus into a space with ambient dimension equal to `ambient`. The torus is randomly rotated in this high dimensional space.
+    """
+
+    assert a <= c, "That's not a torus"
+
+    theta = np.random.random((n,)) * 2.0 * np.pi
+    phi = np.random.random((n,)) * 2.0 * np.pi
+
+    data = np.zeros((n, 3))
+    data[:, 0] = (c + a * np.cos(theta)) * np.cos(phi)
+    data[:, 1] = (c + a * np.cos(theta)) * np.sin(phi)
+    data[:, 2] = a * np.sin(theta)
+
+    if noise: 
+        data += noise * np.random.randn(*data.shape)
+
+    if ambient:
+        data = embed(data, ambient)
+
+    return data, theta
+
+def generate_torus(n, d, c = 2, a = 1):
+    data, _ = torus(n,c,a,noise = None, ambient = d)
+        
+    edge_index = fully_connected_edges(n) 
+    x = torch.Tensor(data)
+    return x, edge_index
+
+def generate_sphere(n,d_sphere,d, r = 1, noise = None):
+    data = np.random.randn(n, d_sphere+1)
+
+    # Normalize points to the sphere
+    data = r * data / np.sqrt(np.sum(data**2, 1)[:, None]) 
+
+    if noise: 
+        data += noise * np.random.randn(*data.shape)
+
+    if d:
+        assert d > d_sphere, "Must embed in higher dimensions"
+        data = embed(data, d)
+        
+    edge_index = fully_connected_edges(n) 
+    x = torch.Tensor(data)
+    return x, edge_index
+
+def generate_spheres_and_torus(Nsamples,d, **kwargs):
+    labels = np.random.randint(2,size = Nsamples)
+    x_list = []
+    edge_list = []
+    n_points = 50
+    for n in range(Nsamples):
+        
+        if labels[n]:
+            x, edge_index = generate_sphere(n = n_points, d_sphere = 2, d = d)     
+            x_list += [x]
+            edge_list += [edge_index]
+        else:
+            x, edge_index = generate_torus(n = n_points,d =  d)     
+            x_list += [x]
+            edge_list += [edge_index]
+
+    with open(f"./SphereTorus/graphs.txt", "wb") as fp:
+        pickle.dump([x_list, edge_list], fp)
+    torch.save(torch.tensor(labels),f"./SphereTorus/labels.pt")
 
 
 def generate_cycles(Nsamples,d, min_cycle = 3,**kwargs):
@@ -143,7 +223,8 @@ if __name__=="__main__":
     DATASET_CHOICES = {"Dummy":generate_dummy,
             "Necklaces":generate_necklaces,
             "Cycle":generate_cycles,
-            "NoCycle":generate_noCycles
+            "NoCycle":generate_noCycles,
+            "SphereTorus":generate_spheres_and_torus
             }
 
     parser = argparse.ArgumentParser(description='Generation of Synthetic Graph Datasets')

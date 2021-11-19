@@ -51,6 +51,7 @@ def dataset_map_dict():
         'Necklaces': Necklaces,
         'Cycles': Cycles,
         'NoCycles': NoCycles,
+        'SphereTorus': SphereTorus,
         'CliquePlanting': CliquePlanting,
         'DBLP': DBLP,
         'Cora': Cora,
@@ -918,6 +919,10 @@ class Cycles(SyntheticDataset):
 class NoCycles(SyntheticDataset):
     def __init__(self, **kwargs):
         super().__init__(name="NoCycles", **kwargs)
+
+class SphereTorus(SyntheticDataset):
+    def __init__(self, **kwargs):
+        super().__init__(name="SphereTorus", **kwargs)
 
 class Necklaces(SyntheticDataset):
     def __init__(self, **kwargs):
