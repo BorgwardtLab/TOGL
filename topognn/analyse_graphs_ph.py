@@ -21,16 +21,21 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import SVC
 
 
-def build_graph_from_edge_list(edge_list):
+def build_graph_from_edge_list(x, edge_list):
     """Build graph from edge list and return it."""
     n_vertices = edge_list.max().numpy() + 1
     g = ig.Graph(n_vertices)
+
+    x = x.numpy()
+    x = np.linalg.norm(x, axis=1)
 
     for u, v in edge_list.numpy().transpose():
         g.add_edge(u, v)
 
     if args.random:
         g.vs['attribute'] = np.random.normal(size=len(g.degree()))
+    elif args.norm_filtration:
+        g.vs['attribute'] = x
     else:
         g.vs['attribute'] = g.degree()
 
@@ -68,6 +73,12 @@ if __name__ == '__main__':
         help='If set, perturbs filtration values.'
     )
 
+    parser.add_argument(
+        '-N', '--norm-filtration',
+        action='store_true',
+        help='If set, use norm-based filtration.'
+    )
+
     args = parser.parse_args()
 
     # Will contain all graphs in `igraph` format. They will form the
@@ -84,8 +95,8 @@ if __name__ == '__main__':
         with open(filename, 'rb') as f:
             x_list, edge_lists = pickle.load(f)
 
-            for edge_list in edge_lists:
-                graphs.append(build_graph_from_edge_list(edge_list))
+            for x, edge_list in zip(x_list, edge_lists):
+                graphs.append(build_graph_from_edge_list(x, edge_list))
 
     persistence_diagrams = [
         calculate_persistence_diagrams(
