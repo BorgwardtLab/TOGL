@@ -262,7 +262,7 @@ python-versions = ">=2.7"
 
 [[package]]
 name = "fsspec"
-version = "2021.4.0"
+version = "2021.11.0"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -275,15 +275,20 @@ requests = {version = "*", optional = true, markers = "extra == \"http\""}
 [package.extras]
 abfs = ["adlfs"]
 adl = ["adlfs"]
+arrow = ["pyarrow (>=1)"]
 dask = ["dask", "distributed"]
 dropbox = ["dropboxdrivefs", "requests", "dropbox"]
 entrypoints = ["importlib-metadata"]
+fuse = ["fusepy"]
 gcs = ["gcsfs"]
 git = ["pygit2"]
 github = ["requests"]
 gs = ["gcsfs"]
+gui = ["panel"]
 hdfs = ["pyarrow (>=1)"]
 http = ["requests", "aiohttp"]
+libarchive = ["libarchive-c"]
+oci = ["ocifs"]
 s3 = ["s3fs"]
 sftp = ["paramiko"]
 smb = ["smbprotocol"]
@@ -662,6 +667,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "littleutils"
+version = "0.2.2"
+description = "Small personal collection of python utility functions"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "llvmlite"
 version = "0.36.0"
 description = "lightweight wrapper around basic LLVM functionality"
@@ -895,6 +908,36 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 rsa = ["cryptography"]
 signals = ["blinker"]
 signedtoken = ["cryptography", "pyjwt (>=1.0.0)"]
+
+[[package]]
+name = "ogb"
+version = "1.3.2"
+description = "Open Graph Benchmark"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = ">=1.16.0"
+outdated = ">=0.2.0"
+pandas = ">=0.24.0"
+scikit-learn = ">=0.20.0"
+six = ">=1.12.0"
+torch = ">=1.6.0"
+tqdm = ">=4.29.0"
+urllib3 = ">=1.24.0"
+
+[[package]]
+name = "outdated"
+version = "0.2.1"
+description = "Check if a version of a PyPI package is outdated"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+littleutils = "*"
+requests = "*"
 
 [[package]]
 name = "packaging"
@@ -1470,6 +1513,22 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, <4"
 
 [[package]]
+name = "tadasets"
+version = "0.0.4"
+description = "Great data sets for Topological Data Analysis."
+category = "main"
+optional = false
+python-versions = ">=2.7,!=3.1,!=3.2,!=3.3"
+
+[package.dependencies]
+matplotlib = "*"
+numpy = "*"
+
+[package.extras]
+docs = ["sphinx", "nbsphinx", "sphinx-better-theme", "sphinxcontrib-fulltoc"]
+testing = ["pytest", "scipy"]
+
+[[package]]
 name = "tensorboard"
 version = "2.4.1"
 description = "TensorBoard lets you watch Tensors Flow"
@@ -1771,7 +1830,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.9"
-content-hash = "91386c6fb468aa363dc113af837256c348363b801791c549f2f2a56c215e0828"
+content-hash = "e48a959b24ffcf8592ff98b6be45976213cccdff63ccb45febc6f10bb3ef5c4d"
 
 [metadata.files]
 absl-py = [
@@ -1971,8 +2030,8 @@ entrypoints = [
     {file = "entrypoints-0.3.tar.gz", hash = "sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451"},
 ]
 fsspec = [
-    {file = "fsspec-2021.4.0-py3-none-any.whl", hash = "sha256:70dae1d8d51072c4a1196acb9ba1bf8f5b9cdd83c4bb67e8a31dac604a49594b"},
-    {file = "fsspec-2021.4.0.tar.gz", hash = "sha256:8b1a69884855d1a8c038574292e8b861894c3373282d9a469697a2b41d5289a6"},
+    {file = "fsspec-2021.11.0-py3-none-any.whl", hash = "sha256:8843f31c7a7bb1afc4add371948f10701814594d407ee1b0bb4facec8b517efa"},
+    {file = "fsspec-2021.11.0.tar.gz", hash = "sha256:cbb7bafd59aa33684a92e843877f4adc0109fb0722b1a26e7d08f5a6e2500904"},
 ]
 future = [
     {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
@@ -2176,6 +2235,9 @@ kiwisolver = [
     {file = "kiwisolver-1.3.1-pp36-pypy36_pp73-manylinux2010_x86_64.whl", hash = "sha256:33449715e0101e4d34f64990352bce4095c8bf13bed1b390773fc0a7295967b3"},
     {file = "kiwisolver-1.3.1-pp36-pypy36_pp73-win32.whl", hash = "sha256:401a2e9afa8588589775fe34fc22d918ae839aaaf0c0e96441c0fdbce6d8ebe6"},
     {file = "kiwisolver-1.3.1.tar.gz", hash = "sha256:950a199911a8d94683a6b10321f9345d5a3a8433ec58b217ace979e18f16e248"},
+]
+littleutils = [
+    {file = "littleutils-0.2.2.tar.gz", hash = "sha256:e6cae3a4203e530d51c9667ed310ffe3b1948f2876e3d69605b3de4b7d96916f"},
 ]
 llvmlite = [
     {file = "llvmlite-0.36.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:cc0f9b9644b4ab0e4a5edb17f1531d791630c88858220d3cc688d6edf10da100"},
@@ -2383,6 +2445,14 @@ numpy = [
 oauthlib = [
     {file = "oauthlib-3.1.0-py2.py3-none-any.whl", hash = "sha256:df884cd6cbe20e32633f1db1072e9356f53638e4361bef4e8b03c9127c9328ea"},
     {file = "oauthlib-3.1.0.tar.gz", hash = "sha256:bee41cc35fcca6e988463cacc3bcb8a96224f470ca547e697b604cc697b2f889"},
+]
+ogb = [
+    {file = "ogb-1.3.2-py3-none-any.whl", hash = "sha256:1c65b15d4e8162ee8a6370743d18fd1c3108803ff322946e473d4a9208341fbc"},
+    {file = "ogb-1.3.2.tar.gz", hash = "sha256:54dfe664a2ca6ec7c7b16201d0cb54354806b8e827871e92a9c6b2c1accf6981"},
+]
+outdated = [
+    {file = "outdated-0.2.1-py3-none-any.whl", hash = "sha256:177e381857c10c410dc643b48ace8753ab977d5ae39642297a7f76eb4a3c1c8e"},
+    {file = "outdated-0.2.1.tar.gz", hash = "sha256:d92921a3d77bc56a6d39c0af321aad44b223906ebb6e8139996d26116baec573"},
 ]
 packaging = [
     {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
@@ -2821,6 +2891,10 @@ subprocess32 = [
     {file = "subprocess32-3.5.4-cp27-cp27m-macosx_10_6_intel.whl", hash = "sha256:88e37c1aac5388df41cc8a8456bb49ebffd321a3ad4d70358e3518176de3a56b"},
     {file = "subprocess32-3.5.4-cp27-cp27mu-manylinux2014_x86_64.whl", hash = "sha256:e45d985aef903c5b7444d34350b05da91a9e0ea015415ab45a21212786c649d0"},
     {file = "subprocess32-3.5.4.tar.gz", hash = "sha256:eb2937c80497978d181efa1b839ec2d9622cf9600a039a79d0e108d1f9aec79d"},
+]
+tadasets = [
+    {file = "tadasets-0.0.4-py3-none-any.whl", hash = "sha256:fd19848f39976982d1a263929fdc8785eb8ace0de642efd49491db074dea951b"},
+    {file = "tadasets-0.0.4.tar.gz", hash = "sha256:a0e6c14678750315febd97fcf334bbbfd2695ebd91b4fe7707bb1220d7348416"},
 ]
 tensorboard = [
     {file = "tensorboard-2.4.1-py3-none-any.whl", hash = "sha256:7b8c53c396069b618f6f276ec94fc45d17e3282d668979216e5d30be472115e4"},
