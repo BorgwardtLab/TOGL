@@ -1,10 +1,25 @@
 # Topological Graph Neural Networks
 
-This repository contains the code for the ICLR 2022 submission "Topological
-Graph Neural Networks".  This repository requires either Python 3.7 or 3.8 to
+This repository contains the code for our ICLR 2022 paper &ldquo;Topological
+Graph Neural Networks.&ldquo; This repository requires either Python 3.7 or 3.8 to
 be installed.
 
 **Please note**: This repository is a work in progress!
+
+## Citation
+
+If you use this code, please consider citing our paper:
+
+```bibtex
+@InProceedings{Horn22a,
+  author        = {Horn, Max and {De Brouwer}, Edward and Moor, Michael and Moreau, Yves and Rieck, Bastian and Borgwardt, Karsten},
+  title         = {Topological Graph Neural Networks},
+  eprint        = {2102.07835},
+  year          = {2022},
+  booktitle     = {International Conference on Learning Representations~(ICLR)},
+  url           = {https://openreview.net/pdf?id=oxxUMeFwEHd},
+}
+```
 
 ## Quickstart
 
