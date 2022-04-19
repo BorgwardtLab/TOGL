@@ -14,7 +14,6 @@ If you use this code, please consider citing our paper:
 @InProceedings{Horn22a,
   author        = {Horn, Max and {De Brouwer}, Edward and Moor, Michael and Moreau, Yves and Rieck, Bastian and Borgwardt, Karsten},
   title         = {Topological Graph Neural Networks},
-  eprint        = {2102.07835},
   year          = {2022},
   booktitle     = {International Conference on Learning Representations~(ICLR)},
   url           = {https://openreview.net/pdf?id=oxxUMeFwEHd},
@@ -30,8 +29,8 @@ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poet
 poetry install
 # In case any errors occur, please rerun `poetry install`
 poetry run install_deps_cpu  # or of course install_deps_cuXXX for GPU support
-# Train TopoGNN on ENZYMES for 10 epochs
-poetry run python topognn/train_model.py --model TopoGNN --dataset ENZYMES --max_epochs 10
+# Train TopoGNN on DD for 10 epochs
+poetry run python topognn/train_model.py --model TopoGNN --dataset DD --max_epochs 10
 ```
 
 ## Installation
@@ -73,8 +72,8 @@ usage: train_model.py [-h] [--model {TopoGNN,GCN}]
                       [--training_seed TRAINING_SEED]
                       [--max_epochs MAX_EPOCHS] [--paired PAIRED]
                       [--merged MERGED] [--logger {wandb,tensorboard}]
-                      [--gpu GPU] [--hidden_dim HIDDEN_DIM] [--depth DEPTH]
-                      [--lr LR] [--lr_patience LR_PATIENCE] [--min_lr MIN_LR]
+                      [--gpu GPU] [--hidden_dim HIDDEN_DIM]
+                      [--lr LR]
                       [--dropout_p DROPOUT_P] [--GIN GIN]
                       [--train_eps TRAIN_EPS] [--batch_norm BATCH_NORM]
                       [--residual RESIDUAL] [--batch_size BATCH_SIZE]
@@ -91,10 +90,7 @@ optional arguments:
   --logger {wandb,tensorboard}
   --gpu GPU
   --hidden_dim HIDDEN_DIM
-  --depth DEPTH
   --lr LR
-  --lr_patience LR_PATIENCE
-  --min_lr MIN_LR
   --dropout_p DROPOUT_P
   --GIN GIN
   --train_eps TRAIN_EPS
@@ -124,20 +120,14 @@ work.
 
 ```bash
 # TopoGNN with coord functions
-poetry run topognn/train_model.py --model TopoGNN --dataset ENZYMES --depth 3 --batch_size 20 --lr 0.0007 --lr_patience 25 --min_lr 0.000001
-# Ablated TopoGNN with coord functions
-poetry run topognn/train_model.py --model TopoGNN --dataset ENZYMES --fake True --depth 3 --batch_size 20 --lr 0.0007 --lr_patience 25 --min_lr 0.000001
-# TopoGNN with coord functions without node attributes
-poetry run topognn/train_model.py --model TopoGNN --dataset ENZYMES --depth 3 --batch_size 20 --lr 0.0007 --lr_patience 25 --min_lr 0.000001 --use_node_attributes False
+poetry run topognn/train_model.py --model TopoGNN --dataset DD --batch_size 20 --lr 0.0007
 
-# TopoGNN with set-functions
-poetry run topognn/train_model.py --model TopoGNN --dataset ENZYMES --deepset True --depth 3 --batch_size 20 --lr 0.0007 --lr_patience 25 --min_lr 0.000001
-# Ablated TopoGNN with set-functions
-poetry run topognn/train_model.py --model TopoGNN --dataset ENZYMES --fake True --deepset True --depth 3 --batch_size 20 --lr 0.0007 --lr_patience 25 --min_lr 0.000001
-
-# GCN on ENZYMES
-poetry run topognn/train_model.py --model GCN --dataset ENZYMES --depth 4 --batch_size 20 --lr 0.0007 --lr_patience 25 --min_lr 0.000001
+# GCN on DD
+poetry run topognn/train_model.py --model GCN --dataset DD --batch_size 20 --lr 0.0007
 ```
+
+Additional calls are also possible; stay tuned for more details or check
+out available models in `models.py`.
 
 ### Synthetic datasets
 The synthetic datasets used to train our models are provided in the folder
